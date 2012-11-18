@@ -1,4 +1,4 @@
-define(["dojo/_base/declare", "./SemanticObject"],
+define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject"],
   function(declare, SemanticObject) {
 
     function internalReload(/*PersistentObject*/ self, /*Object*/ json) {

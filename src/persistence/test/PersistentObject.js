@@ -1,4 +1,4 @@
-define(["dojo/main", "ppwcode_contracts/doh", "../PersistentObject"],
+define(["dojo/main", "ppwcode/contracts/doh", "../PersistentObject"],
     function(dojo, doh, PersistentObject) {
 
       doh.register(PersistentObject.prototype.declaredClass, [

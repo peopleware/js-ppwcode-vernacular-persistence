@@ -1,4 +1,4 @@
-define(["dojo/main", "ppwcode_contracts/doh", "../AuditableObject"],
+define(["dojo/main", "ppwcode/contracts/doh", "../AuditableObject"],
     function(dojo, doh, AuditableObject) {
 
       doh.register(AuditableObject.prototype.declaredClass, [
