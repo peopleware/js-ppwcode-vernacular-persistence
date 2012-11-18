@@ -45,14 +45,12 @@ define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject"],
         throw "error"; // MUDO Make this a special kind of Error (ppwcode exceptions)
       },
 
-      toJsonObject: function() {
-        var json = this.inherited(arguments);
+      _extendJsonObject: function(/*Object*/ json) {
         json.persistenceId = this.persistenceId;
-        return json; // return Object
       },
 
-      _stateToString: function() {
-        return this.inherited(arguments) + "persistenceId: " + this.persistenceId;
+      _stateToString: function(/*Array of String*/ toStrings) {
+        toStrings.push("persistenceId: " + this.persistenceId);
       }
     });
 

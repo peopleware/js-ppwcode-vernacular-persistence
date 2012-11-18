@@ -43,14 +43,12 @@ define(["dojo/_base/declare", "./PersistentObject"],
         throw "error";
       },
 
-      toJsonObject: function() {
-        var json = this.inherited(arguments);
+      _extendJsonObject: function(/*Object*/ json) {
         json.persistenceVersion = this.persistenceVersion;
-        return json; // return Object
       },
 
-      _stateToString: function() {
-        return this.inherited(arguments) + ", persistenceVersion: " + this.persistenceVersion;
+      _stateToString: function(/*Array of String*/ toStrings) {
+        toStrings.push("persistenceVersion: " + this.persistenceVersion);
       }
     });
   }

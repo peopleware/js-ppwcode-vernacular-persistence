@@ -79,17 +79,15 @@ define(["dojo/_base/declare", "./PersistentObject"],
           throw "error"; // MUDO Make this a special kind of Error (ppwcode exceptions)
         },
 
-        toJsonObject: function() {
-          var json = this.inherited(arguments);
-          // it makes no senses whatsover to send this data back to the back-end
-          return json; // return Object
+        _extendJsonObject: function(/*Object*/ json) {
+          // NOP: it makes no senses whatsover to send this data back to the back-end
         },
 
-        _stateToString: function() {
-          return this.inherited(arguments) + ", createdAt: " + this.createdAt +
-            ", createdBy: " + this.createdBy +
-            ", lastModifiedAt: " + this.lastModifiedAt +
-            ", lastModifiedBy: " + this.lastModifiedBy;
+        _stateToString: function(/*Array of String*/ toStrings) {
+          toStrings.push("createdAt: " + this.createdAt);
+          toStrings.push("createdBy: " + this.createdBy);
+          toStrings.push("lastModifiedAt: " + this.lastModifiedAt);
+          toStrings.push("lastModifiedBy: " + this.lastModifiedBy);
         }
       });
     }
