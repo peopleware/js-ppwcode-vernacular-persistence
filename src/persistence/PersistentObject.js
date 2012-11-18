@@ -32,7 +32,6 @@ define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject"],
 
       reload: function(/*Object*/ json) {
         // persistenceId can change from null to an actual number
-        this.inherited(arguments);
         internalReload(this, json);
       },
 

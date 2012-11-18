@@ -52,7 +52,6 @@ define(["dojo/_base/declare", "./PersistentObject"],
         reload: function(/*Object*/ json) {
           // created.. can change from null to an actual date and username number after create,
           // lastModified.. to, but then again with each update
-          this.inherited(arguments);
           internalReload(this, json);
         },
 

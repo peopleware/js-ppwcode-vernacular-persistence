@@ -30,7 +30,6 @@ define(["dojo/_base/declare", "./PersistentObject"],
       reload: function(/*Object*/ json) {
         // persistenceVersion can change from null to an actual number after create,
         // and to a higher number on update
-        this.inherited(arguments);
         internalReload(this, json);
       },
 
