@@ -26,7 +26,7 @@ define(["dojo/_base/declare", "./PersistentObject"],
         }
       }
 
-      return declare("be.ppwcode.vernacular.persistence.AuditableObject", [PersistentObject], {
+      var AuditableObject = declare("be.ppwcode.vernacular.persistence.AuditableObject", [PersistentObject], {
         // created.. can change from null to value, but then no more
         // lastModified.. can change all the time, but ..At can only become bigger
 
@@ -89,5 +89,7 @@ define(["dojo/_base/declare", "./PersistentObject"],
           toStrings.push("lastModifiedBy: " + this.lastModifiedBy);
         }
       });
+
+      return AuditableObject;
     }
 );
