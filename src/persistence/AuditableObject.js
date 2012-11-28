@@ -79,7 +79,7 @@ define(["dojo/_base/declare", "./PersistentObject"],
         },
 
         _extendJsonObject: function(/*Object*/ json) {
-          // NOP: it makes no senses whatsover to send this data back to the back-end
+          // NOP: it makes no senses whatsoever to send this data back to the back-end
         },
 
         _stateToString: function(/*Array of String*/ toStrings) {

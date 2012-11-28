@@ -42,47 +42,60 @@ define(["dojo/main", "ppwcode/contracts/doh", "../VersionedPersistentObject"],
         // MUDO test events
 
         function testReload1() {
+          //noinspection MagicNumberJS
           var subject = new VersionedPersistentObject({persistenceId: 1, persistenceVersion: 884});
           subject.reload();
 
           doh.invars(subject);
           // post
+          //noinspection MagicNumberJS
           doh.is(884, subject.get("persistenceVersion"));
         },
 
         function testReload2a() {
+          //noinspection MagicNumberJS
           var subject = new VersionedPersistentObject({persistenceId: 1, persistenceVersion: 884});
+          //noinspection MagicNumberJS
           subject.reload({persistenceVersion: 885});
 
           doh.invars(subject);
           // post
+          //noinspection MagicNumberJS
           doh.is(885, subject.get("persistenceVersion"));
         },
 
         function testReload2b() {
+          //noinspection MagicNumberJS
           var subject = new VersionedPersistentObject({persistenceId: 1, persistenceVersion: 884});
+          //noinspection MagicNumberJS
           subject.reload({persistenceId: 1, persistenceVersion: 885});
 
           doh.invars(subject);
           // post
+          //noinspection MagicNumberJS
           doh.is(885, subject.get("persistenceVersion"));
         },
 
         function testReload3() {
+          //noinspection MagicNumberJS
           var subject = new VersionedPersistentObject({persistenceId: 1, persistenceVersion: 884});
           subject.reload({});
 
           doh.invars(subject);
           // post
+          //noinspection MagicNumberJS
           doh.is(884, subject.get("persistenceVersion"));
         },
 
         function testReload4() {
+          //noinspection MagicNumberJS
           var subject = new VersionedPersistentObject({persistenceId: 1, persistenceVersion: 884});
+          //noinspection MagicNumberJS
           subject.reload({persistenceId: 1, persistenceVersion: 884});
 
           doh.invars(subject);
           // post
+          //noinspection MagicNumberJS
           doh.is(884, subject.get("persistenceVersion"));
         },
 //
@@ -106,6 +119,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "../VersionedPersistentObject"],
         },
 
         function testToJsonObject2() {
+          //noinspection MagicNumberJS
           var subject = new VersionedPersistentObject({persistenceId: 5, persistenceVersion: 8848});
           var result = subject.toJsonObject();
 

@@ -85,8 +85,10 @@ define(["dojo/main", "ppwcode/contracts/doh", "../AuditableObject"],
           var createdBy = "creator";
           var lastModifiedAt = new Date();
           var lastModifiedBy = "modifier";
+          //noinspection MagicNumberJS
           var subject = new AuditableObject({persistenceId: 666,
             createdAt: createdAt, createdBy: createdBy, lastModifiedAt: new Date(), lastModifiedBy: "jos"});
+          //noinspection MagicNumberJS
           subject.reload({persistenceId: 666,
             createdAt: createdAt, createdBy: createdBy, lastModifiedAt: lastModifiedAt, lastModifiedBy: lastModifiedBy});
 
