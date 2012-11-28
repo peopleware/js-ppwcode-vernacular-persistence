@@ -18,10 +18,14 @@ define(["dojo/_base/declare", "./PersistentObject"],
           }
           // this will happen with the JSON response from a creation or update, and during construction
           if (! self.createdBy) {
+            //noinspection JSUnresolvedFunction
             self._changeAttrValue("createdAt", json.createdAt);
+            //noinspection JSUnresolvedFunction
             self._changeAttrValue("createdBy", json.createdBy);
           }
+          //noinspection JSUnresolvedFunction
           self._changeAttrValue("lastModifiedAt", json.lastModifiedAt);
+          //noinspection JSUnresolvedFunction
           self._changeAttrValue("lastModifiedBy", json.lastModifiedBy);
         }
       }

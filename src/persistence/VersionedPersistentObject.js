@@ -7,11 +7,12 @@ define(["dojo/_base/declare", "./PersistentObject"],
           throw "ERROR cannot become an earlier version"; // MUDO better error, precondition
         }
         // this will happen with the JSON response from a creation or update, and during construction
+        //noinspection JSUnresolvedFunction
         self._changeAttrValue("persistenceVersion", json.persistenceVersion);
       }
     }
 
-    return declare("be.ppwcode.vernacular.persistence.VersionedPersistentObject", [PersistentObject], {
+    var VersionedPersistentObject = declare("be.ppwcode.vernacular.persistence.VersionedPersistentObject", [PersistentObject], {
 
       _c_invar: [
         function() {return this.hasOwnProperty("persistenceVersion");}
@@ -50,5 +51,7 @@ define(["dojo/_base/declare", "./PersistentObject"],
         toStrings.push("persistenceVersion: " + this.persistenceVersion);
       }
     });
+
+    return VersionedPersistentObject;
   }
 );

@@ -8,6 +8,7 @@ define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject"],
         }
         if (! self.persistenceId) {
           // this will happen with the JSON response from a creation, and during construction
+          //noinspection JSUnresolvedFunction
           self._changeAttrValue("persistenceId", json.persistenceId);
         }
       }

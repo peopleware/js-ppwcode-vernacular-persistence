@@ -1,5 +1,5 @@
 define([
   "./PersistentObject",
   "./AuditableObject",
-  "./VersionedPersistentObject",
+  "./VersionedPersistentObject"
 ], 1);
