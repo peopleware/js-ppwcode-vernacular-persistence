@@ -4,7 +4,8 @@ define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject"],
     function internalReload(/*PersistentObject*/ self, /*Object*/ json) {
       if (json && json.persistenceId /* TODO json.persistenceId undefined, but not null */) {
         if (self.persistenceId && json.persistenceId != self.persistenceId) {
-          throw "ERROR cannot change from an existing persistenceId to another or null"; // MUDO better error, precondition
+          throw "ERROR cannot change from an existing persistenceId to another or null (" +
+            json.toString() + ")"; // MUDO better error, precondition
         }
         if (! self.persistenceId) {
           // this will happen with the JSON response from a creation, and during construction
