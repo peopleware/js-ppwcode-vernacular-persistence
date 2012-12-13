@@ -37,9 +37,11 @@ define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject"],
         internalReload(this, json);
       },
 
+/*
       _persistenceIdGetter: function() {
         return this.persistenceId;
       },
+*/
 
       _persistenceIdSetter: function() {
         // persistenceId is read-only

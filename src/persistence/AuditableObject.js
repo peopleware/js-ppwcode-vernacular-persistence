@@ -8,7 +8,7 @@ define(["dojo/_base/declare", "./PersistentObject"],
           if ((self.createdAt || self.createdBy) &&
               ((self.createdAt && json.createdAt != self.createdAt) ||
                (self.createdBy && json.createdBy != self.createdBy))) {
-            throw "ERROR cannot change from existing created information to null"; // MUDO better error, precondition
+            throw "ERROR cannot change from existing created information"; // MUDO better error, precondition
           }
           if (self.lastModifiedAt && json.lastModifiedAt < self.lastModifiedAt) {
             throw "ERROR cannot become an earlier modified version"; // MUDO better error, precondition

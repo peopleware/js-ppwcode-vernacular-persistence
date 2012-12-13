@@ -34,9 +34,11 @@ define(["dojo/_base/declare", "./PersistentObject"],
         internalReload(this, json);
       },
 
+      /*
       _persistenceVersionGetter: function() {
         return this.persistenceVersion;
       },
+      */
 
       _persistenceVersionSetter: function() {
         // persistenceVersion is read-only
