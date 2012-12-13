@@ -31,6 +31,19 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
       // MUDO probably not good enough; we need the header?
     }
 
+    function noLongerInServer(entry, cache) {
+      entry.persistentObject._changeAttrValue("persistenceId", null);
+      cache.delete(entry.getKey());
+    }
+
+    function isSemanticException(/*String*/ error) {
+      return false; // MUDO unfinished
+    }
+
+    function createSemanticException(/*String*/ error) {
+      return "SEMANTIC EXCEPTION"; // MUDO unfinished
+    }
+
     var CacheEntry = declare([_ContractMixin], {
       // summary:
       //
@@ -41,14 +54,14 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
 
       _c_invar: [
         function() {return this.hasOwnProperty("persistentObject");},
-        function() {return this.persistentObject != null},
-        function() {return this.getKey()},
-        function() {return this.getNrOfReferers() >= 0}
+        function() {return this.persistentObject;},
+        function() {return this.getKey();},
+        function() {return this.getNrOfReferers() >= 0;}
       ],
 
       constructor: function(/*PersistentObject*/ p) {
-        this._c_pre(function() { return p != null});
-        this._c_pre(function() { return p.isInstanceOf(PersistentObject)});
+        this._c_pre(function() { return p;});
+        this._c_pre(function() { return p.isInstanceOf(PersistentObject);});
 
         this.persistentObject = p;
         this._referers = new ArraySet();
@@ -81,7 +94,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
         //   the object holding a reference to `persistObject`, or otherwise
         //   responsible for maintaining this reference (i.e., releasing it
         //   when no longer needed, for garbage collection).
-        this._c_pre(function() { return referer != null});
+        this._c_pre(function() { return referer != null;});
 
         this._referers.add(referer);
       },
@@ -109,14 +122,11 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
       //   able to release instances from the cache.
 
       _c_invar: [
-        function() {return this.hasOwnProperty("persistenceId");}
-        /* we don't care about the format of the persistenceId here; we just keep it, and return it to the server
-         like we got it. */
       ],
 
       constructor: function() {
         this.baseUrl = null;
-        this._cache = new ObjectMap();
+        this._cache = {};
         this._errorCount = 0;
       },
 
@@ -126,7 +136,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
         return this.baseUrl;
       },
 
-      _getUrl: function(/*Function*/PoType, /*Number*/ persistenceId) {
+      getUrl: function(/*Function*/PoType, /*Number*/ persistenceId) {
         var classAsPath = declaredClass(PoType).replace(".", "/");
         var relativeObjectUri = classAsPath + "/" + persistenceId;
         var absoluteUrl = this.baseUrl + relativeObjectUri;
@@ -163,30 +173,39 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
       _getCacheEntry: function(/*PersistentObject*/ p) {
         this._c_pre(function() {return p;});
         this._c_pre(function() {return p.isInstanceOf(PersistentObject);});
-        this._c_pre(function() {return p.get("persistenceId") !== null});
+        this._c_pre(function() {return p.get("persistenceId");});
 
-        var entry = this._cache.get(poCacheKey(p));
+        var entry = this._cache[poCacheKey(p)];
         if (!entry) {
           throw "ERROR: object not in CrudDao cache (" + p.toString() + ")";
         }
         return entry;
       },
 
-      _putTransitiveClosureInCache: function(/*PersistentObject*/ p, /*Any*/ referrer) {
-        var thisObject = this;
-        var entry = this._cache.get(poCacheKey(p));
+      track: function(/*PersistentObject*/ p, /*Any*/ referrer) {
+        var entry = this._getCacheEntry(p);
         if (entry) {
           entry.addReferer(referrer);
         }
         else {
           entry = new CacheEntry(p);
           entry.addReferer(referrer);
-          this._cache.put(entry.getKey(), entry);
+          this._cache[entry.getKey()] = entry;
         }
-        var directOwneds = p.getOwnedPersistentObjects();
-        directOwneds.forEeach(function(pdo) {
-          thisObject._putTransitiveClosureInCache(pdo, referrer);
-        });
+      },
+
+      stopTracking: function(/*PersistentObject*/ p, /*Any*/ referer) {
+        this._c_pre(function() {return p;});
+        this._c_pre(function() {return p.isInstanceOf(PersistentObject);});
+        this._c_pre(function() {return p.get("persistenceId") !== null});
+        // TODO p is in cache
+
+        var entry = this._getCacheEntry(p);
+        entry.removeReferer(referer);
+        if (entry.getNrOfReferers() <= 0) {
+          this._cache.delete(entry.getKey());
+          console.trace("Entry removed from CrudDao cache: " + p.toString());
+        }
       },
 
       get: function(/*Function*/ PoType, /*Number*/ persistenceId, /*Any*/ referer) {
@@ -214,33 +233,33 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
         //   receive an error, the error counted is increased. When the error counter
         //   reaches the limit, an error is raised for the user. We assume we have a
         //   communication problem.
-        var thisObject = this;
-        this._c_pre(function() {return thisObject.isOperational();});
+        this._c_pre(function() {return this.isOperational();});
         this._c_pre(function() {return PoType});
         // TODO type is a Constructor of a PersistentObject
-        this._c_pre(function() {return persistenceId});
+        this._c_pre(function() {return persistenceId;});
         // TODO persistenceId is an integer
-        this._c_pre(function() {return referer});
+        this._c_pre(function() {return referer;});
 
-        var entry = this._cache.get(cacheKey(declaredClass(PoType), persistenceId));
-        var url = this._getUrl(PoType, persistenceId);
+        var key = cacheKey(declaredClass(PoType), persistenceId);
+        var entry = this._cache[key];
+        var url = this.getUrl(PoType, persistenceId);
         var loadPromise = request(url, {method: "GET", handleAs: "json"});
+        var thisDao = this;
         if (entry) {
           loadPromise.then(
             function(data) {
               console.trace("Load success: " + data);
-              this._resetErrorCount();
+              thisDao._resetErrorCount();
               entry.persistentObject.reload(data);
               return entry.persistentObject; // return PersistentObject
             },
             function(error) {
               // communication error or IdNotFoundException
               if (isIdNotFoundException(error)) {
-                entry.persistentObject.markDeleted();
-                // MUDO remove from cache
+                noLongerInServer(entry, thisDao._cache);
               }
               else {
-                this._incrementErrorCount(error, "GET " + url);
+                thisDao._incrementErrorCount(error, "GET " + url);
               }
             }
           );
@@ -251,19 +270,18 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
           var resultPromise = loadPromise.then(
             function(data) {
               console.trace("Load success: " + data);
-              this._resetErrorCount();
+              thisDao._resetErrorCount();
               var p = new PoType(data);
-              p.markPersisted();
-              this._putTransitiveClosureInCache(p, referer);
+              thisDao.track(p, referer);
               return p; // return PersistentObject
             },
             function(error) {
               // communication error or IdNotFoundException
               if (isIdNotFoundException(error)) {
-                throw new IdNotFoundException(error); // MUDO does this result in an errback in this promise?
+                return new IdNotFoundException(error);
               }
               else {
-                this._incrementErrorCount(error, "GET " + url);
+                thisDao._incrementErrorCount(error, "GET " + url);
                 throw "ERROR: could not GET " + cacheKey(declaredClass(PoType), persistenceId) + " (" + error + ")";
               }
             }
@@ -280,30 +298,33 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
         this._c_pre(function() {return p.get("persistenceId") === null;});
 
         var PoType = Object.getPrototypeOf(p).constructor;
-        var url = this._getUrl(PoType, p.get("persistenceId"));
-        var loadPromise = request(url, {method: "PUT", handleAs: "json", data: p.toJsonObject()});
-        // MUDO or is this POST?
+        var url = this.getUrl(PoType, p.get("persistenceId"));
+        var loadPromise = request(url, {method: "POST", handleAs: "json", data: p.toJsonObject()});
         // MUDO Do JSONify ourselfs?
+        var thisDao = this;
         var resultPromise = loadPromise.then(
           function(data) {
             console.trace("Create success: " + data);
-            this._resetErrorCount();
+            thisDao._resetErrorCount();
             p.reload(data);
-            p.markPersisted();
-            this._putTransitiveClosureInCache(p, referer);
-            // MUDO recursively add dependent objects?
+            thisDao.track(p, referer);
             return p;
           },
           function(error) {
-            // MUDO Semantic exceptions are reported as such; everyting else is an error
-            this._incrementErrorCount(error, "PUT " + url + " (" + p.toString() + ")");
-            throw "ERROR: could not PUT " + p.toString() + " (" + error + ")";
+            // communication error or IdNotFoundException
+            if (isSemanticException(error)) {
+              return createSemanticException(error);
+            }
+            else {
+              thisDao._incrementErrorCount(error, "POST " + url + " (" + p.toString() + ")");
+              throw "ERROR: could not POST " + p.toString() + " (" + error + ")";
+            }
           }
         );
         return resultPromise;
       },
 
-      update: function(/*PersistentObject*/ p, /*Any*/ referer) {
+      update: function(/*PersistentObject*/ p) {
         var thisObject = this;
         this._c_pre(function() {return thisObject.isOperational();});
         this._c_pre(function() {return p;});
@@ -312,22 +333,29 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
         // TODO p is in cache
 
         var PoType = Object.getPrototypeOf(p).constructor;
-        var url = this._getUrl(PoType, p.get("persistenceId"));
-        var loadPromise = request(url, {method: "POST", handleAs: "json", data: p.toJsonObject()});
-        // MUDO or is this PUT?
+        var url = this.getUrl(PoType, p.get("persistenceId"));
+        var loadPromise = request(url, {method: "PUT", handleAs: "json", data: p.toJsonObject()});
         // MUDO Do JSONify ourselfs?
+        var thisDao = this;
         var resultPromise = loadPromise.then(
           function(data) {
             console.trace("Update success: " + data);
-            this._resetErrorCount();
+            thisDao._resetErrorCount();
             p.reload(data);
-            // MUDO recursively add dependent objects?
             return p;
           },
           function(error) {
-            // MUDO Semantic exceptions are reported as such; everyting else is an error
-            this._incrementErrorCount(error, "POST " + url + " (" + p.toString() + ")");
-            throw "ERROR: could not POST " + p.toString() + " (" + error + ")";
+            if (isIdNotFoundException(error)) {
+              noLongerInServer(entry, thisDao._cache);
+              return createSemanticException(error);
+            }
+            else if (isSemanticException(error)) {
+              return createSemanticException(error);
+            }
+            else {
+              thisDao._incrementErrorCount(error, "PUT " + url + " (" + p.toString() + ")");
+              throw "ERROR: could not PUT " + p.toString() + " (" + error + ")";
+            }
           }
         );
         return resultPromise;
@@ -335,46 +363,35 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
 
       delete: function(/*PersistentObject*/ p) {
         // DOES NOT REMOVE REFERER!
-        var thisObject = this;
-        this._c_pre(function() {return thisObject.isOperational();});
-        this._c_pre(function() {return p;});
-        this._c_pre(function() {return p.isInstanceOf(PersistentObject);});
-        this._c_pre(function() {return p.get("persistenceId") !== null});
-        // TODO p is in cache
-
-        var PoType = Object.getPrototypeOf(p).constructor;
-        var url = this._getUrl(PoType, p.get("persistenceId"));
-        var loadPromise = request(url, {method: "DELETE", handleAs: "json"});
-        var resultPromise = loadPromise.then(
-          function(data) {
-            console.trace("Delete success: " + data);
-            this._resetErrorCount();
-            p.markDeleted(); // MUDO persistenceId == null
-            // MUDO Can this still be a referer for others?
-            return p;
-          },
-          function(error) {
-            // MUDO Semantic exceptions are reported as such; everyting else is an error
-            this._incrementErrorCount(error, "DELETE " + url + " (" + p.toString() + ")");
-            throw "ERROR: could not DELETE " + p.toString() + " (" + error + ")";
-          }
-        );
-        return resultPromise;
-      },
-
-      releaseReference: function(/*PersistentObject*/ p, /*Any*/ referer) {
+        this._c_pre(function() {return this.isOperational();});
         this._c_pre(function() {return p;});
         this._c_pre(function() {return p.isInstanceOf(PersistentObject);});
         this._c_pre(function() {return p.get("persistenceId") !== null});
         // TODO p is in cache
 
         var entry = this._getCacheEntry(p);
-        entry.removeReferer(referer);
-        if (entry.getNrOfReferers() <= 0) {
-          this._cache.remove(entry.getKey());
-          // MUDO remove as referer from other objects
-          console.trace("Entry removed from CrudDao cache: " + p.toString());
-        }
+        var PoType = Object.getPrototypeOf(p).constructor;
+        var url = this.getUrl(PoType, p.get("persistenceId"));
+        var loadPromise = request(url, {method: "DELETE", handleAs: "json"});
+        var thisDao = this;
+        var resultPromise = loadPromise.then(
+          function(data) {
+            console.trace("Delete success: " + data);
+            thisDao._resetErrorCount();
+            noLongerInServer(entry, thisDao._cache);
+            return p;
+          },
+          function(error) {
+            if (isSemanticException(error)) {
+              return createSemanticException(error);
+            }
+            else {
+              thisDao._incrementErrorCount(error, "DELETE " + url + " (" + p.toString() + ")");
+              throw "ERROR: could not DELETE " + p.toString() + " (" + error + ")";
+            }
+          }
+        );
+        return resultPromise;
       }
 
     });
