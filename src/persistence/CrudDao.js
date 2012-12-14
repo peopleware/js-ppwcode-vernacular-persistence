@@ -31,11 +31,6 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
       // MUDO probably not good enough; we need the header?
     }
 
-    function noLongerInServer(entry, cache) {
-      entry.persistentObject._changeAttrValue("persistenceId", null);
-      cache.delete(entry.getKey());
-    }
-
     function isSemanticException(/*String*/ error) {
       return false; // MUDO unfinished
     }
@@ -208,6 +203,11 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
         }
       },
 
+      noLongerInServer: function(entry) {
+        entry.persistentObject._changeAttrValue("persistenceId", null);
+        this._cache.delete(entry.getKey());
+      },
+
       get: function(/*Function*/ PoType, /*Number*/ persistenceId, /*Any*/ referer) {
         // summary:
         //   Get the object of type `PoType` with `persistenceId` from the remote server.
@@ -242,52 +242,40 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
 
         var key = cacheKey(declaredClass(PoType), persistenceId);
         var entry = this._cache[key];
+        var p = null;
+        if (! entry) {
+          p = new PoType();
+          p._changeAttrValue("peristenceId", persistenceId);
+          this.track(p, referer);
+        }
+        else {
+          p = entry.persistentObject;
+        }
         var url = this.getUrl(PoType, persistenceId);
         var loadPromise = request(url, {method: "GET", handleAs: "json"});
         var thisDao = this;
-        if (entry) {
-          loadPromise.then(
-            function(data) {
-              console.trace("Load success: " + data);
-              thisDao._resetErrorCount();
-              entry.persistentObject.reload(data);
-              return entry.persistentObject; // return PersistentObject
-            },
-            function(error) {
-              // communication error or IdNotFoundException
-              if (isIdNotFoundException(error)) {
-                noLongerInServer(entry, thisDao._cache);
-              }
-              else {
-                thisDao._incrementErrorCount(error, "GET " + url);
-              }
+        var resultPromise;
+        resultPromise = loadPromise.then(
+          function(data) {
+            console.trace("Load success: " + data);
+            thisDao._resetErrorCount();
+            p.reload(data);
+            return p; // return PersistentObject
+          },
+          function(error) {
+            // communication error or IdNotFoundException
+            if (isIdNotFoundException(error)) {
+              thisDao.noLongerInServer(entry);
+              return new IdNotFoundException(error);
             }
-          );
-          entry.addReferer(referer);
-          return entry.persistentObject; // return PersistentObject
-        }
-        else {
-          var resultPromise = loadPromise.then(
-            function(data) {
-              console.trace("Load success: " + data);
-              thisDao._resetErrorCount();
-              var p = new PoType(data);
-              thisDao.track(p, referer);
-              return p; // return PersistentObject
-            },
-            function(error) {
-              // communication error or IdNotFoundException
-              if (isIdNotFoundException(error)) {
-                return new IdNotFoundException(error);
-              }
-              else {
-                thisDao._incrementErrorCount(error, "GET " + url);
-                throw "ERROR: could not GET " + cacheKey(declaredClass(PoType), persistenceId) + " (" + error + ")";
-              }
+            else {
+              thisDao._incrementErrorCount(error, "GET " + url);
+              throw "ERROR: could not GET " + cacheKey(declaredClass(PoType), persistenceId) + " (" + error + ")";
             }
-          );
-        }
-        return resultPromise; // return Promise
+          }
+        );
+        resultPromise.persistentObject = p;
+        return resultPromise; // return Promise (extended)
       },
 
       create: function(/*PersistentObject*/ p, /*Any*/ referer) {
@@ -321,6 +309,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
             }
           }
         );
+        resultPromise.persistentObject = p;
         return resultPromise;
       },
 
@@ -346,7 +335,8 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
           },
           function(error) {
             if (isIdNotFoundException(error)) {
-              noLongerInServer(entry, thisDao._cache);
+              var entry = thisDao._getCacheEntry(p);
+              thisDao.noLongerInServer(entry);
               return createSemanticException(error);
             }
             else if (isSemanticException(error)) {
@@ -358,6 +348,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
             }
           }
         );
+        resultPromise.persistentObject = p;
         return resultPromise;
       },
 
@@ -378,7 +369,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
           function(data) {
             console.trace("Delete success: " + data);
             thisDao._resetErrorCount();
-            noLongerInServer(entry, thisDao._cache);
+            thisDao.noLongerInServer(entry);
             return p;
           },
           function(error) {
@@ -391,13 +382,12 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
             }
           }
         );
+        resultPromise.persistentObject = p;
         return resultPromise;
       }
 
     });
 
-    var crudDao = new CrudDao();
-
-    return crudDao; // return CrudDao
+    return CrudDao; // return Function
   }
 );
