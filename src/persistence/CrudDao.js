@@ -133,7 +133,9 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
 
       getUrl: function(/*Function*/PoType, /*Number*/ persistenceId) {
         var classAsPath = declaredClass(PoType).replace(".", "/");
-        var relativeObjectUri = classAsPath + "/" + persistenceId;
+        if (persistenceId) {
+          var relativeObjectUri = classAsPath + "/" + persistenceId;
+        }
         var absoluteUrl = this.baseUrl + relativeObjectUri;
         return absoluteUrl;
       },
@@ -265,12 +267,13 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
           function(error) {
             // communication error or IdNotFoundException
             if (isIdNotFoundException(error)) {
+              thisDao._resetErrorCount();
               thisDao.noLongerInServer(entry);
               return new IdNotFoundException(error);
             }
             else {
               thisDao._incrementErrorCount(error, "GET " + url);
-              throw "ERROR: could not GET " + cacheKey(declaredClass(PoType), persistenceId) + " (" + error + ")";
+              return "ERROR: could not GET " + cacheKey(declaredClass(PoType), persistenceId) + " (" + error + ")";
             }
           }
         );
@@ -286,7 +289,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
         this._c_pre(function() {return p.get("persistenceId") === null;});
 
         var PoType = Object.getPrototypeOf(p).constructor;
-        var url = this.getUrl(PoType, p.get("persistenceId"));
+        var url = this.getUrl(PoType);
         var loadPromise = request(url, {method: "POST", handleAs: "json", data: p.toJsonObject()});
         // MUDO Do JSONify ourselfs?
         var thisDao = this;
@@ -305,7 +308,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
             }
             else {
               thisDao._incrementErrorCount(error, "POST " + url + " (" + p.toString() + ")");
-              throw "ERROR: could not POST " + p.toString() + " (" + error + ")";
+              return "ERROR: could not POST " + p.toString() + " (" + error + ")";
             }
           }
         );
@@ -335,16 +338,18 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
           },
           function(error) {
             if (isIdNotFoundException(error)) {
+              thisDao._resetErrorCount();
               var entry = thisDao._getCacheEntry(p);
               thisDao.noLongerInServer(entry);
               return createSemanticException(error);
             }
             else if (isSemanticException(error)) {
+              thisDao._resetErrorCount();
               return createSemanticException(error);
             }
             else {
               thisDao._incrementErrorCount(error, "PUT " + url + " (" + p.toString() + ")");
-              throw "ERROR: could not PUT " + p.toString() + " (" + error + ")";
+              return "ERROR: could not PUT " + p.toString() + " (" + error + ")";
             }
           }
         );
@@ -378,7 +383,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
             }
             else {
               thisDao._incrementErrorCount(error, "DELETE " + url + " (" + p.toString() + ")");
-              throw "ERROR: could not DELETE " + p.toString() + " (" + error + ")";
+              return "ERROR: could not DELETE " + p.toString() + " (" + error + ")";
             }
           }
         );
