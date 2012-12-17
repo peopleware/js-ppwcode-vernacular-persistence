@@ -92,8 +92,25 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
             doh.t(ce._referers.contains(tracker1));
             doh.t(ce._referers.contains(tracker2));
           }
-        }
+        },
 
+        {
+          name: "stopTracking1",
+          setUp: subjectSetup,
+          runTest: function() {
+            var p = new MockPo({persistenceId: 777});
+            var tracker1 = {};
+            var tracker2 = 6;
+            this.subject.track(p, tracker1);
+            this.subject.track(p, tracker2);
+            this.subject.stopTracking(p, tracker2);
+            var ce = this.subject._getExistingCacheEntry(p);
+            doh.t(this.subject._getExistingCacheEntry(p));
+            doh.is(p, ce.persistentObject);
+            doh.is(1, ce.getNrOfReferers());
+            doh.t(ce._referers.contains(tracker1));
+          }
+        }
       ]);
 
     }
