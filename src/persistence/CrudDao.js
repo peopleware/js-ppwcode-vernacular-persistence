@@ -201,7 +201,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
         var entry = this._getExistingCacheEntry(p);
         entry.removeReferer(referer);
         if (entry.getNrOfReferers() <= 0) {
-          this._cache.delete(entry.getKey());
+          delete this._cache[entry.getKey()];
           console.trace("Entry removed from CrudDao cache: " + p.toString());
         }
       },
