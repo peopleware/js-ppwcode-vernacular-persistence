@@ -1,5 +1,6 @@
 define([
   "./PersistentObject",
   "./AuditableObject",
-  "./VersionedPersistentObject"
+  "./VersionedPersistentObject",
+  "./CrudDao"
 ], 1);

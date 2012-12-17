@@ -12,8 +12,9 @@ define(["dojo/_base/declare",
       return type + "@" + persistenceId;
     }
 
-    function declaredClass(/*Function*/ constructor) {
-      return Object.getPrototypeOf(constructor).declaredClass;
+    function declaredClass(/*Function*/ c) {
+      var proto = c.prototype;
+      return proto.declaredClass;
     }
 
     var CrudDaoMock = declare([CrudDao], {
@@ -125,7 +126,7 @@ define(["dojo/_base/declare",
           setTimeout(function() {
             thisDao._resetErrorCount();
             if (p.semanticException.isInstanceOf(IdNotFoundException)) {
-              var entry = thisDao._getCacheEntry(p);
+              var entry = thisDao._getExistingCacheEntry(p);
               thisDao.noLongerInServer(entry);
             }
             result.reject(p.semanticException);
@@ -168,7 +169,7 @@ define(["dojo/_base/declare",
         else {
           setTimeout(function() {
               thisDao._resetErrorCount();
-              var entry = thisDao._getCacheEntry(p);
+              var entry = thisDao._getExistingCacheEntry(p);
               thisDao.noLongerInServer(entry);
               var json = p.toJsonObject();
               json.persistenceVersion = null;

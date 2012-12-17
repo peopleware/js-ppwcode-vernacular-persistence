@@ -1,8 +1,8 @@
 define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
         "./PersistentObject", "./IdNotFoundException",
-        "ppwcode/collection/ArraySet", "ppwcode/collection/ObjectMap",
+        "ppwcode/collections/ArraySet",
         "dojo/request"],
-  function(declare, _ContractMixin, PersistentObject, IdNotFoundException, ArraySet, ObjectMap, request) {
+  function(declare, _ContractMixin, PersistentObject, IdNotFoundException, Set, request) {
 
     function cacheKey(/*String*/ type, /*Number*/ persistenceId) {
       // summary:
@@ -22,8 +22,9 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
       return cacheKey(p.declaredClass, p.persistenceId);
     }
 
-    function declaredClass(/*Function*/ constructor) {
-      return Object.getPrototypeOf(constructor).declaredClass;
+    function declaredClass(/*Function*/ c) {
+      var proto = c.prototype;
+      return proto.declaredClass;
     }
 
     function isIdNotFoundException(/*String*/ error) {
@@ -59,7 +60,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
         this._c_pre(function() { return p.isInstanceOf(PersistentObject);});
 
         this.persistentObject = p;
-        this._referers = new ArraySet();
+        this._referers = new Set();
       },
 
       // summary:
@@ -104,7 +105,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
       getNrOfReferers: function() {
         // summary:
         //   Return the number of referers.
-        return this._referers.size();
+        return this._referers.getSize();
       }
 
     });
@@ -132,10 +133,10 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
       },
 
       getUrl: function(/*Function*/PoType, /*Number*/ persistenceId) {
-        var classAsPath = declaredClass(PoType).replace(".", "/");
-        if (persistenceId) {
-          var relativeObjectUri = classAsPath + "/" + persistenceId;
-        }
+        var classAsPath = declaredClass(PoType).replace(/\./g, "/");
+        var relativeObjectUri = persistenceId ?
+          relativeObjectUri = classAsPath + "/" + persistenceId :
+          classAsPath;
         var absoluteUrl = this.baseUrl + relativeObjectUri;
         return absoluteUrl;
       },
@@ -167,7 +168,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
       //   Private. Contains a CacheEntry for each retrieved object, that is not yet released.
       _cache: null,
 
-      _getCacheEntry: function(/*PersistentObject*/ p) {
+      _getExistingCacheEntry: function(/*PersistentObject*/ p) {
         this._c_pre(function() {return p;});
         this._c_pre(function() {return p.isInstanceOf(PersistentObject);});
         this._c_pre(function() {return p.get("persistenceId");});
@@ -180,7 +181,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
       },
 
       track: function(/*PersistentObject*/ p, /*Any*/ referrer) {
-        var entry = this._getCacheEntry(p);
+        var entry = this._cache[poCacheKey(p)];
         if (entry) {
           entry.addReferer(referrer);
         }
@@ -197,7 +198,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
         this._c_pre(function() {return p.get("persistenceId") !== null});
         // TODO p is in cache
 
-        var entry = this._getCacheEntry(p);
+        var entry = this._getExistingCacheEntry(p);
         entry.removeReferer(referer);
         if (entry.getNrOfReferers() <= 0) {
           this._cache.delete(entry.getKey());
@@ -339,7 +340,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
           function(error) {
             if (isIdNotFoundException(error)) {
               thisDao._resetErrorCount();
-              var entry = thisDao._getCacheEntry(p);
+              var entry = thisDao._getExistingCacheEntry(p);
               thisDao.noLongerInServer(entry);
               return createSemanticException(error);
             }
@@ -365,7 +366,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
         this._c_pre(function() {return p.get("persistenceId") !== null});
         // TODO p is in cache
 
-        var entry = this._getCacheEntry(p);
+        var entry = this._getExistingCacheEntry(p);
         var PoType = Object.getPrototypeOf(p).constructor;
         var url = this.getUrl(PoType, p.get("persistenceId"));
         var loadPromise = request(url, {method: "DELETE", handleAs: "json"});
