@@ -206,9 +206,10 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
         }
       },
 
-      noLongerInServer: function(entry) {
+      _noLongerInServer: function(entry) {
+        var key = entry.getKey();
         entry.persistentObject._changeAttrValue("persistenceId", null);
-        this._cache.delete(entry.getKey());
+        delete this._cache[key];
       },
 
       get: function(/*Function*/ PoType, /*Number*/ persistenceId, /*Any*/ referer) {
@@ -269,7 +270,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
             // communication error or IdNotFoundException
             if (isIdNotFoundException(error)) {
               thisDao._resetErrorCount();
-              thisDao.noLongerInServer(entry);
+              thisDao._noLongerInServer(entry);
               return new IdNotFoundException(error);
             }
             else {
@@ -341,7 +342,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
             if (isIdNotFoundException(error)) {
               thisDao._resetErrorCount();
               var entry = thisDao._getExistingCacheEntry(p);
-              thisDao.noLongerInServer(entry);
+              thisDao._noLongerInServer(entry);
               return createSemanticException(error);
             }
             else if (isSemanticException(error)) {
@@ -375,7 +376,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
           function(data) {
             console.trace("Delete success: " + data);
             thisDao._resetErrorCount();
-            thisDao.noLongerInServer(entry);
+            thisDao._noLongerInServer(entry);
             return p;
           },
           function(error) {

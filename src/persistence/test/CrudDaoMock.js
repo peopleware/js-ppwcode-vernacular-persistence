@@ -53,7 +53,7 @@ define(["dojo/_base/declare",
         else if (persistenceId.idNotFoundException) {
           setTimeout(function() {
               thisDao._resetErrorCount();
-              thisDao.noLongerInServer(entry);
+              thisDao._noLongerInServer(entry);
               result.reject(persistenceId.idNotFoundException);
             },
             persistenceId.waitMillis);
@@ -127,7 +127,7 @@ define(["dojo/_base/declare",
             thisDao._resetErrorCount();
             if (p.semanticException.isInstanceOf(IdNotFoundException)) {
               var entry = thisDao._getExistingCacheEntry(p);
-              thisDao.noLongerInServer(entry);
+              thisDao._noLongerInServer(entry);
             }
             result.reject(p.semanticException);
           },
@@ -170,7 +170,7 @@ define(["dojo/_base/declare",
           setTimeout(function() {
               thisDao._resetErrorCount();
               var entry = thisDao._getExistingCacheEntry(p);
-              thisDao.noLongerInServer(entry);
+              thisDao._noLongerInServer(entry);
               var json = p.toJsonObject();
               json.persistenceVersion = null;
               p.reload(json);

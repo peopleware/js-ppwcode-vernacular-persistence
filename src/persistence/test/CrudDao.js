@@ -128,6 +128,24 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
             var ce = this.subject._cache[key];
             doh.f(ce);
           }
+        },
+
+        {
+          name: "_noLongerInServer",
+          setUp: subjectSetup,
+          runTest: function() {
+            var p = new MockPo({persistenceId: 777});
+            var tracker1 = {};
+            var tracker2 = 6;
+            this.subject.track(p, tracker1);
+            this.subject.track(p, tracker2);
+            var ce = this.subject._getExistingCacheEntry(p);
+            var key = ce.getKey();
+            this.subject._noLongerInServer(ce);
+            var ce = this.subject._cache[key];
+            doh.f(ce);
+            doh.is(null, p.persistenceId);
+          }
         }
 
       ]);
