@@ -409,7 +409,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
               }
               else if (idNotFoundException) {
                 doh.is(idNotFoundException, problem);
-                removedFromServer(subject, p, persistenceIdEvent, 3, testPropertyEvent, testPropertyEvent);
+                removedFromServer(subject, p, persistenceIdEvent, oldTestValue, testPropertyEvent, testPropertyEvent);
               }
               else {
                 doh.fail();
@@ -426,10 +426,27 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
 
       function testGetNonCached(subject, waitMillis, idNotFoundException, error) {
         var id = 777;
-        var p = new MockPo({persistenceId: id});
+        var tracker2 = {};
+        tracker2.resultJson = { persistenceId: 777 };
+        var newTestValue = 3;
+        tracker2.resultJson.testProperty = newTestValue;
+        if (waitMillis) {
+          tracker2.waitMillis = waitMillis;
+        }
+        if (idNotFoundException) {
+          tracker2.idNotFoundException = idNotFoundException;
+        }
+        if (error) {
+          tracker2.error = error;
+        }
+        var deferred = new doh.Deferred();
+        var result = subject.get(MockPo, id, tracker2);
+        doh.t(result);
+        doh.t(result.persistentObject);
+        var p = result.persistentObject;
+        doh.is(id, p.get("persistenceId"));
+        doh.t(p.isInstanceOf(MockPo));
         var oldTestValue = p.get("testProperty");
-        var tracker1 = {};
-        subject.track(p, tracker1);
         var persistenceIdEvent = null;
         p.watch("persistenceId", function(propertyName, oldValue, newValue) {
           persistenceIdEvent = {
@@ -446,36 +463,15 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
             newValue: newValue
           }
         });
-        var tracker2 = {};
-        tracker2.resultJson = { persistenceId: 777 };
-        var newTestValue = 9;
-        tracker2.resultJson.testProperty = newTestValue;
-        if (waitMillis) {
-          tracker2.waitMillis = waitMillis;
-        }
-        if (idNotFoundException) {
-          tracker2.idNotFoundException = idNotFoundException;
-        }
-        if (error) {
-          tracker2.error = error;
-        }
-        var deferred = new doh.Deferred();
-        var result = subject.get(MockPo, id, tracker2);
-        doh.t(result);
-        doh.t(result.persistentObject);
-        doh.is(p, result.persistentObject);
-        doh.is(oldTestValue, p.get("testProperty"));
-        doh.f(persistenceIdEvent);
-        doh.f(testPropertyEvent);
         var resultPromise = result.promise;
         doh.t(resultPromise);
         resultPromise.then(
           function(pSuccess) {
             try {
               doh.is(p, pSuccess);
-              doh.t(p.persistenceId);
+              doh.is(id, p.persistenceId);
               doh.f(persistenceIdEvent);
-              doh.is(p.get("testProperty"), newTestValue);
+              doh.is(newTestValue, p.get("testProperty"));
               doh.t(testPropertyEvent);
               doh.is("testProperty", testPropertyEvent.propertyName);
               doh.is(oldTestValue, testPropertyEvent.oldValue);
@@ -483,8 +479,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
               var ce = subject._getExistingCacheEntry(p);
               doh.t(ce);
               doh.is(p, ce.persistentObject);
-              doh.is(2, ce.getNrOfReferers());
-              doh.t(ce._referers.contains(tracker1));
+              doh.is(1, ce.getNrOfReferers());
               doh.t(ce._referers.contains(tracker2));
               deferred.callback(true);
             }
@@ -496,11 +491,17 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
             try {
               if (error) {
                 console.log("Expected error message: " + error);
-                testGetNothingChanged(subject, p, persistenceIdEvent, oldTestValue, testPropertyEvent, tracker1, tracker2);
+                doh.t(p.persistenceId);
+                doh.is(id, p.persistenceId);
+                doh.f(persistenceIdEvent);
+                doh.is(oldTestValue, p.get("testProperty"));
+                doh.f(testPropertyEvent);
+                var ce = subject._cache[cacheKey(MockPo, id)];
+                doh.f(ce);
               }
               else if (idNotFoundException) {
                 doh.is(idNotFoundException, problem);
-                removedFromServer(subject, p, persistenceIdEvent, 3, testPropertyEvent, testPropertyEvent);
+                removedFromServer(subject, p, persistenceIdEvent, oldTestValue, testPropertyEvent, testPropertyEvent);
               }
               else {
                 doh.fail();
@@ -864,6 +865,33 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           setUp: subjectSetup,
           runTest: function() {
             return testGetCached(this.subject, 1500, null, "AN ERROR");
+          },
+          timeout: 3000
+        },
+
+        {
+          name: "get-NonCached-1",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testGetCached(this.subject);
+          },
+          timeout: 3000
+        },
+
+        {
+          name: "get-NonCached-2",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testGetCached(this.subject, new IdNotFoundException());
+          },
+          timeout: 3000
+        },
+
+        {
+          name: "get-NonCached-3",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testGetCached(this.subject, null, "AN ERROR");
           },
           timeout: 3000
         }
