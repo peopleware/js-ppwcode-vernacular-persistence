@@ -25,53 +25,53 @@ define(["dojo/_base/declare",
       //   Private. Contains a CacheEntry for each retrieved object, that is not yet released.
 
       get: function(/*Function*/ PoType, /*Number*/ persistenceId, /*Any*/ referer) {
+        // description:
+        //   referer.error will result in that error
+        //   referer.idNotFoundException will result in that exception
+        //   referer.resultJson will be the result
+        //   referer.waitMillis is the time the promise will take
+
         var key = cacheKey(declaredClass(PoType), persistenceId);
         var entry = this._cache[key];
         var p = null;
-        var inCache;
         if (! entry) {
-          inCache = false;
           p = new PoType();
           p._changeAttrValue("peristenceId", persistenceId);
-          this.track(p, referer);
         }
         else {
-          inCache = true;
           p = entry.persistentObject;
         }
+        this.track(p, referer);
         var thisDao = this;
         var resultDeferred = new Deferred();
-        if (persistenceId.error) {
-          setTimeout(function() {
-              var PoType = Object.getPrototypeOf(p).constructor;
-              var url = this.getUrl(PoType, persistenceId);
-              thisDao._incrementErrorCount(persistenceId.error, "GET " + url);
-              resultDeferred.reject("ERROR: could not GET " + persistenceId + " (" + persistenceId.error + ")");
-            },
-            p.waitMillis);
+        var action;
+        if (referer.error) {
+          action = function() {
+            var PoType = Object.getPrototypeOf(p).constructor;
+            var url = this.getUrl(PoType, persistenceId);
+            thisDao._incrementErrorCount(persistenceId.error, "GET " + url);
+            resultDeferred.reject("ERROR: could not GET " + persistenceId + " (" + referer.error + ")");
+          };
         }
-        else if (persistenceId.idNotFoundException) {
-          setTimeout(function() {
-              thisDao._resetErrorCount();
-              thisDao._noLongerInServer(entry);
-              resultDeferred.reject(persistenceId.idNotFoundException);
-            },
-            persistenceId.waitMillis);
+        else if (referer.idNotFoundException) {
+          action = function() {
+            thisDao._resetErrorCount();
+            thisDao._noLongerInServer(entry);
+            resultDeferred.reject(referer.idNotFoundException);
+          };
         }
         else {
-          if (inCache) {
+          action = function() {
             thisDao._resetErrorCount();
-            p.reload(persistenceId.resultObject);
+            p.reload(referer.resultJson);
             resultDeferred.resolve(p);
-          }
-          else {
-            setTimeout(function() {
-              thisDao._resetErrorCount();
-              p.reload(persistenceId.resultObject);
-              resultDeferred.resolve(p);
-            },
-            p.waitMillis);
-          }
+          };
+        }
+        if ((referer.error && referer.idNotFoundException) && ! referer.waitMillis) {
+          action();
+        }
+        else {
+          setTimeout(action, referer.waitMillis);
         }
         var result = {
           promise: resultDeferred.promise,
