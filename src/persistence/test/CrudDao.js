@@ -1,7 +1,25 @@
-define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObject", "dojo/_base/declare"],
-    function(dojo, doh, CrudDaoMock, PersistentObject, declare) {
+define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObject", "../IdNotFoundException", "dojo/_base/declare"],
+    function(dojo, doh, CrudDaoMock, PersistentObject, IdNotFoundException, declare) {
 
       var baseUrl1 = "http://www.ppwcode.org/some/path/";
+
+      function cacheKey(/*String*/ type, /*Number*/ persistenceId) {
+        // summary:
+        //   Returns a key.
+        // description:
+        //   Returns `type + "@" + persistenceId`
+
+        return type + "@" + persistenceId;
+      }
+
+      function poCacheKey(/*PersistentObject*/ p) {
+        // summary:
+        //   Returns a key, intended to be unique, for this entry.
+        // description:
+        //   Returns `persistentObject.declaredClass + "@" + persistentObject.persistenceId`
+
+        return cacheKey(p.declaredClass, p.persistenceId);
+      }
 
       subjectSetup = function() {
         var subject = new CrudDaoMock();
@@ -12,10 +30,10 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
       var MockPo = declare([PersistentObject], {
 
         constructor: function(kwargs) {
-          this.test = 3;
+          this.testProperty = 3;
         },
 
-        test: 5
+        testProperty: 5
 
       });
 
@@ -56,7 +74,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
               doh.is(null, persistenceIdEvent.oldValue);
               doh.is(p.get("persistenceId"), persistenceIdEvent.newValue);
               var ce = subject._getExistingCacheEntry(p);
-              doh.t(subject._getExistingCacheEntry(p));
+              doh.t(ce);
               doh.is(p, ce.persistentObject);
               doh.is(1, ce.getNrOfReferers());
               doh.t(ce._referers.contains(tracker1));
@@ -75,6 +93,108 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
               }
               else if (semanticException) {
                 doh.is(semanticException, problem);
+              }
+              else {
+                doh.fail();
+              }
+              deferred.callback(true);
+            }
+            catch (error) {
+              deferred.errback(error);
+            }
+          }
+        );
+        return deferred;
+      }
+
+      function testUpdateNothingChanged(subject, p, persistenceIdEvent, firstTestPropertyEvent, testPropertyEvent, tracker) {
+        doh.t(p.persistenceId);
+        doh.is(777, p.get("persistenceId"));
+        doh.f(persistenceIdEvent);
+        var ce = subject._getExistingCacheEntry(p);
+        doh.t(ce);
+        doh.is(p, ce.persistentObject);
+        doh.is(1, ce.getNrOfReferers());
+        doh.t(ce._referers.contains(tracker));
+        doh.is(9, p.get("testProperty"));
+        doh.is(firstTestPropertyEvent, testPropertyEvent);
+      }
+
+      function testUpdate(subject, waitMillis, semanticException, error) {
+        var p = new MockPo({persistenceId: 777});
+        if (waitMillis) {
+          p.waitMillis = waitMillis;
+        }
+        if (semanticException) {
+          p.semanticException = semanticException;
+        }
+        if (error) {
+          p.error = error;
+        }
+        var tracker1 = {};
+        subject.track(p, tracker1);
+        var persistenceIdEvent = null;
+        p.watch("persistenceId", function(propertyName, oldValue, newValue) {
+          persistenceIdEvent = {
+            propertyName: propertyName,
+            oldValue: oldValue,
+            newValue: newValue
+          }
+        });
+        var testPropertyEvent = null;
+        p.watch("testProperty", function(propertyName, oldValue, newValue) {
+          testPropertyEvent = {
+            propertyName: propertyName,
+            oldValue: oldValue,
+            newValue: newValue
+          }
+        });
+        p.set("testProperty", 9);
+        var firstTestPropertyEvent = testPropertyEvent;
+        doh.t(testPropertyEvent);
+        doh.is("testProperty", testPropertyEvent.propertyName);
+        doh.is(3, testPropertyEvent.oldValue);
+        doh.is(9, testPropertyEvent.newValue);
+        var deferred = new doh.Deferred();
+        var result = subject.update(p);
+        doh.t(result);
+        doh.t(result.persistentObject);
+        doh.is(p, result.persistentObject);
+        var resultPromise = result.promise;
+        doh.t(resultPromise);
+        resultPromise.then(
+          function(pSuccess) {
+            try {
+              doh.is(p, pSuccess);
+              testUpdateNothingChanged(subject, p, persistenceIdEvent, firstTestPropertyEvent, testPropertyEvent, tracker1);
+              deferred.callback(true);
+            }
+            catch (error) {
+              deferred.errback(error);
+            }
+          },
+          function(problem) {
+            try {
+              if (error) {
+                console.log("Expected error message: " + error);
+                testUpdateNothingChanged(subject, p, persistenceIdEvent, firstTestPropertyEvent, testPropertyEvent, tracker1);
+              }
+              else if (semanticException) {
+                doh.is(semanticException, problem);
+                if (semanticException.isInstanceOf && semanticException.isInstanceOf(IdNotFoundException)) {
+                  doh.is(null, p.get("persistenceId"));
+                  doh.t(persistenceIdEvent);
+                  doh.is("persistenceId", persistenceIdEvent.propertyName);
+                  doh.is(777, persistenceIdEvent.oldValue);
+                  doh.is(null, persistenceIdEvent.newValue);
+                  var ce = subject._cache[poCacheKey(p)];
+                  doh.f(ce);
+                  doh.is(9, p.get("testProperty"));
+                  doh.is(firstTestPropertyEvent, testPropertyEvent);
+                }
+                else {
+                  testUpdateNothingChanged(subject, p, persistenceIdEvent, firstTestPropertyEvent, testPropertyEvent, tracker1);
+                }
               }
               else {
                 doh.fail();
@@ -265,6 +385,74 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           setUp: subjectSetup,
           runTest: function() {
             return testCreate(this.subject, 1500, null, "AN ERROR");
+          },
+          timeout: 3000
+        },
+
+        {
+          name: "update1",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testUpdate(this.subject);
+          }
+        },
+
+        {
+          name: "update2",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testUpdate(this.subject, 1500);
+          },
+          timeout: 3000
+        },
+
+        {
+          name: "update3",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testUpdate(this.subject, 0, "SemanticException");
+          }
+        },
+
+        {
+          name: "update4",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testUpdate(this.subject, 1500, "SemanticException");
+          },
+          timeout: 3000
+        },
+
+        {
+          name: "update5",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testUpdate(this.subject, 0, new IdNotFoundException());
+          }
+        },
+
+        {
+          name: "update6",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testUpdate(this.subject, 1500, new IdNotFoundException());
+          },
+          timeout: 3000
+        },
+
+        {
+          name: "update7",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testUpdate(this.subject, 0, null, "AN ERROR");
+          }
+        },
+
+        {
+          name: "update8",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testUpdate(this.subject, 1500, null, "AN ERROR");
           },
           timeout: 3000
         }

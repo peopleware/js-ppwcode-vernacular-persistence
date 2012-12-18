@@ -126,36 +126,40 @@ define(["dojo/_base/declare",
       update: function(/*PersistentObject*/ p) {
         var thisDao = this;
         var resultDeferred = new Deferred();
+        var action;
         if (p.error) {
-          setTimeout(function() {
+          action = function() {
             var PoType = Object.getPrototypeOf(p).constructor;
             var url = thisDao.getUrl(PoType, p.get("persistenceId"));
             thisDao._incrementErrorCount(p.error, "PUT " + url + " (" + p.toString() + ")");
             resultDeferred.reject("ERROR: could not PUT " + p.toString() + " (" + p.error + ")");
-          },
-          p.waitMillis);
+          };
         }
         else if (p.semanticException) {
-          setTimeout(function() {
+          action = function() {
             thisDao._resetErrorCount();
-            if (p.semanticException.isInstanceOf(IdNotFoundException)) {
+            if (p.semanticException.isInstanceOf && p.semanticException.isInstanceOf(IdNotFoundException)) {
               var entry = thisDao._getExistingCacheEntry(p);
               thisDao._noLongerInServer(entry);
             }
             resultDeferred.reject(p.semanticException);
-          },
-          p.waitMillis);
+          };
         }
         else {
-          setTimeout(function() {
+          action = function() {
             thisDao._resetErrorCount();
             var previousVersion = p.get("persistenceVersion");
             var json = p.toJsonObject();
             json.persistenceVersion = previousVersion + 1;
             p.reload(json);
             resultDeferred.resolve(p);
-          },
-          p.waitMillis);
+          };
+        }
+        if(p.waitMillis) {
+          setTimeout(action, p.waitMillis);
+        }
+        else {
+          action();
         }
         var result = {
           promise: resultDeferred.promise,
