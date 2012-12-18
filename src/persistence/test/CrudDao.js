@@ -209,6 +209,105 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
         return deferred;
       }
 
+      function testDeleteIdChanged(subject, p, persistenceIdEvent, testPropertyEvent) {
+        doh.is(null, p.get("persistenceId"));
+        doh.t(persistenceIdEvent);
+        doh.is("persistenceId", persistenceIdEvent.propertyName);
+        doh.is(777, persistenceIdEvent.oldValue);
+        doh.is(null, persistenceIdEvent.newValue);
+        var ce = subject._cache[poCacheKey(p)];
+        doh.f(ce);
+        testDeleteNoChange(p, testPropertyEvent);
+      }
+
+      function testDeleteNothingChanged(subject, p, persistenceIdEvent, testPropertyEvent, tracker) {
+        doh.t(p.get("persistenceId"));
+        doh.is(777, p.get("persistenceId"));
+        doh.f(persistenceIdEvent);
+
+        var ce = subject._getExistingCacheEntry(p);
+        doh.t(ce);
+        doh.is(p, ce.persistentObject);
+        doh.is(1, ce.getNrOfReferers());
+        doh.t(ce._referers.contains(tracker));
+        testDeleteNoChange(p, testPropertyEvent);
+      }
+
+      function testDeleteNoChange(p, testPropertyEvent) {
+        doh.is(3, p.get("testProperty"));
+        doh.f(testPropertyEvent);
+      }
+
+      function testDelete(subject, waitMillis, semanticException, error) {
+        var p = new MockPo({persistenceId: 777});
+        if (waitMillis) {
+          p.waitMillis = waitMillis;
+        }
+        if (semanticException) {
+          p.semanticException = semanticException;
+        }
+        if (error) {
+          p.error = error;
+        }
+        var tracker1 = {};
+        subject.track(p, tracker1);
+        var persistenceIdEvent = null;
+        p.watch("persistenceId", function(propertyName, oldValue, newValue) {
+          persistenceIdEvent = {
+            propertyName: propertyName,
+            oldValue: oldValue,
+            newValue: newValue
+          }
+        });
+        var testPropertyEvent = null;
+        p.watch("testProperty", function(propertyName, oldValue, newValue) {
+          testPropertyEvent = {
+            propertyName: propertyName,
+            oldValue: oldValue,
+            newValue: newValue
+          }
+        });
+        var deferred = new doh.Deferred();
+        var result = subject.delete(p);
+        doh.t(result);
+        doh.t(result.persistentObject);
+        doh.is(p, result.persistentObject);
+        var resultPromise = result.promise;
+        doh.t(resultPromise);
+        resultPromise.then(
+          function(pSuccess) {
+            try {
+              doh.is(p, pSuccess);
+              testDeleteIdChanged(subject, p, persistenceIdEvent, testPropertyEvent);
+              deferred.callback(true);
+            }
+            catch (error) {
+              deferred.errback(error);
+            }
+          },
+          function(problem) {
+            try {
+              if (error) {
+                console.log("Expected error message: " + error);
+                testDeleteNothingChanged(subject, p, persistenceIdEvent, testPropertyEvent, tracker1);
+              }
+              else if (semanticException) {
+                doh.is(semanticException, problem);
+                testDeleteNothingChanged(subject, p, persistenceIdEvent, testPropertyEvent, tracker1);
+              }
+              else {
+                doh.fail();
+              }
+              deferred.callback(true);
+            }
+            catch (error) {
+              deferred.errback(error);
+            }
+          }
+        );
+        return deferred;
+      }
+
       doh.register("CrudDao (Mock)", [
 
         function testConstructor() {
@@ -453,6 +552,57 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           setUp: subjectSetup,
           runTest: function() {
             return testUpdate(this.subject, 1500, null, "AN ERROR");
+          },
+          timeout: 3000
+        },
+
+        {
+          name: "delete1",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testDelete(this.subject);
+          }
+        },
+
+        {
+          name: "delete2",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testDelete(this.subject, 1500);
+          },
+          timeout: 3000
+        },
+
+        {
+          name: "delete3",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testDelete(this.subject, 0, "SemanticException");
+          }
+        },
+
+        {
+          name: "delete4",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testDelete(this.subject, 1500, "SemanticException");
+          },
+          timeout: 3000
+        },
+
+        {
+          name: "delete5",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testDelete(this.subject, 0, null, "AN ERROR");
+          }
+        },
+
+        {
+          name: "delete6",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testDelete(this.subject, 1500, null, "AN ERROR");
           },
           timeout: 3000
         }
