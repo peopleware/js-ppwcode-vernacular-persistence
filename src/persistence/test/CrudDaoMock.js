@@ -48,8 +48,8 @@ define(["dojo/_base/declare",
         if (referer.error) {
           action = function() {
             var PoType = Object.getPrototypeOf(p).constructor;
-            var url = this.getUrl(PoType, persistenceId);
-            thisDao._incrementErrorCount(persistenceId.error, "GET " + url);
+            var url = thisDao.getUrl(PoType, persistenceId);
+            thisDao._incrementErrorCount(referer.error, "GET " + url);
             resultDeferred.reject("ERROR: could not GET " + persistenceId + " (" + referer.error + ")");
           };
         }

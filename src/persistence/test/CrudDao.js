@@ -128,6 +128,18 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
         doh.is(firstTestPropertyEvent, testPropertyEvent);
       }
 
+      function removedFromServer(subject, p, persistenceIdEvent, testPropertyValue, firstTestPropertyEvent, testPropertyEvent) {
+        doh.is(null, p.get("persistenceId"));
+        doh.t(persistenceIdEvent);
+        doh.is("persistenceId", persistenceIdEvent.propertyName);
+        doh.is(777, persistenceIdEvent.oldValue);
+        doh.is(null, persistenceIdEvent.newValue);
+        var ce = subject._cache[poCacheKey(p)];
+        doh.f(ce);
+        doh.is(testPropertyValue, p.get("testProperty"));
+        doh.is(firstTestPropertyEvent, testPropertyEvent);
+      }
+
       function testUpdate(subject, waitMillis, semanticException, error) {
         var p = new MockPo({persistenceId: 777});
         if (waitMillis) {
@@ -190,15 +202,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
               else if (semanticException) {
                 doh.is(semanticException, problem);
                 if (semanticException.isInstanceOf && semanticException.isInstanceOf(IdNotFoundException)) {
-                  doh.is(null, p.get("persistenceId"));
-                  doh.t(persistenceIdEvent);
-                  doh.is("persistenceId", persistenceIdEvent.propertyName);
-                  doh.is(777, persistenceIdEvent.oldValue);
-                  doh.is(null, persistenceIdEvent.newValue);
-                  var ce = subject._cache[poCacheKey(p)];
-                  doh.f(ce);
-                  doh.is(9, p.get("testProperty"));
-                  doh.is(firstTestPropertyEvent, testPropertyEvent);
+                  removedFromServer(subject, p, persistenceIdEvent, 9, firstTestPropertyEvent, testPropertyEvent);
                 }
                 else {
                   testUpdateNothingChanged(subject, p, persistenceIdEvent, firstTestPropertyEvent, testPropertyEvent, tracker1);
@@ -399,11 +403,13 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           },
           function(problem) {
             try {
-              testGetNothingChanged(subject, p, persistenceIdEvent, oldTestValue, testPropertyEvent, tracker1, tracker2);              if (error) {
+              if (error) {
                 console.log("Expected error message: " + error);
+                testGetNothingChanged(subject, p, persistenceIdEvent, oldTestValue, testPropertyEvent, tracker1, tracker2);
               }
               else if (idNotFoundException) {
                 doh.is(idNotFoundException, problem);
+                removedFromServer(subject, p, persistenceIdEvent, 3, testPropertyEvent, testPropertyEvent);
               }
               else {
                 doh.fail();
@@ -722,6 +728,51 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           setUp: subjectSetup,
           runTest: function() {
             return testGetCached(this.subject);
+          },
+          timeout: 3000
+        },
+
+        {
+          name: "get-Cached-2",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testGetCached(this.subject, 1500);
+          },
+          timeout: 3000
+        },
+
+        {
+          name: "get-Cached-3",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testGetCached(this.subject, 0, new IdNotFoundException());
+          },
+          timeout: 3000
+        },
+
+        {
+          name: "get-Cached-4",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testGetCached(this.subject, 1500, new IdNotFoundException());
+          },
+          timeout: 3000
+        },
+
+        {
+          name: "get-Cached-5",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testGetCached(this.subject, 0, null, "AN ERROR");
+          },
+          timeout: 3000
+        },
+
+        {
+          name: "get-Cached-6",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testGetCached(this.subject, 1500, null, "AN ERROR");
           },
           timeout: 3000
         }
