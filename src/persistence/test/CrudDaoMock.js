@@ -1,7 +1,7 @@
 define(["dojo/_base/declare",
         "../PersistentObject", "../IdNotFoundException", "../CrudDao",
         "dojo/Deferred"],
-  function(declare, PersistentObject, IdNotFoundException, CrudDao, Defered) {
+  function(declare, PersistentObject, IdNotFoundException, CrudDao, Deferred) {
 
     function cacheKey(/*String*/ type, /*Number*/ persistenceId) {
       // summary:
@@ -40,13 +40,13 @@ define(["dojo/_base/declare",
           p = entry.persistentObject;
         }
         var thisDao = this;
-        var result = new Defered();
+        var resultDeferred = new Deferred();
         if (persistenceId.error) {
           setTimeout(function() {
               var PoType = Object.getPrototypeOf(p).constructor;
               var url = this.getUrl(PoType, persistenceId);
               thisDao._incrementErrorCount(persistenceId.error, "GET " + url);
-              result.reject("ERROR: could not GET " + persistenceId + " (" + persistenceId.error + ")");
+              resultDeferred.reject("ERROR: could not GET " + persistenceId + " (" + persistenceId.error + ")");
             },
             p.waitMillis);
         }
@@ -54,7 +54,7 @@ define(["dojo/_base/declare",
           setTimeout(function() {
               thisDao._resetErrorCount();
               thisDao._noLongerInServer(entry);
-              result.reject(persistenceId.idNotFoundException);
+              resultDeferred.reject(persistenceId.idNotFoundException);
             },
             persistenceId.waitMillis);
         }
@@ -62,63 +62,76 @@ define(["dojo/_base/declare",
           if (inCache) {
             thisDao._resetErrorCount();
             p.reload(persistenceId.resultObject);
-            result.resolve(p);
+            resultDeferred.resolve(p);
           }
           else {
             setTimeout(function() {
               thisDao._resetErrorCount();
               p.reload(persistenceId.resultObject);
-              result.resolve(p);
+              resultDeferred.resolve(p);
             },
             p.waitMillis);
           }
         }
-        result.promise.peristentObject = p;
-        return result.promise;
+        var result = {
+          promise: resultDeferred.promise,
+          persistentObject: p
+        };
+        return result;
       },
 
       create: function(/*PersistentObject*/ p, /*Any*/ referer) {
         var thisDao = this;
-        var result = new Defered();
+        var resultDeferred = new Deferred();
+        var action;
         if (p.error) {
-          setTimeout(function() {
-              var PoType = Object.getPrototypeOf(p).constructor;
-              var url = thisDao.getUrl(PoType);
-              thisDao._incrementErrorCount(p.error, "POST " + url + " (" + p.toString() + ")");
-              result.reject("ERROR: could not POST " + p.toString() + " (" + p.error + ")");
-            },
-            p.waitMillis);
+          action = function() {
+            var PoType = Object.getPrototypeOf(p).constructor;
+            var url = thisDao.getUrl(PoType);
+            thisDao._incrementErrorCount(p.error, "POST " + url + " (" + p.toString() + ")");
+            resultDeferred.reject("ERROR: could not POST " + p.toString() + " (" + p.error + ")");
+          };
         }
         else if (p.semanticException) {
-          setTimeout(function() {
-              thisDao._resetErrorCount();
-              result.reject(p.semanticException);
-            },
-            p.waitMillis);
+          action = function() {
+            thisDao._resetErrorCount();
+            resultDeferred.reject(p.semanticException);
+          };
         }
         else {
-          setTimeout(function() {
-              thisDao._resetErrorCount();
-              thisDao.track(p, referer);
-              var json = p.toJsonObject();
-              json.persistenceVersion = Math.floor(Math.random() * 1000000000);
-              p.reload(json);
-              result.resolve(p);
-            },
-            p.waitMillis);
+          action = function() {
+            console.log("Simulated positive outcome of remote create - " + p.toString());
+            thisDao._resetErrorCount();
+            var json = p.toJsonObject();
+            json.persistenceId = Math.floor(Math.random() * 1000000000);
+            json.persistenceVersion = 1;
+            p.reload(json);
+            thisDao.track(p, referer);
+            resultDeferred.resolve(p);
+          };
         }
-        return result.promise;
+        if(p.waitMillis) {
+          setTimeout(action, p.waitMillis);
+        }
+        else {
+          action();
+        }
+        var result = {
+          promise: resultDeferred.promise,
+          persistentObject: p
+        };
+        return result;
       },
 
       update: function(/*PersistentObject*/ p) {
         var thisDao = this;
-        var result = new Defered();
+        var resultDeferred = new Deferred();
         if (p.error) {
           setTimeout(function() {
             var PoType = Object.getPrototypeOf(p).constructor;
             var url = thisDao.getUrl(PoType, p.get("persistenceId"));
             thisDao._incrementErrorCount(p.error, "PUT " + url + " (" + p.toString() + ")");
-            result.reject("ERROR: could not PUT " + p.toString() + " (" + p.error + ")");
+            resultDeferred.reject("ERROR: could not PUT " + p.toString() + " (" + p.error + ")");
           },
           p.waitMillis);
         }
@@ -129,7 +142,7 @@ define(["dojo/_base/declare",
               var entry = thisDao._getExistingCacheEntry(p);
               thisDao._noLongerInServer(entry);
             }
-            result.reject(p.semanticException);
+            resultDeferred.reject(p.semanticException);
           },
           p.waitMillis);
         }
@@ -140,29 +153,33 @@ define(["dojo/_base/declare",
             var json = p.toJsonObject();
             json.persistenceVersion = previousVersion + 1;
             p.reload(json);
-            result.resolve(p);
+            resultDeferred.resolve(p);
           },
           p.waitMillis);
         }
-        return result.promise;
+        var result = {
+          promise: resultDeferred.promise,
+          persistentObject: p
+        };
+        return result;
       },
 
       delete: function(/*PersistentObject*/ p) {
         var thisDao = this;
-        var result = new Defered();
+        var resultDeferred = new Deferred();
         if (p.error) {
           setTimeout(function() {
               var PoType = Object.getPrototypeOf(p).constructor;
               var url = thisDao.getUrl(PoType, p.get("persistenceId"));
               thisDao._incrementErrorCount(p.error, "DELETE " + url + " (" + p.toString() + ")");
-              result.reject("ERROR: could not DELETE " + p.toString() + " (" + p.error + ")");
+              resultDeferred.reject("ERROR: could not DELETE " + p.toString() + " (" + p.error + ")");
             },
             p.waitMillis);
         }
         else if (p.semanticException) {
           setTimeout(function() {
               thisDao._resetErrorCount();
-              result.reject(p.semanticException);
+              resultDeferred.reject(p.semanticException);
             },
             p.waitMillis);
         }
@@ -174,11 +191,15 @@ define(["dojo/_base/declare",
               var json = p.toJsonObject();
               json.persistenceVersion = null;
               p.reload(json);
-              result.resolve(p);
+              resultDeferred.resolve(p);
             },
             p.waitMillis);
         }
-        return result.promise;
+        var result = {
+          promise: resultDeferred.promise,
+          persistentObject: p
+        };
+        return result;
       }
 
     });

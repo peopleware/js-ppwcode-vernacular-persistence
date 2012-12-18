@@ -181,6 +181,9 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
       },
 
       track: function(/*PersistentObject*/ p, /*Any*/ referrer) {
+        this._c_pre(function() {return p;});
+        this._c_pre(function() {return p.get("persistenceId") != null;});
+
         var entry = this._cache[poCacheKey(p)];
         if (entry) {
           entry.addReferer(referrer);
@@ -279,8 +282,11 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
             }
           }
         );
-        resultPromise.persistentObject = p;
-        return resultPromise; // return Promise (extended)
+        var result = {
+          promise: resultPromise,
+          persistentObject: p
+        };
+        return result;
       },
 
       create: function(/*PersistentObject*/ p, /*Any*/ referer) {
@@ -314,8 +320,11 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
             }
           }
         );
-        resultPromise.persistentObject = p;
-        return resultPromise;
+        var result = {
+          promise: resultPromise,
+          persistentObject: p
+        };
+        return result;
       },
 
       update: function(/*PersistentObject*/ p) {
@@ -355,8 +364,11 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
             }
           }
         );
-        resultPromise.persistentObject = p;
-        return resultPromise;
+        var result = {
+          promise: resultPromise,
+          persistentObject: p
+        };
+        return result;
       },
 
       delete: function(/*PersistentObject*/ p) {
@@ -389,8 +401,11 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
             }
           }
         );
-        resultPromise.persistentObject = p;
-        return resultPromise;
+        var result = {
+          promise: resultPromise,
+          persistentObject: p
+        };
+        return result;
       }
 
     });

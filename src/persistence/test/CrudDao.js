@@ -19,6 +19,76 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
 
       });
 
+      function testCreate(subject, waitMillis, semanticException, error) {
+        var p = new MockPo({persistenceId: null});
+        if (waitMillis) {
+          p.waitMillis = waitMillis;
+        }
+        if (semanticException) {
+          p.semanticException = semanticException;
+        }
+        if (error) {
+          p.error = error;
+        }
+        var tracker1 = {};
+        var persistenceIdEvent = null;
+        p.watch("persistenceId", function(propertyName, oldValue, newValue) {
+          persistenceIdEvent = {
+            propertyName: propertyName,
+            oldValue: oldValue,
+            newValue: newValue
+          }
+        });
+        var deferred = new doh.Deferred();
+        var result = subject.create(p, tracker1);
+        doh.t(result);
+        doh.t(result.persistentObject);
+        doh.is(p, result.persistentObject);
+        var resultPromise = result.promise;
+        doh.t(resultPromise);
+        resultPromise.then(
+          function(pSuccess) {
+            try {
+              doh.is(p, pSuccess);
+              doh.t(p.persistenceId);
+              doh.t(persistenceIdEvent);
+              doh.is("persistenceId", persistenceIdEvent.propertyName);
+              doh.is(null, persistenceIdEvent.oldValue);
+              doh.is(p.get("persistenceId"), persistenceIdEvent.newValue);
+              var ce = subject._getExistingCacheEntry(p);
+              doh.t(subject._getExistingCacheEntry(p));
+              doh.is(p, ce.persistentObject);
+              doh.is(1, ce.getNrOfReferers());
+              doh.t(ce._referers.contains(tracker1));
+              deferred.callback(true);
+            }
+            catch (error) {
+              deferred.errback(error);
+            }
+          },
+          function(problem) {
+            try {
+              doh.is(null, p.persistenceId);
+              doh.f(persistenceIdEvent);
+              if (error) {
+                doh.is(error, problem);
+              }
+              else if (semanticException) {
+                doh.is(semanticException, problem);
+              }
+              else {
+                doh.fail();
+              }
+              deferred.callback(true);
+            }
+            catch (error) {
+              deferred.errback(error);
+            }
+          }
+        );
+        return deferred;
+      }
+
       doh.register("CrudDao (Mock)", [
 
         function testConstructor() {
@@ -125,7 +195,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
             var ce = this.subject._getExistingCacheEntry(p);
             var key = ce.getKey();
             this.subject.stopTracking(p, tracker1);
-            var ce = this.subject._cache[key];
+            ce = this.subject._cache[key];
             doh.f(ce);
           }
         },
@@ -142,9 +212,17 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
             var ce = this.subject._getExistingCacheEntry(p);
             var key = ce.getKey();
             this.subject._noLongerInServer(ce);
-            var ce = this.subject._cache[key];
+            ce = this.subject._cache[key];
             doh.f(ce);
             doh.is(null, p.persistenceId);
+          }
+        },
+
+        {
+          name: "create1",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testCreate(this.subject);
           }
         }
 
