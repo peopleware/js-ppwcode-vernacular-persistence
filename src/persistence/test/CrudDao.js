@@ -71,7 +71,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
               doh.is(null, p.persistenceId);
               doh.f(persistenceIdEvent);
               if (error) {
-                doh.is(error, problem);
+                console.log("Expected error message: " + error);
               }
               else if (semanticException) {
                 doh.is(semanticException, problem);
@@ -224,6 +224,49 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           runTest: function() {
             return testCreate(this.subject);
           }
+        },
+
+        {
+          name: "create2",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testCreate(this.subject, 1500);
+          },
+          timeout: 3000
+        },
+
+        {
+          name: "create3",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testCreate(this.subject, 0, "SemanticException");
+          }
+        },
+
+        {
+          name: "create4",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testCreate(this.subject, 1500, "SemanticException");
+          },
+          timeout: 3000
+        },
+
+        {
+          name: "create5",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testCreate(this.subject, 0, null, "AN ERROR");
+          }
+        },
+
+        {
+          name: "create6",
+          setUp: subjectSetup,
+          runTest: function() {
+            return testCreate(this.subject, 1500, null, "AN ERROR");
+          },
+          timeout: 3000
         }
 
       ]);
