@@ -1,7 +1,7 @@
-define(["dojo/_base/declare"],
-    function(declare) {
+define(["dojo/_base/declare", "ppwcode/exceptions/SemanticException"],
+    function(declare, SemanticException) {
 
-      var IdNotFoundException = declare("be.ppwcode.vernacular.persistence.IdNotFoundException", [], {
+      var IdNotFoundException = declare("be.ppwcode.vernacular.persistence.IdNotFoundException", [SemanticException], {
 
         // MUDO
 
