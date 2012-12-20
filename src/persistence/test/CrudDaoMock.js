@@ -36,7 +36,7 @@ define(["dojo/_base/declare",
         var p = null;
         if (! entry) {
           p = new PoType();
-          p._changeAttrValue("peristenceId", persistenceId);
+          p._changeAttrValue("persistenceId", persistenceId);
         }
         else {
           p = entry.persistentObject;
