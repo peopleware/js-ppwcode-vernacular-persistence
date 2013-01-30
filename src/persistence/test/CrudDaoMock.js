@@ -35,7 +35,7 @@ define(["dojo/_base/declare",
         var entry = this._cache[key];
         var p = null;
         if (! entry) {
-          p = new PoType({});
+          p = new PoType(referer.resultJson);
           p._changeAttrValue("persistenceId", persistenceId);
         }
         else {
