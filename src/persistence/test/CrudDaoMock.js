@@ -168,7 +168,7 @@ define(["dojo/_base/declare",
         return result;
       },
 
-      delete: function(/*PersistentObject*/ p) {
+      remove: function(/*PersistentObject*/ p) {
         var thisDao = this;
         var resultDeferred = new Deferred();
         // TODO: we will alway have a delay

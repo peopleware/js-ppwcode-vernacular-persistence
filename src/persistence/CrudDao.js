@@ -371,7 +371,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
         return result;
       },
 
-      delete: function(/*PersistentObject*/ p) {
+      remove: function(/*PersistentObject*/ p) {
         // DOES NOT REMOVE REFERER!
         this._c_pre(function() {return this.isOperational();});
         this._c_pre(function() {return p;});
