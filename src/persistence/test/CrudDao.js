@@ -280,7 +280,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           }
         });
         var deferred = new doh.Deferred();
-        var result = subject.delete(p);
+        var result = subject.remove(p);
         doh.t(result);
         doh.t(result.persistentObject);
         doh.is(p, result.persistentObject);
