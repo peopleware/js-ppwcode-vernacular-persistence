@@ -1,7 +1,7 @@
 define(["dojo/_base/declare",
-        "../PersistentObject", "../IdNotFoundException", "../CrudDao",
+        "../PersistentObject", "../VersionedPersistentObject", "../AuditableObject", "../IdNotFoundException", "../CrudDao",
         "dojo/Deferred"],
-  function(declare, PersistentObject, IdNotFoundException, CrudDao, Deferred) {
+  function(declare, PersistentObject, VersionedPersistentObject, AuditableObject, IdNotFoundException, CrudDao, Deferred) {
 
     function cacheKey(/*String*/ type, /*Number*/ persistenceId) {
       // summary:
@@ -105,7 +105,16 @@ define(["dojo/_base/declare",
             thisDao._resetErrorCount();
             var json = p.toJsonObject();
             json.persistenceId = Math.floor(Math.random() * 1000000000);
-            json.persistenceVersion = 1;
+            if (p.isInstanceOf(VersionedPersistentObject)) {
+              json.persistenceVersion = 1;
+            }
+            if (p.isInstanceOf(AuditableObject)) {
+              var now = new Date();
+              json.createdBy= "De Maker";
+              json.createdAt= now;
+              json.lastModifiedBy = "De Maker";
+              json.lastModifiedAt = now;
+            }
             p.reload(json);
             thisDao.track(p, referer);
             resultDeferred.resolve(p);
@@ -149,9 +158,16 @@ define(["dojo/_base/declare",
         else {
           action = function() {
             thisDao._resetErrorCount();
-            var previousVersion = p.get("persistenceVersion");
             var json = p.toJsonObject();
-            json.persistenceVersion = previousVersion + 1;
+            if (p.isInstanceOf(VersionedPersistentObject)) {
+              json.persistenceVersion = p.get("persistenceVersion") + 1;
+            }
+            if (p.isInstanceOf(AuditableObject)) {
+              json.createdBy = p.get("createdBy");
+              json.createdAt = p.get("createdAt");
+              json.lastModifiedBy = "André Aanpassing";
+              json.lastModifiedAt = new Date();
+            }
             p.reload(json);
             resultDeferred.resolve(p);
           };
@@ -195,7 +211,16 @@ define(["dojo/_base/declare",
               var entry = thisDao._getExistingCacheEntry(p);
               thisDao._noLongerInServer(entry);
               var json = p.toJsonObject();
-              json.persistenceVersion = null;
+              json.persistenceId = null;
+              if (p.isInstanceOf(VersionedPersistentObject)) {
+                json.persistenceVersion = null;
+              }
+              if (p.isInstanceOf(AuditableObject)) {
+                json.createdAt= null;
+                json.createdBy= null;
+                json.lastModifiedAt = null;
+                json.lastModifiedBy = null;
+              }
               p.reload(json);
               resultDeferred.resolve(p);
             },
