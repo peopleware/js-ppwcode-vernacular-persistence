@@ -7,6 +7,10 @@ define(["dojo/_base/declare", "./PersistentObject", "dojo/date"],
         if (dateString === null) {
           return null;
         }
+        if (Object.prototype.toString.call(dateString) === '[object Date]') {
+          // dateString is already a valid Date
+          return dateString;
+        }
         var year = dateString.slice(0, 4);
         var month = dateString.slice(5, 7);
         var day = dateString.slice(8, 10);
@@ -26,7 +30,7 @@ define(["dojo/_base/declare", "./PersistentObject", "dojo/date"],
                (self.createdBy && json.createdBy != self.createdBy))) {
             throw "ERROR cannot change from existing created information"; // MUDO better error, precondition
           }
-          if (self.lastModifiedAt && getDate(json.lastModifiedAt) < self.lastModifiedAt) {
+          if (self.lastModifiedAt && getDate(json.lastModifiedAt) > self.lastModifiedAt) {
             throw "ERROR cannot become an earlier modified version"; // MUDO better error, precondition
           }
           if (self.lastModifiedBy && !json.lastModifiedBy) {
