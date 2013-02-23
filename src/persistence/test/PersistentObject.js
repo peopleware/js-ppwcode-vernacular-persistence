@@ -131,9 +131,9 @@ define(["dojo/main", "ppwcode/contracts/doh", "../PersistentObject"],
           doh.is(5, eventNewValue2);
         },
 
-        function testToJsonObject() {
+        function testToJSON1() {
           var subject = new PersistentObject();
-          var result = subject.toJsonObject();
+          var result = subject.toJSON();
 
           doh.invars(subject);
           // post
@@ -141,9 +141,9 @@ define(["dojo/main", "ppwcode/contracts/doh", "../PersistentObject"],
           console.log(result);
         },
 
-        function testToJsonObject2() {
+        function testToJSON2() {
           var subject = new PersistentObject({persistenceId: 5});
-          var result = subject.toJsonObject();
+          var result = subject.toJSON();
 
           doh.invars(subject);
           // post

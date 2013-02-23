@@ -103,7 +103,7 @@ define(["dojo/_base/declare",
           action = function() {
             console.log("Simulated positive outcome of remote create - " + p.toString());
             thisDao._resetErrorCount();
-            var json = p.toJsonObject();
+            var json = p.toJSON();
             json.persistenceId = Math.floor(Math.random() * 1000000000);
             if (p.isInstanceOf(VersionedPersistentObject)) {
               json.persistenceVersion = 1;
@@ -158,7 +158,7 @@ define(["dojo/_base/declare",
         else {
           action = function() {
             thisDao._resetErrorCount();
-            var json = p.toJsonObject();
+            var json = p.toJSON();
             if (p.isInstanceOf(VersionedPersistentObject)) {
               json.persistenceVersion = p.get("persistenceVersion") + 1;
             }
@@ -210,7 +210,7 @@ define(["dojo/_base/declare",
               thisDao._resetErrorCount();
               var entry = thisDao._getExistingCacheEntry(p);
               thisDao._noLongerInServer(entry);
-              var json = p.toJsonObject();
+              var json = p.toJSON();
               json.persistenceId = null;
               if (p.isInstanceOf(VersionedPersistentObject)) {
                 json.persistenceVersion = null;

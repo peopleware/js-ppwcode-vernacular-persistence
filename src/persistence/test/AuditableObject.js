@@ -100,9 +100,9 @@ define(["dojo/main", "ppwcode/contracts/doh", "../AuditableObject"],
           doh.is(lastModifiedBy, subject.lastModifiedBy);
         },
 
-        function testToJsonObject1() {
+        function testToJSON() {
           var subject = new AuditableObject();
-          var result = subject.toJsonObject();
+          var result = subject.toJSON();
 
           doh.invars(subject);
           // post
@@ -110,10 +110,10 @@ define(["dojo/main", "ppwcode/contracts/doh", "../AuditableObject"],
           console.log(result);
         },
 
-        function testToJsonObject2() {
+        function testToJSON() {
           var subject = new AuditableObject({persistenceId: 5,
             createdAt: new Date(), createdBy: "test", lastModifiedAt: new Date(), lastModifiedBy: "another"});
-          var result = subject.toJsonObject();
+          var result = subject.toJSON();
 
           doh.invars(subject);
           // post

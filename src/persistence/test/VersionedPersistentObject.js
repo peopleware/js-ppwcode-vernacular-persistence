@@ -108,9 +108,9 @@ define(["dojo/main", "ppwcode/contracts/doh", "../VersionedPersistentObject"],
 //          doh.is(884, subject.get("persistenceVersion"));
 //        },
 
-        function testToJsonObject() {
+        function testToJSON() {
           var subject = new VersionedPersistentObject();
-          var result = subject.toJsonObject();
+          var result = subject.toJSON();
 
           doh.invars(subject);
           // post
@@ -118,10 +118,10 @@ define(["dojo/main", "ppwcode/contracts/doh", "../VersionedPersistentObject"],
           console.log(result);
         },
 
-        function testToJsonObject2() {
+        function testToJSON2() {
           //noinspection MagicNumberJS
           var subject = new VersionedPersistentObject({persistenceId: 5, persistenceVersion: 8848});
-          var result = subject.toJsonObject();
+          var result = subject.toJSON();
 
           doh.invars(subject);
           // post
