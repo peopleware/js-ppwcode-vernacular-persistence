@@ -298,7 +298,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
 
         var PoType = Object.getPrototypeOf(p).constructor;
         var url = this.getUrl(PoType);
-        var loadPromise = request(url, {method: "POST", handleAs: "json", data: p.toJsonObject()});
+        var loadPromise = request(url, {method: "POST", handleAs: "json", data: p});
         // MUDO Do JSONify ourselfs?
         var thisDao = this;
         var resultPromise = loadPromise.then(
@@ -337,7 +337,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
 
         var PoType = Object.getPrototypeOf(p).constructor;
         var url = this.getUrl(PoType, p.get("persistenceId"));
-        var loadPromise = request(url, {method: "PUT", handleAs: "json", data: p.toJsonObject()});
+        var loadPromise = request(url, {method: "PUT", handleAs: "json", data: p});
         // MUDO Do JSONify ourselfs?
         var thisDao = this;
         var resultPromise = loadPromise.then(
