@@ -1,0 +1,11 @@
+<div class="auditableInfoPane">
+  <script type="dojo/require">at: "dojox/mvc/at", dateLocale: "dojo/date/locale"</script>
+  <!-- at('rel:', 'propertyName') means "watch the property with name 'propertyName' of the object referred to by
+       the 'target' property the parent widget of the one the expression is used in. In this case, that parent
+       is the AuditableInfo -->
+  ${labels.created} <span data-dojo-type="dojox/mvc/Output" data-dojo-props="value: at('rel:', 'createdBy').direction(at.from)"></span>
+  ${labels.at} <span data-dojo-type="dojox/mvc/Output" data-dojo-props="constraints: {timePattern: 'H:m:s'}, value: at('rel:', 'createdAt').transform(dateLocale).direction(at.from)"></span>.
+  <br />
+  ${labels.lastModified} <span data-dojo-type="dojox/mvc/Output" data-dojo-props="value: at('rel:', 'lastModifiedBy').direction(at.from)"></span>
+  ${labels.at} <span data-dojo-type="dojox/mvc/Output" data-dojo-props="constraints: {timePattern: 'H:m:s'}, value: at('rel:', 'lastModifiedAt').transform(dateLocale).direction(at.from)"></span>.
+</div>
