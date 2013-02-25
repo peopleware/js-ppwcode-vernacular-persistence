@@ -25,22 +25,33 @@
   <script type="text/javascript">
     require(
       ["dojo/parser",
-        "ppwcode/persistence/ui/auditableInfoPane/AuditableInfoPane",
+        "ppwcode/contracts/doh",
         "ppwcode/persistence/AuditableObject",
+        "ppwcode/persistence/ui/auditableInfoPane/AuditableInfoPane",
         "dijit/registry",
+        "ppwcode/semantics/ui/test/semanticObjectPaneTestGenerator",
         "dojo/domReady!"
       ],
-      function(parser, AuditableInfoPane, AuditableObject, registry) {
+      function(parser, doh, AuditableObject, AuditableInfoPane, registry, generator) {
 
-        parser.parse();
-//        var a = registry.byId("subject");
-//        var C = a.getTargetType();
-//        var ao = C();
+        var parsePromise = parser.parse();
+        parsePromise.then(function() {
+          var json = {createdAt: new Date(), createdBy: "Jos2", lastModifiedAt: new Date(), lastModifiedBy: "Mieke"};
 
-        var ao = new AuditableObject();
-        ao.reload({createdAt: new Date(), createdBy: "Jos2", lastModifiedAt: new Date(), lastModifiedBy: "Mieke"});
-        var subject = registry.byId("subject");
-        subject.set("target", ao);
+          function createAO() {
+            var ao = new AuditableObject();
+            ao.reload(json);
+            return ao;
+          }
+
+          var subject = registry.byId("subject");
+
+          doh.register(
+            "Auditable Info Pane",
+            generator(subject, AuditableObject, createAO)
+          );
+          doh.run();
+        });
       });
   </script>
 </head>

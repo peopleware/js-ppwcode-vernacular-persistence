@@ -2,5 +2,6 @@ define([
   "./PersistentObject",
   "./AuditableObject",
   "./VersionedPersistentObject",
-  "./CrudDao"
+  "./CrudDao",
+  "../ui/test/module"
 ], 1);
