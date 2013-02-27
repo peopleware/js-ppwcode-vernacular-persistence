@@ -11,7 +11,7 @@ define(["dojo/_base/declare", "./PersistentObject", "dojo/date"],
             throw "ERROR cannot change from existing created information"; // TODO precondition
           }
           var jsonLastModifiedAt = new Date(json.lastModifiedAt);
-          if (self.lastModifiedAt && jsonLastModifiedAt.getTime() - self.lastModifiedAt.getTime() < 1000) {
+          if (self.lastModifiedAt && jsonLastModifiedAt.getTime() - self.lastModifiedAt.getTime() < 3601000) { // MUDO !!!! see below
             // We use < 1000 (1s) instead of < 0, because the server stores dates only to the second.
             // With the current server implementation, we see that if we retrieve quickly after an
             // update or create, the retrieve lastModified at is later than the one in the response
@@ -22,6 +22,20 @@ define(["dojo/_base/declare", "./PersistentObject", "dojo/date"],
             // response date, which is impossible. By giving our comparison a 1 second leeway,
             // this is resolved.
             // IDEA solve in the server
+            // MUDO There is a much worse problem: a RAM-created server Date is in the local time of the server
+            //      While the time in the DB has no timezone. A RAM-created server Date that is sent over JSON
+            //      contains timezone information. A date that is retrieved from the DB does not contain
+            //      timezone in RAM, and thus does also not contain timezone information when it is sent over
+            //      JSON.
+            //      When JavaScript parses a string with timezone information, it takes it into account.
+            //      When JavaScript parses a string without timezone information, it assumes the local
+            //      timezone.
+            //      When server and client are in a different timezone, when the JSON contains timezone information,
+            //      the string is interpreted in the timezone of the server. When the JSON does not contain
+            //      timezone information, the string is interpreted in the timezone of the client.
+            //      For webapplications, this in unacceptable.
+            // MUDO for now we work around this by allowing not a 1000ms offset, but a 3601000 offset
+            // MUDO but it is obviously wrong
             throw "ERROR cannot become an earlier modified version"; // TODO precondition
           }
           if (self.lastModifiedBy && !json.lastModifiedBy) {
