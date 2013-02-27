@@ -127,11 +127,9 @@ define(["dojo/_base/declare", "./PersistentObject", "dojo/date"],
           // HOWEVER due to an idiosyncrasy in our current server, it is much nicer
           //         if we do send back the created-attributes
           // In any case, it should be in nobody's way.
-//          json.createdBy = this.createdBy;
-//          json.createdAt = this.createdAt;
+          json.createdBy = this.createdBy;
+          json.createdAt = this.createdAt;
           // IDEA resolve this issue in the server
-          // MUDO however, then we see the date problems discussed above, and nothing works
-          // so we won;ts send after all, and not see this data after update
         },
 
         _stateToString: function(/*Array of String*/ toStrings) {
