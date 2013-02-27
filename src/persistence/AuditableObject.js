@@ -10,8 +10,14 @@ define(["dojo/_base/declare", "./PersistentObject", "dojo/date"],
                (self.createdBy && json.createdBy != self.createdBy))) {
             throw "ERROR cannot change from existing created information"; // TODO precondition
           }
+          // MUDO HACK see below
+          if (json.lastModifiedAt.indexOf("+00:00") < 0) {
+            // there is no timezone information in the string
+            json.lastModifiedAt += "+00:00";
+          }
+          // MUDO end hack
           var jsonLastModifiedAt = new Date(json.lastModifiedAt);
-          if (self.lastModifiedAt && 1000 < self.lastModifiedAt.getTime() - jsonLastModifiedAt.getTime()) { // MUDO !!!! see below
+          if (self.lastModifiedAt && 1000 < self.lastModifiedAt.getTime() - jsonLastModifiedAt.getTime()) {
             // We use < 1000 (1s) instead of < 0, because the server stores dates only to the second.
             // With the current server implementation, we see that if we retrieve quickly after an
             // update or create, the retrieve lastModified at is later than the one in the response
@@ -44,6 +50,12 @@ define(["dojo/_base/declare", "./PersistentObject", "dojo/date"],
           }
           // this will happen with the JSON response from a creation or update, and during construction
           if (! self.createdBy) {
+            // MUDO HACK see above
+            if (json.createdAt.indexOf("+00:00") < 0) {
+              // there is no timezone information in the string
+              json.createdAt += "+00:00";
+            }
+            // MUDO end hack
             //noinspection JSUnresolvedFunction
             self._changeAttrValue("createdAt", new Date(json.createdAt));
             //noinspection JSUnresolvedFunction
