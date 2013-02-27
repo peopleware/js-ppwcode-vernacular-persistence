@@ -10,7 +10,17 @@ define(["dojo/_base/declare", "./PersistentObject", "dojo/date"],
                (self.createdBy && json.createdBy != self.createdBy))) {
             throw "ERROR cannot change from existing created information"; // TODO precondition
           }
-          if (self.lastModifiedAt && json.lastModifiedAt < self.lastModifiedAt) {
+          if (self.lastModifiedAt && json.lastModifiedAt - self.lastModifiedAt < 1000) {
+            // We use < 1000 (1s) instead of < 0, because the server stores dates only to the second.
+            // With the current server implementation, we see that if we retrieve quickly after an
+            // update or create, the retrieve lastModified at is later than the one in the response
+            // of the action. The reason is, that the data in the action response comes from RAM,
+            // and has values up to the nanosecond or so (23/6/2012 15:45:32.424242242), while the
+            // data in the retrieve comes from the DB, which only stores up to the second
+            // (23/6/2012 15:45:32). So, it seems that retrieve-date is earlier than the action
+            // response date, which is impossible. By giving our comparison a 1 second leeway,
+            // this is resolved.
+            // IDEA solve in the server
             throw "ERROR cannot become an earlier modified version"; // TODO precondition
           }
           if (self.lastModifiedBy && !json.lastModifiedBy) {
