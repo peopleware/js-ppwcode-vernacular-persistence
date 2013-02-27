@@ -11,7 +11,7 @@ define(["dojo/_base/declare", "./PersistentObject", "dojo/date"],
             throw "ERROR cannot change from existing created information"; // TODO precondition
           }
           var jsonLastModifiedAt = new Date(json.lastModifiedAt);
-          if (self.lastModifiedAt && 3601000 < self.lastModifiedAt.getTime() - jsonLastModifiedAt.getTime()) { // MUDO !!!! see below
+          if (self.lastModifiedAt && 1000 < self.lastModifiedAt.getTime() - jsonLastModifiedAt.getTime()) { // MUDO !!!! see below
             // We use < 1000 (1s) instead of < 0, because the server stores dates only to the second.
             // With the current server implementation, we see that if we retrieve quickly after an
             // update or create, the retrieve lastModified at is later than the one in the response
@@ -34,7 +34,8 @@ define(["dojo/_base/declare", "./PersistentObject", "dojo/date"],
             //      the string is interpreted in the timezone of the server. When the JSON does not contain
             //      timezone information, the string is interpreted in the timezone of the client.
             //      For webapplications, this in unacceptable.
-            // MUDO for now we work around this by allowing not a 1000ms offset, but a 3601000 offset
+            // MUDO for now we work around this by NOT SENDING THE DATA TO THE SERVER IN THE FIRST PLACE
+            //      that was another workaround; the effect of this is that we will not see this data after update
             // MUDO but it is obviously wrong
             throw "ERROR cannot become an earlier modified version"; // TODO precondition
           }
@@ -110,12 +111,15 @@ define(["dojo/_base/declare", "./PersistentObject", "dojo/date"],
         _extendJsonObject: function(/*Object*/ json) {
           // it makes no senses whatsoever to send this data back to the back-end
 
+
           // HOWEVER due to an idiosyncrasy in our current server, it is much nicer
           //         if we do send back the created-attributes
           // In any case, it should be in nobody's way.
-          json.createdBy = this.createdBy;
-          json.createdAt = this.createdAt;
+//          json.createdBy = this.createdBy;
+//          json.createdAt = this.createdAt;
           // IDEA resolve this issue in the server
+          // MUDO however, then we see the date problems discussed above, and nothing works
+          // so we won;ts send after all, and not see this data after update
         },
 
         _stateToString: function(/*Array of String*/ toStrings) {
