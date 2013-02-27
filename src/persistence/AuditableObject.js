@@ -11,7 +11,7 @@ define(["dojo/_base/declare", "./PersistentObject", "dojo/date"],
             throw "ERROR cannot change from existing created information"; // TODO precondition
           }
           var jsonLastModifiedAt = new Date(json.lastModifiedAt);
-          if (self.lastModifiedAt && self.lastModifiedAt.getTime() - jsonLastModifiedAt.getTime() < 3601000) { // MUDO !!!! see below
+          if (self.lastModifiedAt && 3601000 < self.lastModifiedAt.getTime() - jsonLastModifiedAt.getTime()) { // MUDO !!!! see below
             // We use < 1000 (1s) instead of < 0, because the server stores dates only to the second.
             // With the current server implementation, we see that if we retrieve quickly after an
             // update or create, the retrieve lastModified at is later than the one in the response
