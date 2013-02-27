@@ -4,7 +4,7 @@ define(["dojo/_base/declare", "./PersistentObject"],
     function internalReload(/*VersionedPersistentObject*/ self, /*Object*/ json) {
       if (json && json.persistenceVersion /* TODO json.persistenceVersion undefined, but not null */) {
         if (self.persistenceVersion && json.persistenceVersion < self.persistenceVersion) {
-          throw "ERROR cannot become an earlier version"; // MUDO better error, precondition
+          throw "ERROR: cannot become an earlier version"; // TODO precondition
         }
         // this will happen with the JSON response from a creation or update, and during construction
         //noinspection JSUnresolvedFunction

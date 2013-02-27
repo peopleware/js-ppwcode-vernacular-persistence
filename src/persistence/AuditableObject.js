@@ -28,13 +28,13 @@ define(["dojo/_base/declare", "./PersistentObject", "dojo/date"],
           if ((self.createdAt || self.createdBy) &&
               ((self.createdAt && (dojoDate.compare(getDate(json.createdAt), self.createdAt) !== 0)) ||
                (self.createdBy && json.createdBy != self.createdBy))) {
-            throw "ERROR cannot change from existing created information"; // MUDO better error, precondition
+            throw "ERROR cannot change from existing created information"; // TODO precondition
           }
           if (self.lastModifiedAt && getDate(json.lastModifiedAt) < self.lastModifiedAt) {
-            throw "ERROR cannot become an earlier modified version"; // MUDO better error, precondition
+            throw "ERROR cannot become an earlier modified version"; // TODO precondition
           }
           if (self.lastModifiedBy && !json.lastModifiedBy) {
-            throw "ERROR cannot change to lastModifiedBy == null"; // MUDO better error, precondition
+            throw "ERROR cannot change to lastModifiedBy == null"; // TODO precondition
           }
           // this will happen with the JSON response from a creation or update, and during construction
           if (! self.createdBy) {
@@ -80,30 +80,37 @@ define(["dojo/_base/declare", "./PersistentObject", "dojo/date"],
         },
 
         // getters are implicit; create when needed (for documentation)
-        // MUDO documentation
+        // TODO documentation
 
         _createdAtSetter: function() {
-          // persistenceId is read-only
-          throw "error"; // MUDO Make this a special kind of Error (ppwcode exceptions)
+          // createdAt is read-only
+          throw "ERROR";
         },
 
         _createdBySetter: function() {
-          // persistenceId is read-only
-          throw "error"; // MUDO Make this a special kind of Error (ppwcode exceptions)
+          // createdBy is read-only
+          throw "ERROR";
         },
 
         _lastModifiedAtSetter: function() {
-          // persistenceId is read-only
-          throw "error"; // MUDO Make this a special kind of Error (ppwcode exceptions)
+          // lastModifiedAt is read-only
+          throw "ERROR";
         },
 
         _lastModifiedBySetter: function() {
-          // persistenceId is read-only
-          throw "error"; // MUDO Make this a special kind of Error (ppwcode exceptions)
+          // lastModifiedBy is read-only
+          throw "ERROR";
         },
 
         _extendJsonObject: function(/*Object*/ json) {
-          this._c_NOP(json); // it makes no senses whatsoever to send this data back to the back-end
+          // it makes no senses whatsoever to send this data back to the back-end
+
+          // HOWEVER due to an idiosyncrasy in our current server, it is much nicer
+          //         if we do send back the created-attributes
+          // In any case, it should be in nobody's way.
+          json.createdBy = this.createdBy;
+          json.createdAt = this.createdAt;
+          // IDEA resolve this issue in the server
         },
 
         _stateToString: function(/*Array of String*/ toStrings) {
