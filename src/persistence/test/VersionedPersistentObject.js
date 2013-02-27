@@ -1,7 +1,7 @@
 define(["dojo/main", "ppwcode/contracts/doh", "../VersionedPersistentObject"],
     function(dojo, doh, VersionedPersistentObject) {
 
-      doh.register(VersionedPersistentObject.prototype.declaredClass, [
+      doh.register("ppwcode vernacular persistence VersionedPersistentObject", [
 
         function testConstructor1() {
           var persistenceId = 1;

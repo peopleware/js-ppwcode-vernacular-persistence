@@ -1,7 +1,7 @@
 define(["dojo/main", "ppwcode/contracts/doh", "../AuditableObject"],
     function(dojo, doh, AuditableObject) {
 
-      doh.register(AuditableObject.prototype.declaredClass, [
+      doh.register("ppwcode vernacular persistence AuditableObject", [
 
         function testConstructor1() {
           var persistenceId = 1;

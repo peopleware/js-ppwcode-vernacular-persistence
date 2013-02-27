@@ -50,7 +50,7 @@ define(["dojo/_base/declare", "./PersistentObject", "dojo/date"],
         }
       }
 
-      var AuditableObject = declare("be.ppwcode.vernacular.persistence.AuditableObject", [PersistentObject], {
+      var AuditableObject = declare([PersistentObject], {
         // created.. can change from null to value, but then no more
         // lastModified.. can change all the time, but ..At can only become bigger
 

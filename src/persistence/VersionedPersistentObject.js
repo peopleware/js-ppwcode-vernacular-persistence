@@ -12,7 +12,7 @@ define(["dojo/_base/declare", "./PersistentObject"],
       }
     }
 
-    var VersionedPersistentObject = declare("be.ppwcode.vernacular.persistence.VersionedPersistentObject", [PersistentObject], {
+    var VersionedPersistentObject = declare([PersistentObject], {
 
       _c_invar: [
         function() {return this.hasOwnProperty("persistenceVersion");}
