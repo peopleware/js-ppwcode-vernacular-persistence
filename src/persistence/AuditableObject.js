@@ -1,5 +1,5 @@
-define(["dojo/_base/declare", "./PersistentObject", "dojo/date"],
-    function(declare, PersistentObject, dojoDate) {
+define(["dojo/_base/declare", "./PersistentObject", "dojo/date", "dojo/_base/lang"],
+    function(declare, PersistentObject, dojoDate, lang) {
 
       function internalReload(/*AuditableObject*/ self, /*Object*/ json) {
         if (json && json.createdAt && json.createdBy && json.lastModifiedAt && json.lastModifiedBy /* TODO json.... undefined, but not null */) {
@@ -10,13 +10,19 @@ define(["dojo/_base/declare", "./PersistentObject", "dojo/date"],
                (self.createdBy && json.createdBy != self.createdBy))) {
             throw "ERROR cannot change from existing created information"; // TODO precondition
           }
-          // MUDO HACK see below
-          if (json.lastModifiedAt.indexOf("+00:00") < 0) {
-            // there is no timezone information in the string
-            json.lastModifiedAt += "+00:00";
+          var jsonLastModifiedAt = null;
+          if (lang.isString(json.lastModifiedAt)) {
+            // MUDO HACK see below
+            if (json.lastModifiedAt.indexOf("+00:00") < 0) {
+              // there is no timezone information in the string
+              json.lastModifiedAt += "+00:00";
+            }
+            // MUDO end hack
+            jsonLastModifiedAt = new Date(json.lastModifiedAt);
           }
-          // MUDO end hack
-          var jsonLastModifiedAt = new Date(json.lastModifiedAt);
+          else {
+            jsonLastModifiedAt = json.lastModifiedAt; // presumed to be a data already
+          }
           if (self.lastModifiedAt && 1000 < self.lastModifiedAt.getTime() - jsonLastModifiedAt.getTime()) {
             // We use < 1000 (1s) instead of < 0, because the server stores dates only to the second.
             // With the current server implementation, we see that if we retrieve quickly after an
@@ -50,14 +56,21 @@ define(["dojo/_base/declare", "./PersistentObject", "dojo/date"],
           }
           // this will happen with the JSON response from a creation or update, and during construction
           if (! self.createdBy) {
-            // MUDO HACK see above
-            if (json.createdAt.indexOf("+00:00") < 0) {
-              // there is no timezone information in the string
-              json.createdAt += "+00:00";
+            var jsonCreatedAt = null;
+            if (lang.isString(json.createdAt)) {
+              // MUDO HACK see above
+              if (json.createdAt.indexOf("+00:00") < 0) {
+                // there is no timezone information in the string
+                json.createdAt += "+00:00";
+              }
+              // MUDO end hack
+              jsonCreatedAt = new Date(json.createdAt);
             }
-            // MUDO end hack
+            else {
+              jsonCreatedAt = json.createdAt; // already is presumed a Date
+            }
             //noinspection JSUnresolvedFunction
-            self._changeAttrValue("createdAt", new Date(json.createdAt));
+            self._changeAttrValue("createdAt", jsonCreatedAt);
             //noinspection JSUnresolvedFunction
             self._changeAttrValue("createdBy", json.createdBy);
           }
