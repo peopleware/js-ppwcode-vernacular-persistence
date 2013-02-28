@@ -1,4 +1,9 @@
 div.auditableInfoPane {
+  visibility: inherit;
   color: #708090;
   font-size: 80%;
+}
+
+div.auditableInfoPane.SemanticObjectPane_notarget {
+  visibility: hidden;
 }
