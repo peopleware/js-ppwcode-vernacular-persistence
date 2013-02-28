@@ -1,0 +1,21 @@
+<div>
+  <script type="dojo/require">at: "dojox/mvc/at", lang: "dojo/_base/lang"</script>
+  <div>
+    <input data-dojo-type="dijit/form/ValidationTextBox" data-dojo-attach-point="txtName" style="font-size: 14pt; width: 15.5em;"
+           data-dojo-props="placeHolder: '${labels.name}', value: at('rel:', 'name'), required: true" />
+  </div>
+  <br/>
+  <fieldset class="fieldsetClass">
+    <legend>${labels.address}</legend>
+    <input data-dojo-type="dijit/form/ValidationTextBox" style="width: 19em;"
+           data-dojo-props="placeHolder: '${labels.street}', value: at('rel:', 'street')" />
+    <br/>
+    <input data-dojo-type="dijit/form/ValidationTextBox" style="width: 5em;"
+           data-dojo-props="placeHolder: '${labels.zip}', value: at('rel:', 'zip')" />
+    <input data-dojo-type="dijit/form/ValidationTextBox" style="width: 13.5em;"
+           data-dojo-props="placeHolder: '${labels.city}', value: at('rel:', 'city')" />
+  </fieldset>
+  <label class="fixedLabel">${labels.tel}</label>
+  <input data-dojo-type="dijit/form/ValidationTextBox" data-dojo-props="value: at('rel:', 'tel')" />
+  <div
+</div>

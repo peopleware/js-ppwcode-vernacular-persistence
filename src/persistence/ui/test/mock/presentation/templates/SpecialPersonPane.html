@@ -1,0 +1,8 @@
+<div>
+  <script type="dojo/require">at: "dojox/mvc/at"</script>
+  <div data-dojo-type="ppwcode/persistence/ui/test/mock/presentation/PersonPane" data-dojo-attach-point="_personPane"></div>
+  <label class="fixedLabel">${labels.email}</label>
+  <input data-dojo-type="dijit/form/ValidationTextBox"
+         data-dojo-attach-point="txtEmail"
+         data-dojo-props="value: at('rel:', 'email')" />
+</div>
