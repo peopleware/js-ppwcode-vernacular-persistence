@@ -1,5 +1,5 @@
 define(["dojo/_base/declare",
-        "ppwcode/semantics/ui/_SemanticObjectPane", "dijit/_TemplatedMixin", "dijit/_WidgetsInTemplateMixin",
+        "ppwcode/semantics/ui/_semanticObjectPane/_SemanticObjectPane", "dijit/_TemplatedMixin", "dijit/_WidgetsInTemplateMixin",
         "dojo/text!./AuditableInfoPane.html", "dojo/i18n!./nls/labels",
         "ppwcode/persistence/AuditableObject",
         "dojox/mvc/Output", "dojox/mvc/at", "dojo/date/locale",
