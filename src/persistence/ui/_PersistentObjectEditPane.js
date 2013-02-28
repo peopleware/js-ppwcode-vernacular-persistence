@@ -153,7 +153,6 @@ define(["dojo/_base/declare", "ppwcode/semantics/ui/_semanticObjectPane/_Semanti
         var thisObject = this;
         persistPromise.then(
           function(result) {
-            thisObject._btnSave.cancel();
             thisObject.set("presentationMode", thisObject.VIEW);
           },
           function(e) {
@@ -187,7 +186,6 @@ define(["dojo/_base/declare", "ppwcode/semantics/ui/_semanticObjectPane/_Semanti
         var thisObject = this;
         deletePromise.then(
           function(result) {
-            thisObject._btnDelete.cancel();
             thisObject.set("presentationMode", thisObject.VIEW);
             var closer = thisObject.get("closer");
             closer();
