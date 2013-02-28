@@ -10,34 +10,36 @@
          data-dojo-attach-point="_bottomDiv"
          data-dojo-props="region: 'bottom'">
       <div class="persistentObjectButtonEditPane-errors" data-dojo-attach-point="_errorDiv"></div>
+      <div>
+        <div class="persistentObjectButtonEditPane-buttons" data-dojo-attach-point="_buttonDiv">
+          <button data-dojo-type="dijit/form/Button"
+                  data-dojo-props="showLabel: true, onClick: lang.hitch(this, this.edit)"
+                  data-dojo-attach-point="_btnEdit"
+                  type="button">
+            ${labels.editButton}
+          </button>
+          <button data-dojo-type="dijit/form/Button"
+                  data-dojo-props="showLabel: true, onClick: lang.hitch(this, this.cancel)"
+                  data-dojo-attach-point="_btnCancel"
+                  type="button">
+            ${labels.cancelButton}
+          </button>
+          <button data-dojo-type="dijit/form/Button"
+                  data-dojo-props="showLabel: true, onClick: lang.hitch(this, this.remove)"
+                  data-dojo-attach-point="_btnDelete"
+                  type="button">
+            ${labels.deleteButton}
+          </button>
+          <button data-dojo-type="dijit/form/Button"
+                  data-dojo-props="showLabel: true, onClick: lang.hitch(this, this.save)"
+                  data-dojo-attach-point="_btnSave"
+                  type="button">
+            ${labels.saveButton}
+          </button>
+        </div>
+      </div>
       <div data-dojo-type="ppwcode/persistence/ui/auditableInfoPane/AuditableInfoPane"
            data-dojo-attach-point="_auditableInfo"></div>
-      <div class="persistentObjectButtonEditPane-buttons" data-dojo-attach-point="_buttonDiv">
-        <button data-dojo-type="dijit/form/Button"
-                data-dojo-props="showLabel: true, onClick: lang.hitch(this, this.edit)"
-                data-dojo-attach-point="_btnEdit"
-                type="button">
-          ${labels.editButton}
-        </button>
-        <button data-dojo-type="dijit/form/Button"
-                data-dojo-props="showLabel: true, onClick: lang.hitch(this, this.cancel)"
-                data-dojo-attach-point="_btnCancel"
-                type="button">
-          ${labels.cancelButton}
-        </button>
-        <button data-dojo-type="dijit/form/Button"
-                data-dojo-props="showLabel: true, onClick: lang.hitch(this, this.remove)"
-                data-dojo-attach-point="_btnDelete"
-                type="button">
-          ${labels.deleteButton}
-        </button>
-        <button data-dojo-type="dijit/form/Button"
-                data-dojo-props="showLabel: true, onClick: lang.hitch(this, this.save)"
-                data-dojo-attach-point="_btnSave"
-                type="button">
-          ${labels.saveButton}
-        </button>
-      </div>
     </div>
   </div>
 </div>

@@ -1,5 +1,19 @@
+html, body {
+  /* important for border container */
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow:hidden;
+}
+
 .persistentObjectButtonEditPane {
   height: 100%;
+}
+
+.persistentObjectButtonEditPane-buttons {
+  position: absolute;
+  right: 10px;
 }
 
 .persistentObjectButtonEditPane > div {
