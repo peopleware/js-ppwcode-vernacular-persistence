@@ -11,11 +11,11 @@ define(["dojo/_base/declare", "dijit/registry", "dojo/_base/lang", "dojo/dom-sty
              template, labels,
              PersistentObject, AuditableObject) {
 
-      function setVisible(/*Button*/ button, /*Boolean*/ condition) {
+      function setVisible(/*Button*/ button, /*Boolean*/ condition, /*Boolean*/ busy) {
         // IDEA use FX
         var displayStyle = condition ? "inline-block" : "none";
         domStyle.set(button.domNode, "display", displayStyle);
-        button.set("disabled", !condition);
+        button.set("disabled", !condition || busy);
 
         // TODO should listen to isEditable and isDeletable
       }
@@ -149,10 +149,11 @@ define(["dojo/_base/declare", "dijit/registry", "dojo/_base/lang", "dojo/dom-sty
           this._c_pre(function() { return stylePresentationMode && this.stylePresentationModes.indexOf(stylePresentationMode) >= 0; });
 
           var po = this.get("target");
-          setVisible(this._btnEdit, stylePresentationMode == this.VIEW && (po.isEditable() || po.isDeletable()));
-          setVisible(this._btnCancel, this.isInEditMode());
-          setVisible(this._btnDelete, this.isInEditMode() && po.isDeletable());
-          setVisible(this._btnSave, this.isInEditMode() && po.isEditable());
+          var busy = (stylePresentationMode === this.BUSY);
+          setVisible(this._btnEdit, stylePresentationMode === this.VIEW && (po.isEditable() || po.isDeletable()), false);
+          setVisible(this._btnCancel, this.isInEditMode(), busy);
+          setVisible(this._btnDelete, this.isInEditMode() && po.isDeletable(), busy);
+          setVisible(this._btnSave, this.isInEditMode() && po.isEditable(), busy);
         },
 
         _localPresentationModeChange: function(presentationMode) {
