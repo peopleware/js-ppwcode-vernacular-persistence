@@ -2,6 +2,7 @@ define(["dojo/_base/declare", "./PersistentObject", "dojo/date", "dojo/_base/lan
     function(declare, PersistentObject, dojoDate, lang) {
 
       function internalReload(/*AuditableObject*/ self, /*Object*/ json) {
+        // MUDO what about Sample, this only has a createdAt and not a lastModifiedAt, so now createdAt won't be set !!!
         if (json && json.createdAt && json.createdBy && json.lastModifiedAt && json.lastModifiedBy /* TODO json.... undefined, but not null */) {
           // all data or nothing;
           // TODO add precondition for this
