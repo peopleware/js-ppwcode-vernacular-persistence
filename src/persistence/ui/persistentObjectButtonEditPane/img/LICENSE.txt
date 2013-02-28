@@ -1,0 +1,6 @@
+Icons downloaded from:
+http://www.iconfinder.com
+
+loading.gif: part of dojo
+Alert.png: Kyo Tux - http://kyo-tux.deviantart.com/
+file_broken.png: Everaldo Coelho - http://www.everaldo.com/ (LGPL)loading.gif:

@@ -1,0 +1,32 @@
+.persistentObjectButtonEditPane {
+  height: 100%;
+}
+
+.persistentObjectButtonEditPane > div {
+  /* the border container */
+  width: 100%;
+  height: 100%;
+}
+
+.persistentObjectButtonEditPane .dijitBorderContainer-dijitContentPane {
+  /* the content panes */
+  background-color: transparent;
+}
+
+.persistentObjectButtonEditPane.SemanticObjectPane_busy {
+  background-image: url('./img/loading.gif');
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.persistentObjectButtonEditPane.SemanticObjectPane_wild {
+  background-image: url('./img/Alert.png');
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.persistentObjectButtonEditPane.SemanticObjectPane_error {
+  background-image: url('./img/file_broken.png');
+  background-repeat: no-repeat;
+  background-position: center;
+}

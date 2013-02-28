@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+
+  <title>PersonDetail Browser Tests</title>
+
+  <!-- required: the default dijit theme: -->
+  <link rel="stylesheet" href="../../../../../dojo/resources/dojo.css">
+  <link id="themeStyles" rel="stylesheet" href="../../../../../dijit/themes/claro/claro.css"/>
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow:hidden;
+    }
+
+    /*
+    .dijitTextBoxReadOnly {
+      border: 1px solid transparent !important;
+      background-color: transparent !important;
+    }
+
+    .editableSemanticObjectDetail_blockEnabled {
+      display: block;
+      color: inherit;
+    }
+
+    .editableSemanticObjectDetail_blockDisabled {
+      color: #d3d3d3 !important;
+      display: block;
+    }
+    */
+
+    /*.editableSemanticObjectDetail_blockInvisible {
+      display: none;
+      }*/
+
+/*    MUDO DON'T DO THIS: THIS KILLS THE LAYOUT   */
+  </style>
+
+  <!-- SCRIPT -->
+  <script>
+    var dojoConfig = {
+      async: true,
+      parseOnLoad: false,
+      has: {
+        "dojo-debug-messages": true,
+        "mvc-bindings-log-api": true
+      }
+    };
+  </script>
+
+  <script src="../../../../../dojo/dojo.js"></script>
+
+  <script type="text/javascript">
+    function cycle() {
+      setTimeout(function() {
+        person.set("name", "NEW NAME");
+      }, 2000);
+      setTimeout(function() {
+        var nameTextBox = subject.get("persistentObjectPane").get("txtName");
+        nameTextBox.set("value", "NEW NAME 2");
+      }, 4000);
+    }
+
+    require(["dojo/parser",
+             "ppwcode/persistence/ui/persistentObjectButtonEditPane/PersistentObjectButtonEditPane",
+             "ppwcode/persistence/ui/test/mock/presentation/PersonPane",
+             "ppwcode/persistence/ui/test/mock/viewmodel/Person",
+             "dijit/registry",
+             "dojo/Deferred",
+             "dojo/domReady!"],
+      function(parser, PersistentObjectButtonEditPane, PersonPane, Person, registry, Deferred) {
+        window.testMode = "NOMINAL";
+        var parsePromise = parser.parse();
+        parsePromise.then(function() {
+          window.subject = registry.byId("subject");
+          subject.set("refresher", function(po) {
+            console.log("refresh requested of " + po);
+            var temp = po.toJSON();
+            temp.nrOfRawMaterials = Math.floor((Math.random()*10000)+1);
+            var result = new Deferred();
+            setTimeout(function() {
+              console.log("refreshing");
+              po.reload(temp);
+              console.log("refreshed");
+              if (window.testMode === "NOMINAL") {
+                result.resolve(po);
+              }
+              else {
+                result.reject("Not OK"); // TODO semantic exception vs. error
+              }
+            }, 2000);
+            return result;
+          });
+          subject.set("saver", function(po) {
+            console.log("save requested of " + po);
+            var temp = po.toJSON();
+            temp.nrOfRawMaterials = Math.floor((Math.random()*10000)+1);
+            var result = new Deferred();
+            setTimeout(function() {
+              console.log("saving");
+              po.reload(temp);
+              console.log("saved");
+              if (window.testMode === "NOMINAL") {
+                result.resolve(po);
+              }
+              else {
+                result.reject("Not OK"); // TODO semantic exception vs. error
+              }
+            }, 2000);
+            return result;
+          });
+          subject.set("creator", function(po) {
+            console.log("create requested of " + po);
+            var temp = po.toJSON();
+            temp.persistenceId = 2;
+            temp.nrOfRawMaterials = Math.floor((Math.random()*10000)+1);
+            var result = new Deferred();
+            setTimeout(function() {
+              console.log("creating");
+              po.reload(temp);
+              console.log("created");
+              if (window.testMode === "NOMINAL") {
+                result.resolve(po);
+              }
+              else {
+                result.reject("Not OK"); // TODO semantic exception vs. error
+              }
+            }, 2000);
+            return result;
+          });
+          subject.set("remover", function(po) {
+            console.log("remove requested of " + po);
+            var temp = po.toJSON();
+            temp.persistenceId = null;
+            var result = new Deferred();
+            setTimeout(function() {
+              console.log("removing");
+              po.reload(temp);
+              console.log("removed");
+              if (window.testMode === "NOMINAL") {
+                result.resolve(po);
+              }
+              else {
+                result.reject("Not OK"); // TODO semantic exception vs. error
+              }
+            }, 2000);
+            return result;
+          });
+          subject.set("closer", function() {
+            console.log("close requested");
+            subject.destroyRecursive();
+          });
+          subject.set("persistentObjectPane", new PersonPane());
+          window.person = new Person();
+          var json = {"persistenceId":"424124","name":"Pete Peeters","street":"Avenue de rue 93","zip":"1040 CAA","city":"Cité de Beauté","tel":"0322 44 442 22","email":"jandockx@hhh.org"};
+          person.reload(json);
+          person.watch(function(propertyName, oldValue, newValue) {
+            console.log("changed: " + propertyName + " from " + oldValue + " to " + newValue);
+          });
+          subject.set("target", person);
+        });
+      }
+    );
+  </script>
+</head>
+
+<body class="claro">
+  <!-- Define an instance of the widget to test. -->
+  <div id="subject" data-dojo-type="ppwcode/persistence/ui/persistentObjectButtonEditPane/PersistentObjectButtonEditPane"></div>
+
+  <div style="position: absolute; bottom: 20px; right: 10px;;">
+    <button onclick="window.testMode = 'NOMINAL'">Nominal</button>
+    <button onclick="window.testMode = 'WILD'">Wild</button>
+    <button onclick="window.testMode = 'ERROR'">Error</button>
+  </div>
+</body>
+
+</html>
