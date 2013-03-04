@@ -1,5 +1,5 @@
 define(["dojo/_base/declare", "dijit/registry", "dojo/_base/lang", "dojo/dom-style",
-        "ppwcode/persistence/ui/_PersistentObjectEditPane", "dijit/_TemplatedMixin", "dijit/_WidgetsInTemplateMixin",
+        "../_PersistentObjectEditPane", "dijit/_TemplatedMixin", "dijit/_WidgetsInTemplateMixin",
         "dojo/text!./PersistentObjectButtonEditPane.html", "dojo/i18n!./nls/labels",
         "ppwcode/persistence/PersistentObject", "ppwcode/persistence/AuditableObject",
         "dijit/layout/BorderContainer", "dijit/layout/ContentPane",
@@ -108,7 +108,7 @@ define(["dojo/_base/declare", "dijit/registry", "dojo/_base/lang", "dojo/dom-sty
           if (oldPoPane) {
             oldPoPane.set("target", null);
             // no destroy of oldPoDetail; we didn't create it; if we do, we have to!
-            this._contentDiv.remove(oldPoPane);
+            this._contentDiv.removeChild(oldPoPane);
             oldPoPane.destroyRecursive();
           }
           this._set("persistentObjectPane", poPane);
