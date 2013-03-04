@@ -136,11 +136,11 @@
           subject.set("persistentObjectPane", new PersonPane());
           window.person = new Person();
           var json = {"persistenceId":"424124","name":"Pete Peeters","street":"Avenue de rue 93","zip":"1040 CAA","city":"Cité de Beauté","tel":"0322 44 442 22","email":"jandockx@hhh.org"};
-          person.reload(json);
-          person.watch(function(propertyName, oldValue, newValue) {
+          window.person.reload(json);
+          window.person.watch(function(propertyName, oldValue, newValue) {
             console.log("changed: " + propertyName + " from " + oldValue + " to " + newValue);
           });
-          subject.set("target", person);
+          subject.set("target", window.person);
         });
       }
     );
@@ -151,7 +151,7 @@
   <!-- Define an instance of the widget to test. -->
   <div id="subject" data-dojo-type="ppwcode/persistence/ui/persistentObjectButtonEditPane/PersistentObjectButtonEditPane"></div>
 
-  <div style="position: absolute; bottom: 60px; left: 10px;;">
+  <div style="position: absolute; bottom: 60px; left: 10px; background-color: blue; opacity: 0.5;">
     <button onclick="window.testMode = 'NOMINAL'">Nominal</button>
     <button onclick="window.testMode = 'WILD'">Wild</button>
     <button onclick="window.testMode = 'ERROR'">Error</button>
