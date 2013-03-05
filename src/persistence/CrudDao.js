@@ -459,6 +459,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
                 entry.persistentObject.reload(jsonObject);
               }
               // now put it in the store
+              // MUDO NO! use LoadAll: things that are no longer in the store need to be removed, and stop tracking it
               store.put(entry.persistentObject);
             });
           },
