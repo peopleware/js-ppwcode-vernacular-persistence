@@ -1,8 +1,8 @@
 define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
         "./PersistentObject", "./IdNotFoundException",
-        "ppwcode/collections/ArraySet",
-        "dojo/request"],
-  function(declare, _ContractMixin, PersistentObject, IdNotFoundException, Set, request) {
+        "ppwcode/collections/ArraySet", "ppwcode/collections/StoreOfStateful",
+        "dojo/request", "dojo/_base/lang"],
+  function(declare, _ContractMixin, PersistentObject, IdNotFoundException, Set, StoreOfStateful, request, lang) {
 
     function cacheKey(/*String*/ type, /*Number*/ persistenceId) {
       // summary:
@@ -57,7 +57,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
 
       constructor: function(/*PersistentObject*/ p) {
         this._c_pre(function() { return p;});
-        this._c_pre(function() { return p.isInstanceOf(PersistentObject);});
+        this._c_pre(function() { return p.isInstanceOf && p.isInstanceOf(PersistentObject);});
 
         this.persistentObject = p;
         this._referers = new Set();
@@ -170,7 +170,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
 
       _getExistingCacheEntry: function(/*PersistentObject*/ p) {
         this._c_pre(function() {return p;});
-        this._c_pre(function() {return p.isInstanceOf(PersistentObject);});
+        this._c_pre(function() {return p.isInstanceOf && p.isInstanceOf(PersistentObject);});
         this._c_pre(function() {return p.get("persistenceId");});
 
         var entry = this._cache[poCacheKey(p)];
@@ -197,7 +197,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
 
       stopTracking: function(/*PersistentObject*/ p, /*Any*/ referer) {
         this._c_pre(function() {return p;});
-        this._c_pre(function() {return p.isInstanceOf(PersistentObject);});
+        this._c_pre(function() {return p.isInstanceOf && p.isInstanceOf(PersistentObject);});
         this._c_pre(function() {return p.get("persistenceId") !== null});
         // TODO p is in cache
 
@@ -207,6 +207,8 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
           delete this._cache[entry.getKey()];
           console.trace("Entry removed from CrudDao cache: " + p.toString());
         }
+
+        // MUDO remove p as a referer
       },
 
       _noLongerInServer: function(entry) {
@@ -251,7 +253,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
         var entry = this._cache[key];
         var p = null;
         if (! entry) {
-          p = new PoType();
+          p = new PoType(); // MUDO: not polymorph
           p._changeAttrValue("peristenceId", persistenceId);
           this.track(p, referer);
         }
@@ -293,7 +295,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
         var thisObject = this;
         this._c_pre(function() {return thisObject.isOperational();});
         this._c_pre(function() {return p;});
-        this._c_pre(function() {return p.isInstanceOf(PersistentObject);});
+        this._c_pre(function() {return p.isInstanceOf && p.isInstanceOf(PersistentObject);});
         this._c_pre(function() {return p.get("persistenceId") === null;});
 
         var PoType = Object.getPrototypeOf(p).constructor;
@@ -331,7 +333,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
         var thisObject = this;
         this._c_pre(function() {return thisObject.isOperational();});
         this._c_pre(function() {return p;});
-        this._c_pre(function() {return p.isInstanceOf(PersistentObject);});
+        this._c_pre(function() {return p.isInstanceOf && p.isInstanceOf(PersistentObject);});
         this._c_pre(function() {return p.get("persistenceId") !== null});
         // TODO p is in cache
 
@@ -375,7 +377,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
         // DOES NOT REMOVE REFERER!
         this._c_pre(function() {return this.isOperational();});
         this._c_pre(function() {return p;});
-        this._c_pre(function() {return p.isInstanceOf(PersistentObject);});
+        this._c_pre(function() {return p.isInstanceOf && p.isInstanceOf(PersistentObject);});
         this._c_pre(function() {return p.get("persistenceId") !== null});
         // TODO p is in cache
 
@@ -404,6 +406,80 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
         var result = {
           promise: resultPromise,
           persistentObject: p
+        };
+        return result;
+      },
+
+      getToMany: function(/*PeristentObject*/ p, /*String*/ serverPropertyName, /*Function*/ ElementPoType) {
+        this._c_pre(function() {return this.isOperational();});
+        this._c_pre(function() {return p;});
+        this._c_pre(function() {return p.isInstanceOf && p.isInstanceOf(PersistentObject);});
+        this._c_pre(function() {return p.get("persistenceId") !== null});
+        // TODO p is in cache
+        this._c_pre(function() {return serverPropertyName;});
+        this._c_pre(function() {return lang.isString(serverPropertyName);});
+
+        // we cache stores; do we have it already?
+        var entry = this._getExistingCacheEntry(p, serverPropertyName);
+        var store;
+        if (! entry) {
+          store = new StoreOfStateful({
+            getIdentity: function(prod) {
+              return prod.get("peristenceType") + "@" + prod.get("persistenceId");
+            }
+          });
+          this.track(store, p);
+        }
+        else {
+          store = entry.persistentObject;
+        }
+        // the store is now being tracked, with p as referer
+
+        // now start getting the data to load or refresh
+        var url = getToManyUrl(p, serverPropertyName);
+        var loadPromise = request(url, {handleAs: "json", headers: {"Accept" : "application/json"}});
+        var thisDao = this;
+        var resultPromise = loadPromise.then(
+          function(data) {
+            console.trace("Load success: " + data);
+            thisDao._resetErrorCount();
+            if (! lang.isArray(data)) {
+              throw "ERROR: we were expecting an array, but data is '" + data + "'.";
+            }
+            data.forEach(function(jsonObject) {
+              var key = cacheKey(declaredClass(ElementPoType), jsonObject.persistenceId);
+              var entry = this._cache[key];
+              if (! entry) {
+                el = new ElementPoType(); // MUDO: not polymorph
+                el.reload(jsonObject);
+                this.track(el, store);
+              }
+              else {
+                entry.addReferer(p);
+                entry.persistentObject.reload(jsonObject);
+              }
+              // now put it in the store
+              store.put(entry.persistentObject);
+            });
+          },
+          function(error) {
+            // communication error or IdNotFoundException
+            if (isIdNotFoundException(error)) {
+              thisDao._resetErrorCount();
+              thisDao._noLongerInServer(p);
+              return new IdNotFoundException(error);
+            }
+            else {
+              thisDao._incrementErrorCount(error, "GET " + url);
+              var msg = "ERROR: could not GET " + url + " (" + error + ")";
+              console.error(msg);
+              return msg;
+            }
+          }
+        );
+        var result = {
+          promise: resultPromise,
+          store: store
         };
         return result;
       }
