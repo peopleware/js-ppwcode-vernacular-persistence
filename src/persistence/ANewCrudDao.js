@@ -19,7 +19,7 @@ define(["dojo/_base/declare",
 
     function reportError(err) {
       console.error("ERROR (CrudDao):", err);
-      console.trace();
+//      console.trace();
     }
 
     var CrudDao = declare([_ContractMixin], {
@@ -133,7 +133,7 @@ define(["dojo/_base/declare",
             if (typeOf(data) !== "array") {
               throw new Error("expected array from remote call");
             }
-            console.info("Retrieved successfully from server: " + data);
+            console.info("Retrieved successfully from server: " + data.length + " items");
             var revivePromise = self.reviveInto(null, data, null, self._cache);
             revivePromise.then(
               function (revived) {
