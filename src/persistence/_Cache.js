@@ -2,44 +2,20 @@ define(["dojo/_base/declare",
         "ppwcode/contracts/_Mixin",
         "./UrlBuilder", "./PersistentObject", "ppwcode/collections/StoreOfStateful", "./IdNotFoundException",
         "ppwcode/collections/ArraySet",
-        "dojo/request", "dojo/_base/lang"],
+        "dojo/request", "ppwcode/oddsAndEnds/typeOf"],
   function(declare,
            _ContractMixin,
            UrlBuilder, PersistentObject, StoreOfStateful, IdNotFoundException,
            Set,
-           request, lang) {
-
-    function toType(obj) {
-      // summary:
-      //   more than lang.isObject etc.
-
-      /* based on
-         http://javascriptweblog.wordpress.com/2011/08/08/fixing-the-javascript-typeof-operator/
-         */
-      /*
-       toType({a: 4}); //"object"
-       toType([1, 2, 3]); //"array"
-       (function() {console.log(toType(arguments))})(); //arguments
-       toType(new ReferenceError); //"error"
-       toType(new Date); //"date"
-       toType(/a-z/); //"regexp"
-       toType(Math); //"math"
-       toType(JSON); //"json"
-       toType(new Number(4)); //"number"
-       toType(new String("abc")); //"string"
-       toType(new Boolean(true)); //"boolean"
-       */
-
-      return Object.prototype.toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase();  // return String
-    }
+           request, typeOf) {
 
     function poTypeCacheKey(/*String*/ serverType, /*Number*/ persistenceId) {
       // summary:
       //   Returns a key.
       // description:
       //   Returns `type + "@" + persistenceId`
-      this._c_pre(function() {return serverType && lang.isString(serverType);});
-      this._c_pre(function() {return id && toType(id) === "number";});
+      this._c_pre(function() {return typeOf(serverType) === "string";});
+      this._c_pre(function() {return id && typeOf(id) === "number";});
 
       return serverType + "@" + persistenceId; // return String
     }
@@ -83,6 +59,9 @@ define(["dojo/_base/declare",
 
       _c_invar: [
         function() {return this._c_prop_mandatory("payload");},
+        function() {return this.payload.isInstanceOf &&
+          (this.payload.isInstanceOf(PersistentObject) || this.payload.isInstanceOf(StoreOfStateful));},
+        function() {return ! this.payload.isInstanceOf(PersistentObject) || this.payload.get("persistenceId");},
         function() {return this.getNrOfReferers() >= 0;}
       ],
 
@@ -126,6 +105,20 @@ define(["dojo/_base/declare",
 
     var _Cache = declare([_ContractMixin], {
 
+      _c_invar: [
+        {
+          condition: function() {
+            return true;
+          },
+          objectSelector: function(c) {
+            return c._data;
+          },
+          invars: [
+            function() {return this.isInstanceOf && this.isInstanceOf(_Entry);}
+          ]
+        }
+      ],
+
       _data: null,
 
       constructor: function() {
@@ -136,8 +129,8 @@ define(["dojo/_base/declare",
         // summary:
         //   gets a cached PersistentObject by serverType and id
         //   returns undefined if there is no such entry
-        this._c_pre(function() {return serverType && lang.isString(serverType);});
-        this._c_pre(function() {return persistenceId && toType(persistenceId) === "number";});
+        this._c_pre(function() {return typeOf(serverType) === "string";});
+        this._c_pre(function() {return typeOf(persistenceId) === "number";});
 
         var key = poTypeCacheKey(serverType, persistenceId);
         return this._data[key].payload; // return PersistentObject
@@ -158,14 +151,14 @@ define(["dojo/_base/declare",
         //   gets a cached LazyStore for po[toManyProperty]
         //   returns undefined if there is no such entry
         this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
-        this._c_pre(function() {return toManyPropertyName && lang.isString(toManyPropertyName);});
+        this._c_pre(function() {return typeOf(toManyPropertyName) === "string";});
 
         var key = storeCacheKey(po, toManyPropertyName);
         return this._data[key].payload; // return LazyStore
       },
 
       _track:function (/*String*/ key, /*Object*/ object, /*Object*/ referer) {
-        this._c_pre(function() {return key && lang.isString(key);});
+        this._c_pre(function() {return typeOf(key) === "string";});
         this._c_pre(function() {return object;});
         this._c_pre(function() {return referer;});
 
@@ -206,7 +199,7 @@ define(["dojo/_base/declare",
         //   This does nothing for elements of ls. We do not go deep.
         this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
         this._c_pre(function() {return po.get("persistenceId");});
-        this._c_pre(function() {return toManyPropertyName && lang.isString(toManyPropertyName);});
+        this._c_pre(function() {return typeOf(toManyPropertyName) === "string";});
         this._c_pre(function() {return ls && ls.isInstanceOf && ls.isInstanceOf(StoreOfStateful);});
         this._c_pre(function() {return referer;});
 
@@ -255,7 +248,7 @@ define(["dojo/_base/declare",
         //   If, by this removal, there are no more referers for that paylaod,
         //   remove the entry from the cache, and remove its payload as referer
         //   from all other entries (recursively).
-        this._c_pre(function() {return key && lang.isString(key);});
+        this._c_pre(function() {return typeOf(key) === "string";});
         this._c_pre(function() {return referer;});
 
         var entry = this._data[key];
