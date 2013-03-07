@@ -17,6 +17,11 @@ define(["dojo/_base/declare",
 //      return exc && exc.isInstanceOf && exc.isInstanceOf(SemanticException);
 //    }
 
+    function reportError(err) {
+      console.error("ERROR (CrudDao):", err);
+      console.trace();
+    }
+
     var CrudDao = declare([_ContractMixin], {
       // summary:
       //
@@ -46,7 +51,8 @@ define(["dojo/_base/declare",
 
       _handleException: function(exc) {
         // MUDO triage and log as error, warn or trace; return triaged
-        console.warn(exc);
+//        console.warn(exc);
+        reportError(exc);
         return exc;
       },
 
@@ -103,12 +109,14 @@ define(["dojo/_base/declare",
         //   A search for a specific `serverType` without a `query` should return all
         //   objects of that type.
         this._c_pre(function() {return this.isOperational();});
-        this._c_pre(function() {return result && result.isInstanceOf && result.isInstanceOf(StoreOfStateful);});
+        this._c_pre(function() {return result && result.isInstanceOf;});
+// Cannot really formulate what we want, because of stupid Observable Store wrapper
+//        this._c_pre(function() {return result && result.isInstanceOf && result.isInstanceOf(StoreOfStateful);});
         this._c_pre(function() {return typeOf(url) === "string";});
         this._c_pre(function() {return !query || typeOf(query) === "object";});
 
-        console.trace("GET URL is: " + url);
-        console.trace("query: " + query);
+        console.log("GET URL is: " + url);
+        console.log("query: " + query);
         var self = this;
         var deferred = new Deferred();
         var loadPromise = request(
@@ -125,8 +133,8 @@ define(["dojo/_base/declare",
             if (typeOf(data) !== "array") {
               throw new Error("expected array from remote call");
             }
-            console.trace("Retrieved successfully from server: " + data);
-            var revivePromise = this.reviveInto(null, data, null, this._cache);
+            console.info("Retrieved successfully from server: " + data);
+            var revivePromise = self.reviveInto(null, data, null, self._cache);
             revivePromise.then(
               function (revived) {
                 if (typeOf(data) !== "array") {
@@ -169,13 +177,15 @@ define(["dojo/_base/declare",
         //   A search for a specific `serverType` without a `query` should return all
         //   objects of that type.
         this._c_pre(function() {return this.isOperational();});
-        this._c_pre(function() {return result && result.isInstanceOf && result.isInstanceOf(StoreOfStateful);});
+        this._c_pre(function() {return result && result.isInstanceOf;});
+// Cannot really formulate what we want, because of stupid Observable Store wrapper
+//        this._c_pre(function() {return result && result.isInstanceOf && result.isInstanceOf(StoreOfStateful);});
         this._c_pre(function() {return !serverType || typeOf(serverType) === "string";});
         this._c_pre(function() {return !query || typeOf(query) === "object";});
 
-        console.trace("Requested GET of matching instances: '" + serverType +"' matching '" + query + "'");
+        console.log("Requested GET of matching instances: '" + serverType +"' matching '" + query + "'");
         var url = this.urlBuilder.search(serverType, query);
-        return this._refresh(url, query, result);
+        return this._refresh(result, url, query);
       },
 
       retrieve: function(/*String*/ serverType, /*Number*/ persistenceId, /*Any*/ referer) {
@@ -218,9 +228,9 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return typeOf(persistenceId) === "number";});
         this._c_pre(function() {return referer;});
 
-        console.trace("Requested GET of: '" + serverType + "' with id '" + persistenceId + "'");
+        console.log("Requested GET of: '" + serverType + "' with id '" + persistenceId + "'");
         var url = this.urlBuilder.retrieve(serverType, persistenceId);
-        console.trace("GET URL is: " + url);
+        console.log("GET URL is: " + url);
         var self = this;
         var deferred = new Deferred();
         var loadPromise = request(
@@ -233,7 +243,7 @@ define(["dojo/_base/declare",
         );
         loadPromise.then(
           function(data) {
-            console.trace("Retrieved successfully from server: " + data);
+            console.info("Retrieved successfully from server: " + data);
             var revivePromise = this.reviveInto(null, data, referer, this._cache);
             revivePromise.then(
               function(revived) {
@@ -269,11 +279,13 @@ define(["dojo/_base/declare",
         //   The remote retrieve might fail, with an error, which is returned by the errback
         //   of the returned Promise. In that case, `result` is left unchanged.
         this._c_pre(function() {return this.isOperational();});
-        this._c_pre(function() {return result && result.isInstanceOf && result.isInstanceOf(StoreOfStateful);});
+        this._c_pre(function() {return result && result.isInstanceOf;});
+// Cannot really formulate what we want, because of stupid Observable Store wrapper
+//        this._c_pre(function() {return result && result.isInstanceOf && result.isInstanceOf(StoreOfStateful);});
         this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
         this._c_pre(function() {return typeOf(serverPropertyName) === "string";});
 
-        console.trace("Requested GET of to many: '" + po + "[" + serverPropertyName+ "]'");
+        console.log("Requested GET of to many: '" + po + "[" + serverPropertyName+ "]'");
         var url = this.urlBuilder.toMany(po.get("persistenceType"), po.get("persistenceId"), serverPropertyName);
         return this._refresh(url, null, result); // IDEA: we can even add a query here
       },
@@ -302,9 +314,9 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return po;});
         this._c_pre(function() {return po.isInstanceOf && po.isInstanceOf(PersistentObject);});
 
-        console.trace("Requested " + method + " of: " + po);
+        console.log("Requested " + method + " of: " + po);
         var url = this.urlBuilder.get(method)(po.get("persistenceType"), po.get("persistenceId"));
-        console.trace(method + " URL is: " + url);
+        console.log(method + " URL is: " + url);
         var self = this;
         var deferred = new Deferred();
         var loadPromise = request(
@@ -318,7 +330,7 @@ define(["dojo/_base/declare",
         );
         loadPromise.then(
           function(data) {
-            console.trace("Create succes in server: " + data);
+            console.info("Create succes in server: " + data);
             var revivePromise = this.reviveInto(po, data, referer, this._cache);
             /*
              For create, tracking will only be added at the end, because we need a peristenceId for that.

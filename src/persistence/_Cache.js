@@ -14,8 +14,11 @@ define(["dojo/_base/declare",
       //   Returns a key.
       // description:
       //   Returns `type + "@" + persistenceId`
-      this._c_pre(function() {return typeOf(serverType) === "string";});
-      this._c_pre(function() {return id && typeOf(id) === "number";});
+//      this._c_pre(function() {return typeOf(serverType) === "string";});
+//      this._c_pre(function() {return persistenceId && typeOf(persistenceId) === "number";});
+//        Function: there is no this
+      if (! (typeOf(serverType) === "string")) { throw new Error(); }
+      if (! (persistenceId && typeOf(persistenceId) === "number")) { throw new Error(); }
 
       return serverType + "@" + persistenceId; // return String
     }
@@ -25,7 +28,9 @@ define(["dojo/_base/declare",
       //   Returns a key, intended to be unique, for this entry.
       // description:
       //   Returns `persistentObject.getTypeDescription() + "@" + persistentObject.get("persistenceId")`
-      this._c_pre(function() {return po && po.isInstance && po.isInstanceOf(PersistentObject);});
+//      this._c_pre(function() {return po && po.isInstance && po.isInstanceOf(PersistentObject);});
+//        Function: there is no this
+      if (! (po && po.isInstance && po.isInstanceOf(PersistentObject))) { throw new Error(); }
 
       return poTypeCacheKey(po.getTypeDescription(), po.persistenceId); // return String
     }
@@ -35,6 +40,11 @@ define(["dojo/_base/declare",
       //   Returns a key, intended to be unique, for a store that represents po[toManyPropertyname]
       // description:
       //   Returns `persistentObject.getTypeDescription() + "@" + persistentObject.get("persistenceId") + "#" + toManyPropertyName`
+//      this._c_pre(function() {return po && po.isInstance && po.isInstanceOf(PersistentObject);});
+//      this._c_pre(function() {return typeOf(toManyPropertyName) === "string";});
+//        Function: there is no this
+      if (! (po && po.isInstance && po.isInstanceOf(PersistentObject))) { throw new Error(); }
+      if (! (typeOf(toManyPropertyName) === "string")) { throw new Error(); }
 
       return poInstanceCacheKey(po) + "#" + toManyPropertyName; // return String
     }
@@ -59,8 +69,10 @@ define(["dojo/_base/declare",
 
       _c_invar: [
         function() {return this._c_prop_mandatory("payload");},
-        function() {return this.payload.isInstanceOf &&
-          (this.payload.isInstanceOf(PersistentObject) || this.payload.isInstanceOf(StoreOfStateful));},
+        function() {return this.payload.isInstanceOf;},
+// Cannot really formulate what we want, because of stupid Observable Store wrapper
+//        function() {return this.payload.isInstanceOf &&
+//          (this.payload.isInstanceOf(PersistentObject) || this.payload.isInstanceOf(StoreOfStateful));},
         function() {return ! this.payload.isInstanceOf(PersistentObject) || this.payload.get("persistenceId");},
         function() {return this.getNrOfReferers() >= 0;}
       ],
@@ -133,7 +145,7 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return typeOf(persistenceId) === "number";});
 
         var key = poTypeCacheKey(serverType, persistenceId);
-        return this._data[key].payload; // return PersistentObject
+        return this._data[key] && this._data[key].payload; // return PersistentObject
       },
 
       getPo: function(/*PersistentObject*/ po) {
@@ -143,7 +155,7 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
 
         var key = poInstanceCacheKey(po);
-        return this._data[key].payload; // return PersistentObject
+        return this._data[key] && this._data[key].payload; // return PersistentObject
       },
 
       getToManyStore: function(/*PersistentObject*/ po, /*String*/ toManyPropertyName) {
@@ -154,7 +166,7 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return typeOf(toManyPropertyName) === "string";});
 
         var key = storeCacheKey(po, toManyPropertyName);
-        return this._data[key].payload; // return LazyStore
+        return this._data[key] && this._data[key].payload; // return LazyStore
       },
 
       _track:function (/*String*/ key, /*Object*/ object, /*Object*/ referer) {
@@ -200,7 +212,9 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
         this._c_pre(function() {return po.get("persistenceId");});
         this._c_pre(function() {return typeOf(toManyPropertyName) === "string";});
-        this._c_pre(function() {return ls && ls.isInstanceOf && ls.isInstanceOf(StoreOfStateful);});
+        this._c_pre(function() {return ls && ls.isInstanceOf;});
+// Cannot really formulate what we want, because of stupid Observable Store wrapper
+//        this._c_pre(function() {return ls && ls.isInstanceOf && ls.isInstanceOf(StoreOfStateful);});
         this._c_pre(function() {return referer;});
 
         var key = storeCacheKey(po, toManyPropertyName);
@@ -215,8 +229,10 @@ define(["dojo/_base/declare",
         //   If pols is removed from the cache, it is also removed as a referer
         //   of all other entries (potentially resulting in removal from the cache
         //   of that entry, recursively).
-        this._c_pre(function() {return pols && pols.isInstanceOf &&
-          (pols.isInstanceOf(PersistentObject) || pols.isInstanceOf(StoreOfStateful));});
+        this._c_pre(function() {return pols && pols.isInstanceOf;});
+// Cannot really formulate what we want, because of stupid Observable Store wrapper
+//        this._c_pre(function() {return pols && pols.isInstanceOf &&
+//          (pols.isInstanceOf(PersistentObject) || pols.isInstanceOf(StoreOfStateful));});
         this._c_pre(function() {return referer;});
 
 
