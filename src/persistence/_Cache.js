@@ -182,7 +182,7 @@ define(["dojo/_base/declare",
         if (!entry) {
           entry = new _Entry(object);
           this._data[key] = entry;
-          console.trace("Entry added to cache: " + object.toString());
+          console.log("Entry added to cache: " + object.toString());
         }
         entry.addReferer(referer);
       },
@@ -276,7 +276,7 @@ define(["dojo/_base/declare",
           entry.removeReferer(referer);
           if (entry.getNrOfReferers() <= 0) {
             delete this._data[key];
-            console.trace("Entry removed from CrudDao cache: " + entry.payload.toString());
+            console.log("Entry removed from CrudDao cache: " + entry.payload.toString());
             // now, if payload was itself a referer, we need to remove if everywhere as referer
             var propertyNames = Object.keys(this._data);
             for (var i = 0; i < propertyNames.length; i++) {
