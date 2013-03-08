@@ -244,7 +244,7 @@ define(["dojo/_base/declare",
         loadPromise.then(
           function(data) {
             console.info("Retrieved successfully from server: " + data);
-            var revivePromise = self.reviveInto(null, data, referer, this._cache);
+            var revivePromise = self.reviveInto(null, data, referer, self._cache);
             revivePromise.then(
               function(revived) {
                 deferred.resolve(revived);
