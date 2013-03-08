@@ -1,5 +1,5 @@
-define(["dojo/_base/declare", "ppwcode/contracts/_Mixin", "ppwcode/oddsAndEnds/typeOf"],
-    function(declare, _ContractMixin, typeOf) {
+define(["dojo/_base/declare", "ppwcode/contracts/_Mixin", "ppwcode/oddsAndEnds/typeOf", "dojo/_base/lang"],
+    function(declare, _ContractMixin, typeOf, lang) {
 
       var UrlBuilder = declare([_ContractMixin], {
         // summary:
@@ -16,13 +16,13 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin", "ppwcode/oddsAndEnds/t
 
           switch (method) {
             case "GET":
-              return this.retrieve;
+              return lang.hitch(this, this.retrieve);
             case "POST":
-              return this.create;
+              return lang.hitch(this, this.create);
             case "PUT":
-              return this.update;
+              return lang.hitch(this, this.update);
             case "DELETE":
-              return this.delete;
+              return lang.hitch(this, this.delete);
             default:
               throw new Error("Unknown method: " + method);
           }
