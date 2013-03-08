@@ -4,11 +4,11 @@ html, body {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow:hidden;
 }
 
 .persistentObjectButtonEditPane {
-  height: 100%;
+  background-color: #DFFFDF;
+  display: inline-block !important;
 }
 
 .persistentObjectButtonEditPane-buttons {
@@ -19,8 +19,11 @@ html, body {
 
 .persistentObjectButtonEditPane > div {
   /* the border container */
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
 }
 
 .persistentObjectButtonEditPane .dijitBorderContainer-dijitContentPane {

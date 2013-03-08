@@ -2,15 +2,14 @@ define(["dojo/_base/declare", "dijit/registry", "dojo/_base/lang", "dojo/dom-sty
         "../_PersistentObjectEditPane", "dijit/_TemplatedMixin", "dijit/_WidgetsInTemplateMixin",
         "dojo/text!./PersistentObjectButtonEditPane.html", "dojo/i18n!./nls/labels",
         "ppwcode/persistence/PersistentObject", "ppwcode/persistence/AuditableObject",
-        "dijit/layout/_ContentPaneResizeMixin", "dijit/layout/BorderContainer", "dijit/layout/ContentPane",
+        "dijit/layout/BorderContainer", "dijit/layout/ContentPane",
         "ppwcode/persistence/ui/auditableInfoPane/AuditableInfoPane",
         "dijit/form/Button",
         "xstyle/css!./PersistentObjectButtonEditPane.css"],
     function(declare, registry, lang, domStyle,
              _PersistentObjectEditPane, _TemplatedMixin, _WidgetsInTemplateMixin,
              template, labels,
-             PersistentObject, AuditableObject,
-             _ContentPaneResizeMixin) {
+             PersistentObject, AuditableObject) {
 
       function setVisible(/*Button*/ button, /*Boolean*/ condition, /*Boolean*/ busy) {
         // IDEA use FX
@@ -21,7 +20,7 @@ define(["dojo/_base/declare", "dijit/registry", "dojo/_base/lang", "dojo/dom-sty
         // TODO should listen to isEditable and isDeletable
       }
 
-      return declare([_PersistentObjectEditPane, _TemplatedMixin, _WidgetsInTemplateMixin, _ContentPaneResizeMixin], {
+      return declare([_PersistentObjectEditPane, _TemplatedMixin, _WidgetsInTemplateMixin], {
         // summary:
         //    Widget that extends _PersistentObjectEditPane with an actual presentation.
         //    There are buttons to control the edit cycle on the bottom of the pane.
@@ -65,10 +64,6 @@ define(["dojo/_base/declare", "dijit/registry", "dojo/_base/lang", "dojo/dom-sty
           if (! this.get("target")) { // TODO is this really necessary? why? write a comment
             this.set("target", null);
           }
-
-          if(!this.containerNode){
-            this.containerNode = this.domNode;
-          }
         },
 
         destroy: function() {
@@ -94,7 +89,7 @@ define(["dojo/_base/declare", "dijit/registry", "dojo/_base/lang", "dojo/dom-sty
             this.get("persistentObjectPane").set("target", po);
           }
           var ao = po && po.isInstanceOf(AuditableObject) ? po : null;
-          // MUDO invisible is there is no target
+          // MUDO invisible if there is no target
           this._auditableInfo.set("target", ao);
         },
 
@@ -119,6 +114,7 @@ define(["dojo/_base/declare", "dijit/registry", "dojo/_base/lang", "dojo/dom-sty
           this._set("persistentObjectPane", poPane);
           if (poPane) {
             this._contentDiv.addChild(poPane);
+            this.domNode.style.width = poPane.getWidgetSize() + "px";
             // new detail might already have a target
             var ourPo = this.get("target");
             var wrappedPo = poPane.get("target");
@@ -163,6 +159,14 @@ define(["dojo/_base/declare", "dijit/registry", "dojo/_base/lang", "dojo/dom-sty
 
         _localPresentationModeChange: function(presentationMode) {
           this._setButtonsStyles(this.get("stylePresentationMode"));
+        },
+
+        getWidgetSize: function() {
+          var poPane = this.get("persistentObjectPane");
+          if (poPane) {
+            return poPane.getWidgetSize() + 20;
+          }
+          return 0;
         }
 
       });
