@@ -226,7 +226,7 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return this.isOperational();});
         this._c_pre(function() {return typeOf(serverType) === "string";});
         this._c_pre(function() {return typeOf(persistenceId) === "number";});
-        this._c_pre(function() {return referer;});
+        this._c_pre(function() {return typeOf(referer) === "object";});
 
         console.log("Requested GET of: '" + serverType + "' with id '" + persistenceId + "'");
         var url = this.urlBuilder.retrieve(serverType, persistenceId);
