@@ -1,7 +1,7 @@
-define(["dojo/_base/declare", "ppwcode/oddsAndEnds/typeOf"],
-    function(declare, typeOf) {
+define(["dojo/_base/declare", "ppwcode/contracts/_Mixin", "ppwcode/oddsAndEnds/typeOf"],
+    function(declare, _ContractMixin, typeOf) {
 
-      var UrlBuilder = declare([], {
+      var UrlBuilder = declare([_ContractMixin], {
         // summary:
         //   An interface for which you have to provide an implementation.
         //   Instances, when operational, return url's for CRUD functions,
