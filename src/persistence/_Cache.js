@@ -30,7 +30,9 @@ define(["dojo/_base/declare",
       //   Returns `persistentObject.getTypeDescription() + "@" + persistentObject.get("persistenceId")`
 //      this._c_pre(function() {return po && po.isInstance && po.isInstanceOf(PersistentObject);});
 //        Function: there is no this
-      if (! (po && po.isInstance && po.isInstanceOf(PersistentObject))) { throw new Error(); }
+      if (! (po && po.isInstanceOf && po.isInstanceOf(PersistentObject))) {
+        throw new Error("po && po.isInstanceOf && po.isInstanceOf(PersistentObject)");
+      }
 
       return poTypeCacheKey(po.getTypeDescription(), po.persistenceId); // return String
     }
@@ -43,7 +45,9 @@ define(["dojo/_base/declare",
 //      this._c_pre(function() {return po && po.isInstance && po.isInstanceOf(PersistentObject);});
 //      this._c_pre(function() {return typeOf(toManyPropertyName) === "string";});
 //        Function: there is no this
-      if (! (po && po.isInstance && po.isInstanceOf(PersistentObject))) { throw new Error(); }
+      if (! (po && po.isInstanceOf && po.isInstanceOf(PersistentObject))) {
+        throw new Error("po && po.isInstanceOf && po.isInstanceOf(PersistentObject)");
+      }
       if (! (typeOf(toManyPropertyName) === "string")) { throw new Error(); }
 
       return poInstanceCacheKey(po) + "#" + toManyPropertyName; // return String
