@@ -287,7 +287,7 @@ define(["dojo/_base/declare",
 
         console.log("Requested GET of to many: '" + po + "[" + serverPropertyName+ "]'");
         var url = this.urlBuilder.toMany(po.get("persistenceType"), po.get("persistenceId"), serverPropertyName);
-        return this._refresh(url, null, result); // IDEA: we can even add a query here
+        return this._refresh(result, url, null); // IDEA: we can even add a query here
       },
 
       _poAction: function(/*String*/ method, /*PersistentObject*/ po, /*Any?*/ referer) {
