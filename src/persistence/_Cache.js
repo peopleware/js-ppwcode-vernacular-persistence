@@ -55,21 +55,30 @@ define(["dojo/_base/declare",
 
     var _Entry = declare([_ContractMixin], {
       // summary:
-      //   Helper class for ./CrudDao. Defines the cache entries, and methods to deal with it.
-      //
+      //   Helper class for _Cache. Defines the cache entries, and methods to deal with it.
+      // description:
       //   In the absence of some form of weak reference in JavaScript (promised for ECMAScript 6 / Harmony,
       //   see <http://wiki.ecmascript.org/doku.php?id=harmony:harmony>), we use reference tracking to be
       //   able to release instances from the cache.
-      //   An entry in the cache holds the `PersistentObject`
 
-      // summary:
+      // payload: Object
       //   Reference to the object this is an entry for.
       //   This can never change.
       payload: null,
 
-      // summary:
-      //   Private. The set of referers.
+      // _referers: Set
+      //   The set of referers.
+      // tags:
+      //   private
       _referers: null,
+
+      // _createdAt: Date
+      //    The time of creation of this entry.
+      // tags:
+      //    private
+      // description:
+      //    introduced to do memory leak detection
+      _createdAt: null,
 
       _c_invar: [
         function() {return this._c_prop_mandatory("payload");},
@@ -86,9 +95,10 @@ define(["dojo/_base/declare",
 
         this.payload = o;
         this._referers = new Set();
+        this._createdAt = new Date();
       },
 
-      addReferer: function(referer) {
+      addReferer: function(/*Object*/ referer) {
         // summary:
         //   Adds a referer to the set of referers. If referer is already
         //   in the set, nothing happens.
@@ -102,7 +112,7 @@ define(["dojo/_base/declare",
         this._referers.add(referer);
       },
 
-      removeReferer: function(referer) {
+      removeReferer: function(/*Object*/ referer) {
         // summary:
         //   Removes a referer from the set referers. If referer is
         //   not in the set to begin with, nothing happens.
@@ -115,19 +125,40 @@ define(["dojo/_base/declare",
         //   Return the number of referers.
 
         return this._referers.getSize(); // return Number
+      },
+
+      report: function() {
+        return { payload: this.payload, createdAt: this._createdAt, nrOfReferers: this._referers.getSize() };
+      },
+
+      detailedReport: function() {
+        return { payload: this.payload, createdAt: this._createdAt, referers: this._referers.toJson() };
       }
 
     });
 
     var _Cache = declare([_ContractMixin], {
+      // summary:
+      //   Cache for PersistentObjects and StoreOfStateful instances.
+      //   Instances are cached with a referer. Subsequent track-commands add new referers.
+      //   When the cache is asked to stop tracking an object, it also removes the object it stops
+      //   tracking as a referer everywhere.
+      //   When there are no more referers for a given instance, it is removed from the cache, recursively.
+      // description:
+      //   In the absence of some form of weak reference in JavaScript (promised for ECMAScript 6 / Harmony,
+      //   see <http://wiki.ecmascript.org/doku.php?id=harmony:harmony>), we use reference tracking to be
+      //   able to release instances from the cache.
+      //
+      //   The cache is *not* responsible for caching deep. Only the offered object is cached
+      //   with the given referer.
 
       _c_invar: [
         {
           condition: function() {
             return true;
           },
-          objectSelector: function(c) {
-            return c._data;
+          selector: function() {
+            return this._data;
           },
           invars: [
             function() {return this.isInstanceOf && this.isInstanceOf(_Entry);}
@@ -135,42 +166,13 @@ define(["dojo/_base/declare",
         }
       ],
 
+      // _data: Object
+      //    Hash for the cache _Entry instances
+      //    The keys are poInstanceCacheKey for PersistentObject or storeCacheKey for StoreOfStateful
       _data: null,
 
       constructor: function() {
         this._data = {};
-      },
-
-      getPoByTypeAndId: function(/*String*/ serverType, /*Number*/ persistenceId) {
-        // summary:
-        //   gets a cached PersistentObject by serverType and id
-        //   returns undefined if there is no such entry
-        this._c_pre(function() {return typeOf(serverType) === "string";});
-        this._c_pre(function() {return typeOf(persistenceId) === "number";});
-
-        var key = poTypeCacheKey(serverType, persistenceId);
-        return this._data[key] && this._data[key].payload; // return PersistentObject
-      },
-
-      getPo: function(/*PersistentObject*/ po) {
-        // summary:
-        //   gets a cached PersistentObject for a given po
-        //   returns undefined if there is no such entry
-        this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
-
-        var key = poInstanceCacheKey(po);
-        return this._data[key] && this._data[key].payload; // return PersistentObject
-      },
-
-      getToManyStore: function(/*PersistentObject*/ po, /*String*/ toManyPropertyName) {
-        // summary:
-        //   gets a cached LazyStore for po[toManyProperty]
-        //   returns undefined if there is no such entry
-        this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
-        this._c_pre(function() {return typeOf(toManyPropertyName) === "string";});
-
-        var key = storeCacheKey(po, toManyPropertyName);
-        return this._data[key] && this._data[key].payload; // return LazyStore
       },
 
       _track:function (/*String*/ key, /*Object*/ object, /*Object*/ referer) {
@@ -185,6 +187,72 @@ define(["dojo/_base/declare",
           console.log("Entry added to cache: " + object.toString());
         }
         entry.addReferer(referer);
+      },
+
+      _getPayload: function(key) {
+        return this._data[key] && this._data[key].payload; // return object
+      },
+
+      _removeReferer: function(/*String*/ key, /*Object*/ referer) {
+        // summary:
+        //   Remove referer as referer to the payload of the entry with `key`
+        //   (if that exists).
+        //   If, by this removal, there are no more referers for that paylaod,
+        //   remove the entry from the cache, and remove its payload as referer
+        //   from all other entries (recursively).
+        this._c_pre(function() {return typeOf(key) === "string";});
+        this._c_pre(function() {return referer;});
+
+        var entry = this._data[key];
+        if (entry) {
+          entry.removeReferer(referer);
+          if (entry.getNrOfReferers() <= 0) {
+            delete this._data[key];
+            console.log("Entry removed from CrudDao cache: " + entry.payload.toString());
+            // now, if payload was itself a referer, we need to remove if everywhere as referer
+            var propertyNames = Object.keys(this._data);
+            for (var i = 0; i < propertyNames.length; i++) {
+              /* Concurrent modification: by the time we get here, the entry might no longer
+                 exist (removed by an earlier branch of this backtrack). That is no problem
+                 though, because we have if (entry) above. */
+              this._removeReferer(propertyNames[i], entry.payload);
+            }
+          }
+        }
+      },
+
+      getPoByTypeAndId: function(/*String*/ serverType, /*Number*/ persistenceId) {
+        // summary:
+        //   gets a cached PersistentObject by serverType and id
+        //   returns undefined if there is no such entry
+        this._c_pre(function() {return typeOf(serverType) === "string";});
+        this._c_pre(function() {return typeOf(persistenceId) === "number";});
+
+        var key = poTypeCacheKey(serverType, persistenceId);
+        return this._getPayload(key); // return PersistentObject
+      },
+
+      getPo: function(/*PersistentObject*/ po) {
+        // summary:
+        //   gets a cached PersistentObject for a given po
+        //   returns undefined if there is no such entry
+        this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
+        this._c_pre(function() {return po.get("persistenceId");});
+
+        var key = poInstanceCacheKey(po);
+        return this._getPayload(key); // return PersistentObject
+      },
+
+      getToManyStore: function(/*PersistentObject*/ po, /*String*/ toManyPropertyName) {
+        // summary:
+        //   gets a cached StoreOfStateful for po[toManyProperty]
+        //   returns undefined if there is no such entry
+        this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
+        this._c_pre(function() {return po.get("persistenceId");});
+        this._c_pre(function() {return typeOf(toManyPropertyName) === "string";});
+
+        var key = storeCacheKey(po, toManyPropertyName);
+        return this._getPayload(key); // return StoreOfStateful
       },
 
       trackPo: function(/*PersistentObject*/ po, /*Object*/ referer) {
@@ -260,30 +328,6 @@ define(["dojo/_base/declare",
           this._removeReferer(key, referer);
         }
         // else, there is no entry, so nobody is tracking anyway
-      },
-
-      _removeReferer: function(/*String*/ key, /*Object*/ referer) {
-        // summary:
-        //   Remove referer as referer to the payload of the entry with `key`.
-        //   If, by this removal, there are no more referers for that paylaod,
-        //   remove the entry from the cache, and remove its payload as referer
-        //   from all other entries (recursively).
-        this._c_pre(function() {return typeOf(key) === "string";});
-        this._c_pre(function() {return referer;});
-
-        var entry = this._data[key];
-        if (entry) {
-          entry.removeReferer(referer);
-          if (entry.getNrOfReferers() <= 0) {
-            delete this._data[key];
-            console.log("Entry removed from CrudDao cache: " + entry.payload.toString());
-            // now, if payload was itself a referer, we need to remove if everywhere as referer
-            var propertyNames = Object.keys(this._data);
-            for (var i = 0; i < propertyNames.length; i++) {
-              this._removeReferer(propertyNames[i], entry.payload);
-            }
-          }
-        }
       }
 
     });
