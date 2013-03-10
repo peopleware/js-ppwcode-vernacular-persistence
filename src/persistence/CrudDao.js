@@ -254,7 +254,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
         var p = null;
         if (! entry) {
           p = new PoType(); // MUDO: not polymorph
-          p._changeAttrValue("peristenceId", persistenceId);
+          p._changeAttrValue("persistenceId", persistenceId);
           this.track(p, referer);
         }
         else {
