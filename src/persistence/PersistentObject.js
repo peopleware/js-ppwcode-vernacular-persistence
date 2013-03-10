@@ -1,5 +1,5 @@
-define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject"],
-  function(declare, SemanticObject) {
+define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject", "dojo/_base/lang"],
+  function(declare, SemanticObject, lang) {
 
     function internalReload(/*PersistentObject*/ self, /*Object*/ json) {
       if (json && json.persistenceId /* TODO json.persistenceId undefined, but not null */) {
@@ -16,9 +16,12 @@ define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject"],
     var PersistentObject = declare([SemanticObject], {
 
       _c_invar: [
-        function() {return this.hasOwnProperty("persistenceId");}
+        function() {return this._c_prop_mandatory("persistenceType");},
+        function() {return this._c_prop_string("persistenceType");},
+        function() {return this.hasOwnProperty("persistenceId");},
         /* we don't care about the format of the persistenceId here; we just keep it, and return it to the server
          like we got it. */
+        function() {return this.get("persistenceId") === null || lang.isString(this.getKey());}
       ],
 
       // persistenceType: String
@@ -40,7 +43,7 @@ define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject"],
       //   That is how we know the object is fresh.
       //   Afterwards, it may never change. It is under control of the server.
       //   We actually don't care what type this is. We just store, and return to the server.
-      peristenceId: null,
+      persistenceId: null,
 
       constructor: function(/*Object*/ props) {
         /* we don't care about the format of the persistenceId here; we just keep it, and return it to the server
@@ -65,6 +68,17 @@ define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject"],
         throw "ERROR: the persistence id can never change";
       },
 
+      getKey: function() {
+        // summary:
+        //   A (business) key (String) that uniquely identifies
+        //   the object represented by this (if we all keep to the rules).
+        //   Can only be called when this.get("persistenceId") !== null.
+
+        this._c_pre(function() {return this && this.get("persistenceId") != null;});
+
+        return PersistentObject.keyFor(this);
+      },
+
       _extendJsonObject: function(/*Object*/ json) {
         json["$type"] = this.persistenceType; // "$type" is a magic string, mandated by JSON.net TODO fix this
         json.persistenceId = this.persistenceId;
@@ -83,6 +97,25 @@ define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject"],
         toStrings.push("persistenceId: " + this.persistenceId);
       }
     });
+
+
+
+    PersistentObject.keyFor = function(/*PersistentObject*/ po) {
+      // summary:
+      //   po --> String
+      //   A function that returns a unique (business) key (String) that uniquely identifies
+      //   the object represented by po (if we all keep to the rules).
+      //   Can only be called when po.get("persistenceId") !== null.
+
+      // IDEA can't use current form of precondition here
+      if (! (po && po.get("persistenceId") != null)) {
+        throw new Error("precondition violation: po && po.get('persistenceId') != null");
+      }
+
+      return po.get("persistenceType") + "@" + po.get("persistenceId"); // return String
+    };
+
+
 
     return PersistentObject; // return PersistentObject
   }
