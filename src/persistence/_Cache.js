@@ -75,10 +75,10 @@ define(["dojo/_base/declare",
       // _createdAt: Date
       //    The time of creation of this entry.
       // tags:
-      //    private
+      //    readonly
       // description:
       //    introduced to do memory leak detection
-      _createdAt: null,
+      createdAt: null,
 
       _c_invar: [
         function() {return this._c_prop_mandatory("payload");},
@@ -95,7 +95,7 @@ define(["dojo/_base/declare",
 
         this.payload = o;
         this._referers = new Set();
-        this._createdAt = new Date();
+        this.createdAt = new Date();
       },
 
       addReferer: function(/*Object*/ referer) {
@@ -128,11 +128,11 @@ define(["dojo/_base/declare",
       },
 
       report: function() {
-        return { payload: this.payload, createdAt: this._createdAt, nrOfReferers: this._referers.getSize() };
+        return { payload: this.payload, createdAt: this.createdAt, nrOfReferers: this._referers.getSize() };
       },
 
       detailedReport: function() {
-        return { payload: this.payload, createdAt: this._createdAt, referers: this._referers.toJson() };
+        return { payload: this.payload, createdAt: this.createdAt, referers: this._referers.toJson() };
       }
 
     });
@@ -328,6 +328,22 @@ define(["dojo/_base/declare",
           this._removeReferer(key, referer);
         }
         // else, there is no entry, so nobody is tracking anyway
+      },
+
+      report: function() {
+        var self = this;
+        var pNames = Object.keys(this._data);
+        var minCreatedAt = pNames.reduce(
+          function(acc, pn) {
+            return acc && acc < self._data[pn].createdAt ? acc : self._data[pn].createdAt;
+          },
+          null
+        );
+        var result = { nrOfEntries: pNames.length, earliestEntry:  minCreatedAt };
+//        result.entries = pNames.map(function(pn) {
+//          return self._data[pn].report();
+//        });
+        return result;
       }
 
     });
