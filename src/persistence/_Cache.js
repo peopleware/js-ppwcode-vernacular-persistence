@@ -180,15 +180,15 @@ define(["dojo/_base/declare",
         }
       },
 
-      getPoByTypeAndId: function(/*Function*/ Constructor, /*Number*/ persistenceId) {
+      getPoByTypeAndId: function(/*String*/ serverType, /*Number*/ persistenceId) {
         // summary:
         //   gets a cached PersistentObject by serverType and id
         //   returns undefined if there is no such entry
-        this._c_pre(function() {return typeOf(Constructor) === "function";});
+        this._c_pre(function() {return typeOf(serverType) === "string";});
         // IDEA subtype of PersistentObject
         this._c_pre(function() {return typeOf(persistenceId) === "number";});
 
-        var key = PersistentObject.keyForId(Constructor, persistenceId);
+        var key = PersistentObject.keyForId(serverType, persistenceId);
         return this._getPayload(key); // return PersistentObject
       },
 

@@ -100,22 +100,16 @@ define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject", "dojo/_base/la
 
 
 
-    PersistentObject.keyForId = function(/*Function*/ SubType, /*Number*/ id) {
+    PersistentObject.keyForId = function(/*String*/ persistenceType, /*Number*/ id) {
       // IDEA can't use current form of precondition here
-      if (! (SubType && lang.isFunction(SubType))) {
-        throw new Error("precondition violation: SubType && lang.isFunction(SubType)");
-      }
-      // IDEA must be a subtype of PeristentObject
-      if (! (SubType.prototype.persistenceType)) {
-        throw new Error("precondition violation: SubType.prototype.persistenceType");
+      if (! (persistenceType && lang.isString(persistenceType))) {
+        throw new Error("precondition violation: persistenceType && lang.isString(persistenceType)");
       }
       if (! (id)) {
         throw new Error("precondition violation: id");
       }
 
-      var serverType = SubType.prototype.persistenceType;
-
-      var result = serverType + "@" + id;
+      var result = persistenceType + "@" + id;
       return result; // return String
     };
 
@@ -131,8 +125,8 @@ define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject", "dojo/_base/la
         throw new Error("precondition violation: po && po.get('persistenceId') != null");
       }
 
-      var Constructor = po.constructor;
-      return PersistentObject.keyForId(Constructor, po.get("persistenceId")); // return String
+      var serverType = po.get("persistenceType");
+      return PersistentObject.keyForId(serverType, po.get("persistenceId")); // return String
     };
 
 

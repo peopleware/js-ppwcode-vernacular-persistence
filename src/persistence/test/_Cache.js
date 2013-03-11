@@ -27,7 +27,7 @@ define(["dojo/main", "ppwcode/contracts/doh",
     function getAndTestPersonEntry(cache, po, persistenceId, expectedNrOfReferers) {
       var tracked;
       if (expectedNrOfReferers) {
-        tracked = cache.getPoByTypeAndId(Person, persistenceId);
+        tracked = cache.getPoByTypeAndId(Person.prototype.persistenceType, persistenceId);
         doh.is(po, tracked);
         tracked = cache.getPo(po);
         doh.is(po, tracked);

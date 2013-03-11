@@ -181,7 +181,7 @@ define(["dojo/main", "ppwcode/contracts/doh",
 
       function testKeyForId() {
         var id = 9859893;
-        var key = PersistentObject.keyForId(Mock, id);
+        var key = PersistentObject.keyForId(type, id);
         doh.t(lang.isString(key));
         doh.is(type + "@" + id, key);
       },

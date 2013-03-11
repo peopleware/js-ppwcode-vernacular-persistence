@@ -38,7 +38,7 @@ define(["dojo/_base/declare", "ppwcode/collections/StoreOfStateful",
         throw new Error("precondition violation: toManyPropertyName && lang.isString(toManyPropertyName)");
       }
 
-      var result = PersistentObject.keyForId(Constructor, id) + "/" + toManyPropertyName;
+      var result = PersistentObject.keyForId(Constructor.prototype.persistenceType, id) + "/" + toManyPropertyName;
       return result; // return String
     };
 
