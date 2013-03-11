@@ -165,7 +165,7 @@ define(["dojo/_base/declare",
         loadPromise.then(
           function(data) {
             console.info("Create succes in server: " + data);
-            var revivePromise = this.reviveInto(po, data, referer, this._cache);
+            var revivePromise = self.reviveInto(po, data, referer, this._cache);
             /*
              For create, tracking will only be added at the end, because we need a persistenceId for that.
              That is not a problem, since nobody should have a reference yet, except referer ...
