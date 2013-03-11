@@ -1,12 +1,12 @@
 define(["dojo/_base/declare",
   "ppwcode/contracts/_Mixin",
   "./UrlBuilder", "./_Cache", "./PersistentObject", "./IdNotFoundException",
-  "ppwcode/collections/ArraySet", "ppwcode/collections/StoreOfStateful",
+  "ppwcode/collections/ArraySet", "./PersistentObjectStore", "dojo/store/Observable",
   "dojo/Deferred", "dojo/request", "dojo/_base/lang", "ppwcode/oddsAndEnds/typeOf"],
   function(declare,
            _ContractMixin,
            UrlBuilder, _Cache, PersistentObject, IdNotFoundException,
-           Set, StoreOfStateful,
+           Set, PersistentObjectStore, Observable,
            Deferred, request, lang, typeOf) {
 
     function isIdNotFoundException(/*String*/ exc) {
@@ -54,37 +54,6 @@ define(["dojo/_base/declare",
 //        console.warn(exc);
         reportError(exc);
         return exc;
-      },
-
-      isOperational: function() {
-        return this.urlBuilder && this.reviveInto;
-      },
-
-      track: function(/*PersistentObject*/ po, /*Any*/ referrer) {
-        // summary:
-        //   After this call, po will be in the cache, and be tracked by referrer.
-        // description:
-        //   If it was not in the cache yet, it is added, and referrer is added as referrer.
-        //   If it was already in the cache, referrer is added as referrer.
-        //   Since the referrers of a cache are a Set, there will be no duplicate entries.
-        this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
-        this._c_pre(function() {return referrer;});
-
-        this._cache.track(po, referrer);
-      },
-
-      stopTracking: function(/*PersistentObject*/ po, /*Any*/ referer) {
-        // summary:
-        //   We note that referer no longer uses po.
-        // description:
-        //   If referer was the last referer of po, po is removed from the cache.
-        //   If po is removed from the cache, it is also removed as a referer
-        //   of all other entries (potentially resulting in removal from the cache
-        //   of that entry, recursively).
-        this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
-        this._c_pre(function() {return referer;});
-
-        this._cache.stopTracking(po, referer);
       },
 
       _refresh: function(/*StoreOfStateful*/ result, /*String*/ url, /*Object?*/ query) {
@@ -155,37 +124,108 @@ define(["dojo/_base/declare",
         return deferred.promise;
       },
 
-      searchInto: function(/*StoreOfStateful*/ result, /*String?*/ serverType, /*Object?*/ query) {
+      _poAction: function(/*String*/ method, /*PersistentObject*/ po, /*Any?*/ referer) {
         // summary:
-        //   Get all the objects of type `serverType` given the query from the remote server,
-        //   and update `result` to reflect the returned collection when an answer arrives.
-        //   This returns a Promise, that resolves to result.
-        //   *The resulting objects are not tracked*
-        // result: StoreOfStateful
-        //   Mandatory. When the promise is resolved, it will contain exactly the objects that were returned.
-        // serverType: String?
-        //   Optional.
-        // query: Object?
-        //   Optional. The semantics of these parameters are left to the server.
+        //   Ask the server to create, update, or delete po, track po on success,
+        //   with referer, if provided.
+        //   Returns a Promise.
+        // method: String
+        //   POST for create, PUT for update, DELETE for remove
         // description:
-        //   The objects might be in result or the cache beforehand. Those objects are reloaded,
-        //   and might send changed events.
+        //   The caller has a reference to po already. It is this object that will be reloaded
+        //   with the result from the remote call, and thus "magically" have its properties changed,
+        //   including the persistenceId on create.
+        //   Since po is Stateful, listeners will be notified of this change.
+        //   This means po can already be used.
         //
-        //   The remote retrieve might fail, with an error, which is returned by the errback
-        //   of the returned Promise. In that case, `result` is left unchanged.
+        //   The promise returns po after reload.
         //
-        //   A search for a specific `serverType` without a `query` should return all
-        //   objects of that type.
+        //   If anything fails during the request or revival of the response,
+        //   the errback of the Promise is called with the exception. This can be a SemanticException.
+        //   All other kinds of exceptions or value are to be considered errors.
         this._c_pre(function() {return this.isOperational();});
-        this._c_pre(function() {return result && result.isInstanceOf;});
-// Cannot really formulate what we want, because of stupid Observable Store wrapper
-//        this._c_pre(function() {return result && result.isInstanceOf && result.isInstanceOf(StoreOfStateful);});
-        this._c_pre(function() {return !serverType || typeOf(serverType) === "string";});
-        this._c_pre(function() {return !query || typeOf(query) === "object";});
+        this._c_pre(function() {return method === "POST" || method === "PUT" || method === "DELETE";});
+        this._c_pre(function() {return po;});
+        this._c_pre(function() {return po.isInstanceOf && po.isInstanceOf(PersistentObject);});
 
-        console.log("Requested GET of matching instances: '" + serverType +"' matching '" + query + "'");
-        var url = this.urlBuilder.search(serverType, query);
-        return this._refresh(result, url, query);
+        console.log("Requested " + method + " of: " + po);
+        var url = this.urlBuilder.get(method)(po.get("persistenceType"), po.get("persistenceId"));
+        console.log(method + " URL is: " + url);
+        var self = this;
+        var deferred = new Deferred();
+        var loadPromise = request(
+          url,
+          {
+            method: method,
+            handleAs: "json",
+            data: JSON.stringify(po),
+            headers: {"Accept" : "application/json"}
+          }
+        );
+        loadPromise.then(
+          function(data) {
+            console.info("Create succes in server: " + data);
+            var revivePromise = this.reviveInto(po, data, referer, this._cache);
+            /*
+             For create, tracking will only be added at the end, because we need a persistenceId for that.
+             That is not a problem, since nobody should have a reference yet, except referer ...
+             unless somebody does a very fast intermediate retrieve (which would be bad code, since
+             that retrieve needs to have the persistenceId, which we don't even know yet).
+             So with this caveat, there will only be 1 version of this new object in our RAM.
+
+             For delete, the po will have persistenceId == null afterwards. It can no longer be cached,
+             and is removed, as payload and referer.
+
+             MUDO: the same happens when we get an IdNotFoundException in the other methods
+             */
+            revivePromise.then(
+              function(revived) {
+                if (po && revived !== po) {
+                  throw new Error("revive promise should have provided po");
+                }
+                deferred.resolve(revived);
+              },
+              function(exc) {
+                deferred.reject(self._handleException(exc));
+              }
+            );
+          },
+          function(exc) {
+            deferred.reject(self._handleException(exc)); // communication error or IdNotFoundException of related objects
+          }
+        );
+        return deferred.promise;
+      },
+
+      isOperational: function() {
+        return this.urlBuilder && this.reviveInto;
+      },
+
+      track: function(/*PersistentObject*/ po, /*Any*/ referrer) {
+        // summary:
+        //   After this call, po will be in the cache, and be tracked by referrer.
+        // description:
+        //   If it was not in the cache yet, it is added, and referrer is added as referrer.
+        //   If it was already in the cache, referrer is added as referrer.
+        //   Since the referrers of a cache are a Set, there will be no duplicate entries.
+        this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
+        this._c_pre(function() {return referrer;});
+
+        this._cache.trackPo(po, referrer); // TODO or store? not needed?
+      },
+
+      stopTracking: function(/*PersistentObject*/ po, /*Any*/ referer) {
+        // summary:
+        //   We note that referer no longer uses po.
+        // description:
+        //   If referer was the last referer of po, po is removed from the cache.
+        //   If po is removed from the cache, it is also removed as a referer
+        //   of all other entries (potentially resulting in removal from the cache
+        //   of that entry, recursively).
+        this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
+        this._c_pre(function() {return referer;});
+
+        this._cache.stopTracking(po, referer);
       },
 
       retrieve: function(/*String*/ serverType, /*Number*/ persistenceId, /*Any*/ referer) {
@@ -261,108 +301,6 @@ define(["dojo/_base/declare",
         return deferred.promise;
       },
 
-      retrieveToManyInto: function(/*StoreOfStateful*/ result, /*PersistentObject*/ po, /*String*/ serverPropertyName) {
-        // summary:
-        //   Refresh the objects of a to-many relationship into result from the remote server.
-        //   These are the many objects of po[serverPropertyName].
-        //   This returns a Promise, that resolves to result.
-        //   The resulting objects are tracked, with result as referer.
-        // result: StoreOfStateful
-        //   Mandatory. When the promise is resolved, it will contain exactly the objects that were returned.
-        // po: PersistentObject
-        // serverPropertyName: String
-        //   The name of the to-many property in server lingo.
-        // description:
-        //   The objects might be in result or the cache beforehand. Those objects are reloaded,
-        //   and might send changed events.
-        //
-        //   The remote retrieve might fail, with an error, which is returned by the errback
-        //   of the returned Promise. In that case, `result` is left unchanged.
-        this._c_pre(function() {return this.isOperational();});
-        this._c_pre(function() {return result && result.isInstanceOf;});
-// Cannot really formulate what we want, because of stupid Observable Store wrapper
-//        this._c_pre(function() {return result && result.isInstanceOf && result.isInstanceOf(StoreOfStateful);});
-        this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
-        this._c_pre(function() {return typeOf(serverPropertyName) === "string";});
-
-        console.log("Requested GET of to many: '" + po + "[" + serverPropertyName+ "]'");
-        var url = this.urlBuilder.toMany(po.get("persistenceType"), po.get("persistenceId"), serverPropertyName);
-        return this._refresh(result, url, null); // IDEA: we can even add a query here
-      },
-
-      _poAction: function(/*String*/ method, /*PersistentObject*/ po, /*Any?*/ referer) {
-        // summary:
-        //   Ask the server to create, update, or delete po, track po on success,
-        //   with referer, if provided.
-        //   Returns a Promise.
-        // method: String
-        //   POST for create, PUT for update, DELETE for remove
-        // description:
-        //   The caller has a reference to po already. It is this object that will be reloaded
-        //   with the result from the remote call, and thus "magically" have its properties changed,
-        //   including the peristenceId on create.
-        //   Since po is Stateful, listeners will be notified of this change.
-        //   This means po can already be used.
-        //
-        //   The promise returns po after reload.
-        //
-        //   If anything fails during the request or revival of the response,
-        //   the errback of the Promise is called with the exception. This can be a SemanticException.
-        //   All other kinds of exceptions or value are to be considered errors.
-        this._c_pre(function() {return this.isOperational();});
-        this._c_pre(function() {return method === "POST" || method === "PUT" || method === "DELETE";});
-        this._c_pre(function() {return po;});
-        this._c_pre(function() {return po.isInstanceOf && po.isInstanceOf(PersistentObject);});
-
-        console.log("Requested " + method + " of: " + po);
-        var url = this.urlBuilder.get(method)(po.get("persistenceType"), po.get("persistenceId"));
-        console.log(method + " URL is: " + url);
-        var self = this;
-        var deferred = new Deferred();
-        var loadPromise = request(
-          url,
-          {
-            method: method,
-            handleAs: "json",
-            data: JSON.stringify(po),
-            headers: {"Accept" : "application/json"}
-          }
-        );
-        loadPromise.then(
-          function(data) {
-            console.info("Create succes in server: " + data);
-            var revivePromise = this.reviveInto(po, data, referer, this._cache);
-            /*
-             For create, tracking will only be added at the end, because we need a peristenceId for that.
-             That is not a problem, since nobody should have a reference yet, except referer ...
-             unless somebody does a very fast intermediate retrieve (which would be bad code, since
-             that retrieve needs to have the peristenceId, which we don't even know yet).
-             So with this caveat, there will only be 1 version of this new object in our RAM.
-
-             For delete, the po will have persistenceId == null afterwards. It can no longer be cached,
-             and is removed, as payload and referer.
-
-             MUDO: the same happens when we get an IdNotFoundException in the other methods
-             */
-            revivePromise.then(
-              function(revived) {
-                if (po && revived !== po) {
-                  throw new Error("revive promise should have provided po");
-                }
-                deferred.resolve(revived);
-              },
-              function(exc) {
-                deferred.reject(self._handleException(exc));
-              }
-            );
-          },
-          function(exc) {
-            deferred.reject(self._handleException(exc)); // communication error or IdNotFoundException of related objects
-          }
-        );
-        return deferred.promise;
-      },
-
       create: function(/*PersistentObject*/ po, /*Any*/ referer) {
         // summary:
         //   Ask the server to create po, track po on success, with referer as the first referer.
@@ -371,7 +309,7 @@ define(["dojo/_base/declare",
         //   po must have po.get("persistenceId") === null on call.
         //   The caller has a reference to po already. It is this object that will be reloaded
         //   with the result from the remote call, and thus "magically" have its properties changed,
-        //   including the peristenceId.
+        //   including the persistenceId.
         //   Since po is Stateful, listeners will be notified of this change.
         //   This means po can already be used.
         //
@@ -397,7 +335,7 @@ define(["dojo/_base/declare",
         //   po must have po.get("persistenceId") !== null on call.
         //   The caller has a reference to po already. It is this object that will be reloaded
         //   with the result from the remote call, and thus "magically" have its properties changed,
-        //   including the peristenceId.
+        //   including the persistenceId.
         //   Since po is Stateful, listeners will be notified of this change.
         //   This means po can already be used.
         //
@@ -425,7 +363,7 @@ define(["dojo/_base/declare",
         //   po must have po.get("persistenceId") !== null on call.
         //   The caller has a reference to po already. It is this object that will be reloaded
         //   with the result from the remote call, and thus "magically" have its properties changed,
-        //   including the peristenceId.
+        //   including the persistenceId.
         //   Since po is Stateful, listeners will be notified of this change.
         //   This means po can already be used.
         //
@@ -441,6 +379,76 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return po.get("persistenceId") !== null;});
 
         return this._poAction("DELETE", po);
+      },
+
+      retrieveToMany: function(/*PersistentObject*/ po, /*String*/ serverPropertyName) {
+        // summary:
+        //   Load the objects of a to-many relationship from the remote server.
+        //   These are the many objects of po[serverPropertyName].
+        //   This returns a StoreOfStafeful, containing PersistentObjects.
+        //   The resulting objects are tracked, with the store as referer. The store itself is also tracked,
+        //   with po a referer.
+        // po: PersistentObject
+        //   po should be in the cache beforehand
+        // serverPropertyName: String
+        //   The name of the to-many property in server lingo.
+        // description:
+        //   If we find a StoreOfStateful in our cache for po[serverPropertyName], it will be returned, without
+        //   change.
+        //   If we don't find a StoreOfStateful in our cache, we create one, and start tracking it, and then
+        //   return it to the caller, empty.
+        //   Asynchronously, we get up-to-date content from the server, and will
+        //   update the content of the store when the server returns a response.
+        //   The store will send events (if reload is implemented correctly).
+        //
+        //   In other words, the  method returns a StoreOfStateful immediately, but it might be
+        //   reloaded soon afterwards, and change.
+        //
+        //   The remote retrieve might fail, with an error, or an `IdNotFoundException`, or a
+        //   `SecurityException`.
+        //   TODO find a way to signal this as a state of the StoreOfStateful
+        this._c_pre(function() {return this.isOperational();});
+        this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
+        this._c_pre(function() {return typeOf(serverPropertyName) === "string";});
+
+        console.log("Requested GET of to many: '" + po + "[" + serverPropertyName+ "]'");
+        var url = this.urlBuilder.toMany(po.get("persistenceType"), po.get("persistenceId"), serverPropertyName);
+        // MUDO store from cache
+        var store = Observable(new PersistentObjectStore());
+        return this._refresh(store, url, null); // IDEA: we can even add a query here
+      },
+
+      searchInto: function(/*StoreOfStateful*/ result, /*String?*/ serverType, /*Object?*/ query) {
+        // summary:
+        //   Get all the objects of type `serverType` given the query from the remote server,
+        //   and update `result` to reflect the returned collection when an answer arrives.
+        //   This returns a Promise, that resolves to result.
+        //   *The resulting objects are not tracked*
+        // result: StoreOfStateful
+        //   Mandatory. When the promise is resolved, it will contain exactly the objects that were returned.
+        // serverType: String?
+        //   Optional.
+        // query: Object?
+        //   Optional. The semantics of these parameters are left to the server.
+        // description:
+        //   The objects might be in result or the cache beforehand. Those objects are reloaded,
+        //   and might send changed events.
+        //
+        //   The remote retrieve might fail, with an error, which is returned by the errback
+        //   of the returned Promise. In that case, `result` is left unchanged.
+        //
+        //   A search for a specific `serverType` without a `query` should return all
+        //   objects of that type.
+        this._c_pre(function() {return this.isOperational();});
+        this._c_pre(function() {return result && result.isInstanceOf;});
+// Cannot really formulate what we want, because of stupid Observable Store wrapper
+//        this._c_pre(function() {return result && result.isInstanceOf && result.isInstanceOf(StoreOfStateful);});
+        this._c_pre(function() {return !serverType || typeOf(serverType) === "string";});
+        this._c_pre(function() {return !query || typeOf(query) === "object";});
+
+        console.log("Requested GET of matching instances: '" + serverType +"' matching '" + query + "'");
+        var url = this.urlBuilder.search(serverType, query);
+        return this._refresh(result, url, query);
       }
 
     });
