@@ -1,12 +1,13 @@
 define(["dojo/main", "ppwcode/contracts/doh",
         "../PersistentObject",
-        "dojo/_base/declare"],
+        "dojo/_base/declare", "dojo/_base/lang"],
   function(dojo, doh,
            PersistentObject,
-           declare) {
+           declare, lang) {
 
+    var type = "SOME TYPE DESCRIPTOR";
     var Mock = declare([PersistentObject], {
-      persistenceType: "SOME TYPE DESCRIPTOR"
+      persistenceType: type
     });
 
     doh.register("ppwcode vernacular persistence PersistentObject", [
@@ -176,6 +177,27 @@ define(["dojo/main", "ppwcode/contracts/doh",
         doh.t(typeof result === "string");
         doh.isNot("", result);
         console.log(result);
+      },
+
+      function testKeyForId() {
+        var id = 9859893;
+        var key = PersistentObject.keyForId(Mock, id);
+        doh.t(lang.isString(key));
+        doh.is(type + "@" + id, key);
+      },
+
+      function testKeyForObject() {
+        var subject = new Mock({persistenceId: 5});
+        var key = PersistentObject.keyForObject(subject);
+        doh.t(lang.isString(key));
+        doh.is(type + "@" + 5, key);
+      },
+
+      function testGetKey() {
+        var subject = new Mock({persistenceId: 5});
+        var key = subject.getKey();
+        doh.t(lang.isString(key));
+        doh.is(type + "@" + 5, key);
       }
 
     ]);

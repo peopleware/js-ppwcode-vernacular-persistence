@@ -6,11 +6,11 @@ define(["dojo/_base/declare", "ppwcode/collections/StoreOfStateful",
     var PersistentObjectStore = declare([StoreOfStateful], {
 
       _c_invar: [
-        function() {return this.getIdentity === PersistentObject.keyFor;}
+        function() {return this.getIdentity === PersistentObject.keyForObject;}
       ],
 
       constructor: function() {
-        this.getIdentity = PersistentObject.keyFor
+        this.getIdentity = PersistentObject.keyForObject
       }
 
     });

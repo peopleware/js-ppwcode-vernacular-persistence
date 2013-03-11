@@ -76,7 +76,7 @@ define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject", "dojo/_base/la
 
         this._c_pre(function() {return this && this.get("persistenceId") != null;});
 
-        return PersistentObject.keyFor(this);
+        return PersistentObject.keyForObject(this);
       },
 
       _extendJsonObject: function(/*Object*/ json) {
@@ -100,7 +100,26 @@ define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject", "dojo/_base/la
 
 
 
-    PersistentObject.keyFor = function(/*PersistentObject*/ po) {
+    PersistentObject.keyForId = function(/*Function*/ SubType, /*Object*/ id) {
+      // IDEA can't use current form of precondition here
+      if (! (SubType && lang.isFunction(SubType))) {
+        throw new Error("precondition violation: SubType && lang.isFunction(SubType)");
+      }
+      // IDEA must be a subtype of PeristentObject
+      if (! (SubType.prototype.persistenceType)) {
+        throw new Error("precondition violation: SubType.prototype.persistenceType");
+      }
+      if (! (id)) {
+        throw new Error("precondition violation: id");
+      }
+
+      var serverType = SubType.prototype.persistenceType;
+
+      var result = serverType + "@" + id;
+      return result; // return String
+    };
+
+    PersistentObject.keyForObject = function(/*PersistentObject*/ po) {
       // summary:
       //   po --> String
       //   A function that returns a unique (business) key (String) that uniquely identifies
@@ -112,7 +131,8 @@ define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject", "dojo/_base/la
         throw new Error("precondition violation: po && po.get('persistenceId') != null");
       }
 
-      return po.get("persistenceType") + "@" + po.get("persistenceId"); // return String
+      var Constructor = po.constructor;
+      return PersistentObject.keyForId(Constructor, po.get("persistenceId")); // return String
     };
 
 
