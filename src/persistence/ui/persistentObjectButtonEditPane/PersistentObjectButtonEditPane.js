@@ -126,7 +126,7 @@ define(["dojo/_base/declare", "dijit/registry", "dojo/_base/lang", "dojo/dom-sty
             }
             // else we both have null targets; ok
           }
-          this._borderContainer.resize();
+          this.resize();
         },
 
         validate: function() {
@@ -167,6 +167,10 @@ define(["dojo/_base/declare", "dijit/registry", "dojo/_base/lang", "dojo/dom-sty
             return poPane.getWidgetSize() + 20;
           }
           return 0;
+        },
+
+        resize: function() {
+          this._borderContainer.resize();
         }
 
       });
