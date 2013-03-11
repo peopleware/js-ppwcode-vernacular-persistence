@@ -1,10 +1,10 @@
 define(["dojo/main", "ppwcode/contracts/doh",
         "../_Cache",
-        "./mock/Person", "ppwcode/collections/StoreOfStateful",
+        "./mock/Person", "../PersistentObjectStore", "dojo/store/Observable",
         "ppwcode/oddsAndEnds/typeOf"],
   function(dojo, doh,
            _Cache,
-           Person, StoreOfStateful,
+           Person, PersistentObjectStore, Observable,
            typeOf) {
 
 
@@ -27,7 +27,7 @@ define(["dojo/main", "ppwcode/contracts/doh",
     function getAndTestPersonEntry(cache, po, persistenceId, expectedNrOfReferers) {
       var tracked;
       if (expectedNrOfReferers) {
-        tracked = cache.getPoByTypeAndId(po.get("persistenceType"), persistenceId);
+        tracked = cache.getPoByTypeAndId(Person, persistenceId);
         doh.is(po, tracked);
         tracked = cache.getPo(po);
         doh.is(po, tracked);
@@ -40,7 +40,43 @@ define(["dojo/main", "ppwcode/contracts/doh",
       }
     }
 
-    function generateTests(what, payloadCreator, getAndTest) {
+    var aPersistentObject = createPerson(99999);
+    var toManyPropertyName = "TOMANY";
+
+    function createStoreOfStateful() {
+      var person1 = createPerson(personId1);
+      var person2 = createPerson(9424);
+      var person3 = createPerson(42525);
+      var person4 = createPerson(25216);
+      var sos = Observable(new PersistentObjectStore());
+      sos.put(person1);
+      sos.put(person2);
+      sos.put(person3);
+      sos.put(person4);
+      return sos;
+    }
+
+    function getAndTestStoreOfStateful(cache, sos, expectedNrOfReferers) {
+      var tracked;
+      if (expectedNrOfReferers) {
+        tracked = cache.getToManyStore(aPersistentObject, toManyPropertyName);
+        doh.is(sos, tracked);
+        // IDEA test breaks encapsulation -- whenever this fails, just remove the test
+        doh.is(
+          expectedNrOfReferers,
+          cache._data[aPersistentObject.get("persistenceType") + "@" +
+                      aPersistentObject.get("persistenceId") + "/" +
+                      toManyPropertyName].
+            getNrOfReferers()
+        );
+      }
+      else {
+        tracked = cache.getToManyStore(aPersistentObject, toManyPropertyName);
+        doh.f(tracked);
+      }
+    }
+
+    function generateTests(what, payloadCreator, track, getAndTest) {
       return [
         {
           name: what + " track once",
@@ -49,7 +85,7 @@ define(["dojo/main", "ppwcode/contracts/doh",
             this.subject = new _Cache();
           },
           runTest: function() {
-            this.subject.trackPo(this.payload, this);
+            track(this.subject, this.payload, this);
             getAndTest(this.subject, this.payload, 1);
             console.log(JSON.stringify(this.subject.report()));
           },
@@ -66,9 +102,9 @@ define(["dojo/main", "ppwcode/contracts/doh",
             this.subject = new _Cache();
           },
           runTest: function() {
-            this.subject.trackPo(this.payload, this);
-            this.subject.trackPo(this.payload, {});
-            this.subject.trackPo(this.payload, {});
+            track(this.subject, this.payload, this);
+            track(this.subject, this.payload, {});
+            track(this.subject, this.payload, {});
             getAndTest(this.subject, this.payload, 3);
             console.log(JSON.stringify(this.subject.report()));
           },
@@ -87,10 +123,10 @@ define(["dojo/main", "ppwcode/contracts/doh",
             this.referer2 = {};
           },
           runTest: function() {
-            this.subject.trackPo(this.payload, this);
-            this.subject.trackPo(this.payload, this.referer1);
-            this.subject.trackPo(this.payload, this.referer1);
-            this.subject.trackPo(this.payload, this.referer2);
+            track(this.subject, this.payload, this);
+            track(this.subject, this.payload, this.referer1);
+            track(this.subject, this.payload, this.referer1);
+            track(this.subject, this.payload, this.referer2);
             getAndTest(this.subject, this.payload, 3);
             console.log(JSON.stringify(this.subject.report()));
           },
@@ -111,10 +147,10 @@ define(["dojo/main", "ppwcode/contracts/doh",
             this.referer2 = {};
           },
           runTest: function() {
-            this.subject.trackPo(this.payload, this);
-            this.subject.trackPo(this.payload, this.referer1);
-            this.subject.trackPo(this.payload, this.referer1);
-            this.subject.trackPo(this.payload, this.referer2);
+            track(this.subject, this.payload, this);
+            track(this.subject, this.payload, this.referer1);
+            track(this.subject, this.payload, this.referer1);
+            track(this.subject, this.payload, this.referer2);
             getAndTest(this.subject, this.payload, 3);
             console.log(JSON.stringify(this.subject.report()));
 
@@ -130,7 +166,7 @@ define(["dojo/main", "ppwcode/contracts/doh",
             getAndTest(this.subject, this.payload, 1);
             console.log(JSON.stringify(this.subject.report()));
 
-            this.subject.trackPo(this.payload, this.referer1);
+            track(this.subject, this.payload, this.referer1);
             getAndTest(this.subject, this.payload, 2);
             console.log(JSON.stringify(this.subject.report()));
 
@@ -170,9 +206,24 @@ define(["dojo/main", "ppwcode/contracts/doh",
           function() {
             return createPerson(personId1);
           },
+          function(cache, po, referer) {
+            cache.trackPo(po, referer);
+          },
           function(cache, payload, expectedNrOfReferers) {
             getAndTestPersonEntry(cache, payload, personId1, expectedNrOfReferers);
           }
+        )
+      )
+      .concat(
+        generateTests(
+          "PersistentObjectStore",
+          function() {
+            return createStoreOfStateful();
+          },
+          function(cache, store, referer) {
+            cache.trackStore(aPersistentObject, toManyPropertyName, store, referer);
+          },
+          getAndTestStoreOfStateful
         )
       )
       .concat([{
