@@ -100,7 +100,7 @@ define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject", "dojo/_base/la
 
 
 
-    PersistentObject.keyForId = function(/*Function*/ SubType, /*Object*/ id) {
+    PersistentObject.keyForId = function(/*Function*/ SubType, /*Number*/ id) {
       // IDEA can't use current form of precondition here
       if (! (SubType && lang.isFunction(SubType))) {
         throw new Error("precondition violation: SubType && lang.isFunction(SubType)");
