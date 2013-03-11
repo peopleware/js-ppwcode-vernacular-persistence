@@ -87,10 +87,20 @@ define(["dojo/_base/declare", "dijit/registry", "dojo/_base/lang", "dojo/dom-sty
           //    Set the target on the persistentObjectPane and _auditableInfo
           if (this.get("persistentObjectPane")) {
             this.get("persistentObjectPane").set("target", po);
+            if (this.opener) {
+              this.get("persistentObjectPane").set("opener", this.opener);
+            }
           }
           var ao = po && po.isInstanceOf(AuditableObject) ? po : null;
           // MUDO invisible if there is no target
           this._auditableInfo.set("target", ao);
+        },
+
+        _setOpenerAttr: function(opener) {
+          this.opener = opener;
+          if (this.get("persistentObjectPane")) {
+            this.get("persistentObjectPane").set("opener", this.opener);
+          }
         },
 
         _setPersistentObjectPaneAttr: function(poPane) {
