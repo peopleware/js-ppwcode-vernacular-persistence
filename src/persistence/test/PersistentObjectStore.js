@@ -1,8 +1,8 @@
 define(["dojo/main", "ppwcode/contracts/doh",
-        "../PersistentObjectStore", "../PersistentObject",
+        "../PersistentObjectStore", "../PersistentObject", "dojo/store/Observable",
         "dojo/_base/declare", "dojo/_base/lang"],
   function(dojo, doh,
-           PersistentObjectStore, PersistentObject,
+           PersistentObjectStore, PersistentObject, Observable,
            declare, lang) {
 
     var type = "SOME TYPE DESCRIPTOR";
@@ -14,6 +14,11 @@ define(["dojo/main", "ppwcode/contracts/doh",
 
       function testConstructor() {
         var subject = new PersistentObjectStore();
+        doh.invars(subject);
+      },
+
+      function testConstructor() {
+        var subject = Observable(new PersistentObjectStore());
         doh.invars(subject);
       },
 

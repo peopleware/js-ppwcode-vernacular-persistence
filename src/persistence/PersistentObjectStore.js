@@ -6,14 +6,14 @@ define(["dojo/_base/declare", "ppwcode/collections/StoreOfStateful",
            lang) {
 
     var PersistentObjectStore = declare([StoreOfStateful], {
+      // summary:
+      //   Instance should be wrapped in dojo/store/Observable
+
+      getIdentity: PersistentObject.keyForObject,
 
       _c_invar: [
         function() {return this.getIdentity === PersistentObject.keyForObject;}
-      ],
-
-      constructor: function() {
-        this.getIdentity = PersistentObject.keyForObject
-      }
+      ]
 
     });
 
