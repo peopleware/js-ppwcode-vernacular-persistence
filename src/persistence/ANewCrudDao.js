@@ -278,7 +278,8 @@ define(["dojo/_base/declare",
           {
             method: "GET",
             handleAs: "json",
-            headers: {"Accept" : "application/json"}
+            headers: {"Accept" : "application/json"},
+            preventCache: true
           }
         );
         loadPromise.then(
