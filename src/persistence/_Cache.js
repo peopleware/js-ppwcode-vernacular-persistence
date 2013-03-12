@@ -290,6 +290,37 @@ define(["dojo/_base/declare",
         // else, there is no entry, so nobody is tracking anyway
       },
 
+      stopTrackingCompletely: function(/*PersistentObject|PersistentObjectStore*/ pols) {
+        this._c_pre(function() {return pols && pols.isInstanceOf;});
+
+        var key;
+        var entry;
+        if (pols.isInstanceOf(PersistentObject) && pols.get("persistenceId")) {
+          // it can already be deleted from the server, and then persistenceId is null
+          key = pols.getKey();
+          entry = this._data[key];
+        }
+        else {
+          // pols is deleted, and no longer has a persistenceId; or pols is a store;
+          // we need to travel all entries
+          var propertyNames = Object.keys(this._data);
+          for (var i = 0; i < propertyNames.length; i++) {
+            if (this._data[propertyNames[i]].payload === pols) {
+              key = propertyNames[i];
+              entry = this._data[propertyNames[i]];
+              break;
+            }
+          }
+        }
+        if (entry) {
+          var self = this;
+          entry._referers.forEach(function(r) {
+            self._removeReferer(key, r);
+          });
+        }
+        // else, there is no entry, so nobody is tracking anyway
+      },
+
       report: function() {
         var self = this;
         var pNames = Object.keys(this._data);
