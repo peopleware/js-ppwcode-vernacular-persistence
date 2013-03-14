@@ -94,7 +94,8 @@ define(["dojo/_base/declare",
             method:"GET",
             handleAs:"json",
             query:query,
-            headers:{"Accept":"application/json"}
+            headers:{"Accept":"application/json"},
+            withCredentials: true
           }
         );
         loadPromise.then(
@@ -159,7 +160,8 @@ define(["dojo/_base/declare",
             method: method,
             handleAs: "json",
             data: JSON.stringify(po),
-            headers: {"Accept" : "application/json"}
+            headers: {"Accept" : "application/json"},
+            withCredentials: true
           }
         );
         loadPromise.then(
@@ -279,7 +281,8 @@ define(["dojo/_base/declare",
             method: "GET",
             handleAs: "json",
             headers: {"Accept" : "application/json"},
-            preventCache: true
+            preventCache: true,
+            withCredentials: true
           }
         );
         loadPromise.then(
