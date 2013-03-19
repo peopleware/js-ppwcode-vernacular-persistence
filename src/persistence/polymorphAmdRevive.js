@@ -1,12 +1,12 @@
 define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
-        "dojo/Deferred", "dojo/when", "require"],
+        "dojo/Deferred", "require"],
   function(typeOf, all, PersistentObject,
-           Deferred, when, require) {
+           Deferred, require) {
 
     function revive(/*Object*/   graphRoot,
                     /*Object*/   referer,
                     /*Function*/ serverType2Mid,
-                    /*_Cache*/   cache) {
+                    /*_Cache2*/   cache) {
       // summary:
       //   Returns the Promise of a result, or a result, transforming
       //   graphRoot, deep, depth-first, to a graph of instances of classes
@@ -141,7 +141,7 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
         var reloadPromise = all(intermediateObjectPromise).then(
           function (intermediateObject) {
             po.reload(intermediateObject);
-            cache.trackPo(po, referer);
+            cache.track(po, referer);
             deferred.resolve(po);
           },
           function (e) {
@@ -151,7 +151,19 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
       }
 
       function instantiateLazyToMany(/*PersistentObject*/ po) {
-        // MUDO
+        Object.keys(po).forEach(function(propertyName) {
+          var candidateDefinition = po[propertyName];
+          // MUDO
+//          if (candidateDefinition && candidateDefinition.isInstanceOf && candidateDefinition.isInstanceOf(LazyToManyDefinition)) {
+//            // probably found in the prototype
+//            po[propertyName] = new LazyToMany(this, candidateDefinition);
+//          }
+        });
+        // The LazyToMany will be used as referer for all objects it currently
+        // contains. When, on stopTracking, a po has no more referers, and is
+        // removed from the cache, and as a referer from all other entries,
+        // also its LazyToManies will be removed as referer from all other
+        // entries.
       }
 
       function processTypedObject2(/*Object*/ o, /*Object*/ referer, /*Deferred*/ deferred) {
@@ -177,7 +189,15 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
         var key = PersistentObject.keyForId(type, id);
         var cachedPromise = promiseCache[key];
         if (cachedPromise) {
-          return cachedPromise;
+          return cachedPromise.then(
+            function(po) {
+              cache.track(po, referer);
+              return po;
+            },
+            function(err) {
+              return err;
+            }
+          );
         }
 
         // not encountered this key yet
