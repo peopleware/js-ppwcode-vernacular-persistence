@@ -36,7 +36,7 @@ define(["dojo/_base/declare",
 
       // urlBuilder: UrlBuilder
       urlBuilder: null,
-      reviveInto: null,
+      revive: null,
 
       // _cache: Object
       //   Hash that stores all tracked objects and stores, using a cacheKey
@@ -104,7 +104,7 @@ define(["dojo/_base/declare",
               throw new Error("expected array from remote call");
             }
             console.info("Retrieved successfully from server: " + data.length + " items");
-            var revivePromise = self.reviveInto(null, data, null, self._cache);
+            var revivePromise = self.revive(data, null, self._cache);
             revivePromise.then(
               function (revived) {
                 if (typeOf(data) !== "array") {
@@ -167,7 +167,7 @@ define(["dojo/_base/declare",
         loadPromise.then(
           function(data) {
             console.info("Create succes in server: " + data);
-            var revivePromise = self.reviveInto(po, data, referer, self._cache);
+            var revivePromise = self.revive(data, referer, self._cache);
             /*
              For create, tracking will only be added at the end, because we need a persistenceId for that.
              That is not a problem, since nobody should have a reference yet, except referer ...
@@ -200,7 +200,7 @@ define(["dojo/_base/declare",
       },
 
       isOperational: function() {
-        return this.urlBuilder && this.reviveInto;
+        return this.urlBuilder && this.revive;
       },
 
       track: function(/*PersistentObject*/ po, /*Any*/ referrer) {
@@ -213,7 +213,7 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
         this._c_pre(function() {return referrer;});
 
-        this._cache.trackPo(po, referrer); // TODO or store? not needed?
+        this._cache.track(po, referrer); // TODO or store? not needed?
       },
 
       stopTracking: function(/*PersistentObject*/ po, /*Any*/ referer) {
@@ -288,7 +288,7 @@ define(["dojo/_base/declare",
         loadPromise.then(
           function(data) {
             console.info("Retrieved successfully from server: " + data);
-            var revivePromise = self.reviveInto(null, data, referer, self._cache);
+            var revivePromise = self.revive(data, referer, self._cache);
             revivePromise.then(
               function(revived) {
                 deferred.resolve(revived);

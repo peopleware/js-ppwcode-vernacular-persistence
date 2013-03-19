@@ -141,7 +141,9 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
         var reloadPromise = intermediateObjectPromise.then(
           function (intermediateObject) {
             po.reload(intermediateObject);
-            cache.track(po, referer);
+            if (referer) {
+              cache.track(po, referer);
+            }
             deferred.resolve(po);
           },
           function (e) {
@@ -191,7 +193,9 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
         if (cachedPromise) {
           return cachedPromise.then(
             function(po) {
-              cache.track(po, referer);
+              if (referer) {
+                cache.track(po, referer);
+              }
               return po;
             },
             function(err) {
