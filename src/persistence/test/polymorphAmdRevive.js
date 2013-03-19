@@ -341,6 +341,63 @@ define(["dojo/main", "ppwcode/contracts/doh",
           tearDown: function() {
             this.parsedJson = null;
           }
+        },
+
+        {
+          name: "Object (complex)",
+          setUp: function() {
+            this.parsedJson = {
+              propa: "a",
+              prop1: 1,
+              propMath: Math,
+              arrayPropEmpty: [],
+              arrayProp: [1, "a", Math, JSON, { name: "a NAme"}, [], null, undefined, [4, 6, 88, "a", [24, { another: "ANother"}]]],
+              nestedObject: {},
+              nestedObject2: {
+                pA: "A",
+                p2: 2,
+                pDate: new Date(),
+                nestedObject: {
+                  nestedAlpha: "alpha",
+                  arrayProp: [1, "a", Math, JSON, { name: "a NAme"}, [], null, undefined, [4, 6, 88, "a", [24, { another: "ANother"}]]]
+                }
+              }
+            };
+          },
+          runTest: function() {
+            var deferred = new doh.Deferred();
+            var parsedJson = this.parsedJson;
+            var resultPromise = revive(parsedJson, referer, serverType2Mid, cache);
+            doh.is("object", typeOf(resultPromise)); // a Promise
+            doh.t(resultPromise instanceof Promise);
+            resultPromise.then(
+              function(result) {
+                try {
+                  doh.is("object", typeOf(result));
+                  doh.is(7, Object.keys(result).length);
+                  doh.is(parsedJson, result);
+                  doh.f(parsedJson === result);
+                  doh.f(parsedJson.arrayProp === result.arrayProp);
+                  doh.f(parsedJson.nestedObject2 === result.nestedObject2);
+                  doh.f(parsedJson.nestedObject2.pDate === result.nestedObject2.pDate);
+                  doh.f(parsedJson.nestedObject2.nestedObject === result.nestedObject2.nestedObject);
+                  doh.f(parsedJson.nestedObject2.nestedObject.arrayProp === result.nestedObject2.nestedObject.arrayProp);
+                  console.log(cache.report());
+                  deferred.callback(result);
+                }
+                catch(e) {
+                  deferred.errback(e);
+                }
+              },
+              function(err) {
+                deferred.errback(err);
+              }
+            )
+            return deferred;
+          },
+          tearDown: function() {
+            this.parsedJson = null;
+          }
         }
 
       ]);
