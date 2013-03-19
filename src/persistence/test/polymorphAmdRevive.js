@@ -2,6 +2,9 @@ define(["dojo/main", "ppwcode/contracts/doh",
         "../polymorphAmdRevive",
         "../_Cache2",
         "ppwcode/oddsAndEnds/typeOf", "dojo/promise/Promise"],
+  // NOTE: don't require Person; this will ruin the test (reviver must find it itself)
+
+
     function(dojo, doh,
              revive,
              _Cache,
@@ -262,7 +265,7 @@ define(["dojo/main", "ppwcode/contracts/doh",
               function(err) {
                 deferred.errback(err);
               }
-            )
+            );
             return deferred;
           },
           tearDown: function() {
@@ -302,7 +305,7 @@ define(["dojo/main", "ppwcode/contracts/doh",
               function(err) {
                 deferred.errback(err);
               }
-            )
+            );
             return deferred;
           },
           tearDown: function() {
@@ -335,7 +338,7 @@ define(["dojo/main", "ppwcode/contracts/doh",
               function(err) {
                 deferred.errback(err);
               }
-            )
+            );
             return deferred;
           },
           tearDown: function() {
@@ -392,7 +395,49 @@ define(["dojo/main", "ppwcode/contracts/doh",
               function(err) {
                 deferred.errback(err);
               }
-            )
+            );
+            return deferred;
+          },
+          tearDown: function() {
+            this.parsedJson = null;
+          }
+        },
+
+        {
+          name: "AMD (Person)",
+          setUp: function() {
+            this.parsedJson = {
+              "$type": "Person",
+              "persistenceId": 7,
+              "name":"Pete Peeters",
+              "street":"Avenue de rue 93",
+              "zip":"1040 CAA",
+              "city":"Cité de Beauté",
+              "tel":"0322 44 442 22"
+            };
+          },
+          runTest: function() {
+            var deferred = new doh.Deferred();
+            var resultPromise = revive(this.parsedJson, referer, serverType2Mid, cache);
+            doh.is("object", typeOf(resultPromise)); // a Promise
+            doh.t(resultPromise instanceof Promise);
+            resultPromise.then(
+              function(result) {
+                try {
+                  doh.is("object", typeOf(result));
+                  doh.t(result.isInstanceOf && Object.getPrototypeOf(result).persistenceType === "PERSON");
+                  doh.is(7, result.get("persistenceId"));
+                  console.log(cache.report());
+                  deferred.callback(result);
+                }
+                catch(e) {
+                  deferred.errback(e);
+                }
+              },
+              function(err) {
+                deferred.errback(err);
+              }
+            );
             return deferred;
           },
           tearDown: function() {

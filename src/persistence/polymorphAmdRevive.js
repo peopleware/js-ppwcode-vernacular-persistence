@@ -138,7 +138,7 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
 
       function reloadTypedObject(o, po, referer, deferred) {
         var intermediateObjectPromise = processObject(o, po); // po is referer going deep
-        var reloadPromise = all(intermediateObjectPromise).then(
+        var reloadPromise = intermediateObjectPromise.then(
           function (intermediateObject) {
             po.reload(intermediateObject);
             cache.track(po, referer);
@@ -203,7 +203,7 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
         // not encountered this key yet
         var deferred = new Deferred();
         promiseCache[key] = deferred.promise;
-        var cachedPo = cache.getPoByTypeAndId(type, id);
+        var cachedPo = cache.getByTypeAndId(type, id);
         if (cachedPo) {
           reloadTypedObject(value, cachedPo, referer, deferred);
         }

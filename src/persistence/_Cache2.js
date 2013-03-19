@@ -1,12 +1,10 @@
 define(["dojo/_base/declare",
         "ppwcode/contracts/_Mixin",
-        "./UrlBuilder", "./PersistentObject", "./PersistentObjectStore", "./IdNotFoundException",
-        "ppwcode/collections/ArraySet",
+        "./PersistentObject", "ppwcode/collections/ArraySet",
         "dojo/request", "ppwcode/oddsAndEnds/typeOf"],
   function(declare,
            _ContractMixin,
-           UrlBuilder, PersistentObject, IdNotFoundException,
-           Set,
+           PersistentObject, Set,
            request, typeOf) {
 
     var _Entry = declare([_ContractMixin], {
