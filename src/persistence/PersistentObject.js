@@ -74,8 +74,6 @@ define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject", "dojo/_base/la
         //   the object represented by this (if we all keep to the rules).
         //   Can only be called when this.get("persistenceId") !== null.
 
-        this._c_pre(function() {return this && this.get("persistenceId") != null;});
-
         return PersistentObject.keyForObject(this);
       },
 
@@ -105,12 +103,11 @@ define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject", "dojo/_base/la
       if (! (persistenceType && lang.isString(persistenceType))) {
         throw new Error("precondition violation: persistenceType && lang.isString(persistenceType)");
       }
-      if (! (id)) {
-        throw new Error("precondition violation: id");
-      }
 
-      var result = persistenceType + "@" + id;
-      return result; // return String
+      if (!id) {
+        return null;
+      }
+      return persistenceType + "@" + id; // return String
     };
 
     PersistentObject.keyForObject = function(/*PersistentObject*/ po) {
@@ -121,8 +118,8 @@ define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject", "dojo/_base/la
       //   Can only be called when po.get("persistenceId") !== null.
 
       // IDEA can't use current form of precondition here
-      if (! (po && po.get("persistenceId") != null)) {
-        throw new Error("precondition violation: po && po.get('persistenceId') != null");
+      if (!po) {
+        throw new Error("precondition violation: po");
       }
 
       var serverType = po.get("persistenceType");
