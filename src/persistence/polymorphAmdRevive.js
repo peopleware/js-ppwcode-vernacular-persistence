@@ -6,7 +6,7 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
     function revive(/*Object*/   graphRoot,
                     /*Object*/   referer,
                     /*Function*/ serverType2Mid,
-                    /*_Cache2*/   cache) {
+                    /*_Cache2*/  cache) {
       // summary:
       //   Returns the Promise of a result, or a result, transforming
       //   graphRoot, deep, depth-first, to a graph of instances of classes
