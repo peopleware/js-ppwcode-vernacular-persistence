@@ -443,6 +443,198 @@ define(["dojo/main", "ppwcode/contracts/doh",
           tearDown: function() {
             this.parsedJson = null;
           }
+        },
+
+        {
+          name: "AMD (Array of Person)",
+          setUp: function() {
+            this.parsedJson = [
+              {
+                "$type": "Person",
+                "persistenceId": 7,
+                "name":"Pete Peeters",
+                "street":"Avenue de rue 93",
+                "zip":"1040 CAA",
+                "city":"Cité de Beauté",
+                "tel":"0322 44 442 22"
+              },
+              {
+                "$type": "Person",
+                "persistenceId": 9,
+                "name":"Pete Peeters 2",
+                "street":"Avenue de rue 93",
+                "zip":"1040 CAA",
+                "city":"Cité de Beauté",
+                "tel":"0322 44 442 22"
+              },
+              {
+                "$type": "Person",
+                "persistenceId": 7,
+                "name":"Pete Peeters EEN ANDERE MET ZELFDE PK",
+                "street":"Avenue de rue 93",
+                "zip":"1040 CAA",
+                "city":"Cité de Beauté",
+                "tel":"0322 44 442 22"
+              },
+              {
+                "$type": "Person",
+                "persistenceId": 10,
+                "name":"Pete Peeters 10",
+                "street":"Avenue de rue 93",
+                "zip":"1040 CAA",
+                "city":"Cité de Beauté",
+                "tel":"0322 44 442 22"
+              },
+              {
+                "$type": "Person",
+                "persistenceId": null,
+                "name":"Pete Peeters DELETED",
+                "street":"Avenue de rue 93",
+                "zip":"1040 CAA",
+                "city":"Cité de Beauté",
+                "tel":"0322 44 442 22"
+              }];
+          },
+          runTest: function() {
+            var deferred = new doh.Deferred();
+            var resultPromise = revive(this.parsedJson, referer, serverType2Mid, cache);
+            doh.is("object", typeOf(resultPromise)); // a Promise
+            doh.t(resultPromise instanceof Promise);
+            var parsedJson = this.parsedJson;
+            resultPromise.then(
+              function(result) {
+                try {
+                  doh.is("array", typeOf(result));
+                  doh.is(5, result.length);
+                  doh.t(result[0] === result[2]);
+                  doh.f(result[0] === result[1]);
+                  doh.f(result[0] === result[3]);
+                  console.log(cache.report());
+                  deferred.callback(result);
+                }
+                catch(e) {
+                  deferred.errback(e);
+                }
+              },
+              function(err) {
+                deferred.errback(err);
+              }
+            );
+            return deferred;
+          },
+          tearDown: function() {
+            this.parsedJson = null;
+          }
+        },
+
+        {
+          name: "AMD (Array of Children with 2 parents)",
+          setUp: function() {
+            this.parsedJson = [
+              {
+                "$type": "Child",
+                "persistenceId": 7,
+                "name":"Kind1A",
+                "street":"Avenue de rue 93",
+                "zip":"1040 CAA",
+                "city":"Cité de Beauté",
+                "tel":"0322 44 442 22",
+                parent: {
+                  "$type": "Person",
+                  "persistenceId": 123,
+                  "name":"Parent1",
+                  "street":"Avenue de rue 93",
+                  "zip":"1040 CAA",
+                  "city":"Cité de Beauté",
+                  "tel":"0322 44 442 22"
+                }
+              },
+              {
+                "$type": "Child",
+                "persistenceId": 101,
+                "name":"Kind1B",
+                "street":"Avenue de rue 93",
+                "zip":"1040 CAA",
+                "city":"Cité de Beauté",
+                "tel":"0322 44 442 22",
+                parent: {
+                  "$type": "Person",
+                  "persistenceId": 456,
+                  "name":"Parent2",
+                  "street":"Avenue de rue 93",
+                  "zip":"1040 CAA",
+                  "city":"Cité de Beauté",
+                  "tel":"0322 44 442 22"
+                }
+              },
+              {
+                "$type": "Child",
+                "persistenceId": 102,
+                "name":"Kind2A",
+                "street":"Avenue de rue 93",
+                "zip":"1040 CAA",
+                "city":"Cité de Beauté",
+                "tel":"0322 44 442 22",
+                parent: {
+                  "$type": "Person",
+                  "persistenceId": 123,
+                  "name":"Parent1",
+                  "street":"Avenue de rue 93",
+                  "zip":"1040 CAA",
+                  "city":"Cité de Beauté",
+                  "tel":"0322 44 442 22"
+                }
+              },
+              {
+                "$type": "Child",
+                "persistenceId": 777,
+                "name":"Kind2B",
+                "street":"Avenue de rue 93",
+                "zip":"1040 CAA",
+                "city":"Cité de Beauté",
+                "tel":"0322 44 442 22",
+                parent: {
+                  "$type": "Person",
+                  "persistenceId": 456,
+                  "name":"Parent2",
+                  "street":"Avenue de rue 93",
+                  "zip":"1040 CAA",
+                  "city":"Cité de Beauté",
+                  "tel":"0322 44 442 22"
+                }
+              }];
+          },
+          runTest: function() {
+            var deferred = new doh.Deferred();
+            var resultPromise = revive(this.parsedJson, referer, serverType2Mid, cache);
+            doh.is("object", typeOf(resultPromise)); // a Promise
+            doh.t(resultPromise instanceof Promise);
+            var parsedJson = this.parsedJson;
+            resultPromise.then(
+              function(result) {
+                try {
+                  doh.is("array", typeOf(result));
+                  doh.is(4, result.length);
+                  doh.t(result[0].parent === result[2].parent);
+                  doh.t(result[1].parent === result[3].parent);
+                  doh.f(result[0].parent === result[1].parent);
+                  doh.f(result[2].parent === result[3].parent);
+                  console.log(cache.report());
+                  deferred.callback(result);
+                }
+                catch(e) {
+                  deferred.errback(e);
+                }
+              },
+              function(err) {
+                deferred.errback(err);
+              }
+            );
+            return deferred;
+          },
+          tearDown: function() {
+            this.parsedJson = null;
+          }
         }
 
       ]);
