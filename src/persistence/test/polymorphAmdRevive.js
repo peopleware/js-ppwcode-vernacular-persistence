@@ -1,35 +1,19 @@
-define(["dojo/main", "ppwcode/contracts/doh", "../../persistence/polymorphAmdRevive",
-        "dojo/promise/Promise"],
-    function(dojo, doh, amdRevive,
-             Promise) {
+define(["dojo/main", "ppwcode/contracts/doh",
+        "../polymorphAmdRevive",
+        "../_Cache2",
+        "ppwcode/oddsAndEnds/typeOf", "dojo/promise/Promise"],
+    function(dojo, doh,
+             revive,
+             _Cache,
+             typeOf, Promise) {
 
-      function toType(obj) {
-        // more than lang.isObject etc.
-        /*
-         http://javascriptweblog.wordpress.com/2011/08/08/fixing-the-javascript-typeof-operator/
+      var referer = {};
+      var serverType2Mid = function(serverType) {
+        return "ppwcode/persistence/test/mock/" + serverType;
+      };
+      var cache = new _Cache();
 
-         but with a better toString, and a final ;
-         */
-        /*
-         toType({a: 4}); //"object"
-         toType([1, 2, 3]); //"array"
-         (function() {console.log(toType(arguments))})(); //arguments
-         toType(new ReferenceError); //"error"
-         toType(new Date); //"date"
-         toType(/a-z/); //"regexp"
-         toType(Math); //"math"
-         toType(JSON); //"json"
-         toType(new Number(4)); //"number"
-         toType(new String("abc")); //"string"
-         toType(new Boolean(true)); //"boolean"
-         */
-
-        return Object.prototype.toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase();
-
-        // TODO fails with null, I think
-      }
-
-      doh.register("ppwcode vernacular semantics amdRevive", [
+      doh.register("ppwcode vernacular semantics revive", [
 
         {
           name: "undefined",
@@ -37,8 +21,9 @@ define(["dojo/main", "ppwcode/contracts/doh", "../../persistence/polymorphAmdRev
             this.parsedJson = undefined;
           },
           runTest: function() {
-            var result = amdRevive(this.parsedJson);
+            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
             doh.is(undefined, result);
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -51,8 +36,9 @@ define(["dojo/main", "ppwcode/contracts/doh", "../../persistence/polymorphAmdRev
             this.parsedJson = null;
           },
           runTest: function() {
-            var result = amdRevive(this.parsedJson);
+            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
             doh.is(null, result);
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -65,9 +51,10 @@ define(["dojo/main", "ppwcode/contracts/doh", "../../persistence/polymorphAmdRev
             this.parsedJson = "This is a string";
           },
           runTest: function() {
-            var result = amdRevive(this.parsedJson);
-            doh.is("string", toType(result));
+            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            doh.is("string", typeOf(result));
             doh.is(this.parsedJson, result);
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -80,9 +67,10 @@ define(["dojo/main", "ppwcode/contracts/doh", "../../persistence/polymorphAmdRev
             this.parsedJson = "";
           },
           runTest: function() {
-            var result = amdRevive(this.parsedJson);
-            doh.is("string", toType(result));
+            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            doh.is("string", typeOf(result));
             doh.is(this.parsedJson, result);
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -95,9 +83,10 @@ define(["dojo/main", "ppwcode/contracts/doh", "../../persistence/polymorphAmdRev
             this.parsedJson = 5;
           },
           runTest: function() {
-            var result = amdRevive(this.parsedJson);
-            doh.is("number", toType(result));
+            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            doh.is("number", typeOf(result));
             doh.is(this.parsedJson, result);
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -110,9 +99,10 @@ define(["dojo/main", "ppwcode/contracts/doh", "../../persistence/polymorphAmdRev
             this.parsedJson = 0;
           },
           runTest: function() {
-            var result = amdRevive(this.parsedJson);
-            doh.is("number", toType(result));
+            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            doh.is("number", typeOf(result));
             doh.is(this.parsedJson, result);
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -125,9 +115,10 @@ define(["dojo/main", "ppwcode/contracts/doh", "../../persistence/polymorphAmdRev
             this.parsedJson = -5.4;
           },
           runTest: function() {
-            var result = amdRevive(this.parsedJson);
-            doh.is("number", toType(result));
+            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            doh.is("number", typeOf(result));
             doh.is(this.parsedJson, result);
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -140,9 +131,10 @@ define(["dojo/main", "ppwcode/contracts/doh", "../../persistence/polymorphAmdRev
             this.parsedJson = true;
           },
           runTest: function() {
-            var result = amdRevive(this.parsedJson);
-            doh.is("boolean", toType(result));
+            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            doh.is("boolean", typeOf(result));
             doh.is(this.parsedJson, result);
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -155,9 +147,10 @@ define(["dojo/main", "ppwcode/contracts/doh", "../../persistence/polymorphAmdRev
             this.parsedJson = false;
           },
           runTest: function() {
-            var result = amdRevive(this.parsedJson);
-            doh.is("boolean", toType(result));
+            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            doh.is("boolean", typeOf(result));
             doh.is(this.parsedJson, result);
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -170,9 +163,10 @@ define(["dojo/main", "ppwcode/contracts/doh", "../../persistence/polymorphAmdRev
             this.parsedJson = JSON;
           },
           runTest: function() {
-            var result = amdRevive(this.parsedJson);
-            doh.is("json", toType(result));
+            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            doh.is("json", typeOf(result));
             doh.is(this.parsedJson, result);
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -185,9 +179,10 @@ define(["dojo/main", "ppwcode/contracts/doh", "../../persistence/polymorphAmdRev
             this.parsedJson = Math;
           },
           runTest: function() {
-            var result = amdRevive(this.parsedJson);
-            doh.is("math", toType(result));
+            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            doh.is("math", typeOf(result));
             doh.is(this.parsedJson, result);
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -200,9 +195,10 @@ define(["dojo/main", "ppwcode/contracts/doh", "../../persistence/polymorphAmdRev
             this.parsedJson = new ReferenceError();
           },
           runTest: function() {
-            var result = amdRevive(this.parsedJson);
-            doh.is("error", toType(result));
+            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            doh.is("error", typeOf(result));
             doh.is(this.parsedJson, result);
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -215,9 +211,10 @@ define(["dojo/main", "ppwcode/contracts/doh", "../../persistence/polymorphAmdRev
             this.parsedJson = new Date();
           },
           runTest: function() {
-            var result = amdRevive(this.parsedJson);
-            doh.is("date", toType(result));
+            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            doh.is("date", typeOf(result));
             doh.is(this.parsedJson, result);
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -230,9 +227,10 @@ define(["dojo/main", "ppwcode/contracts/doh", "../../persistence/polymorphAmdRev
             this.parsedJson = /abc/g;
           },
           runTest: function() {
-            var result = amdRevive(this.parsedJson);
-            doh.is("regexp", toType(result));
+            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            doh.is("regexp", typeOf(result));
             doh.is(this.parsedJson, result);
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -246,14 +244,15 @@ define(["dojo/main", "ppwcode/contracts/doh", "../../persistence/polymorphAmdRev
           },
           runTest: function() {
             var deferred = new doh.Deferred();
-            var resultPromise = amdRevive(this.parsedJson);
-            doh.is("object", toType(resultPromise)); // a Promise
+            var resultPromise = revive(this.parsedJson, referer, serverType2Mid, cache);
+            doh.is("object", typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
             resultPromise.then(
               function(result) {
                 try {
-                  doh.is("array", toType(result));
-                  doh.is(0, resultPromise.length);
+                  doh.is("array", typeOf(result));
+                  doh.is(0, result.length);
+                  console.log(cache.report());
                   deferred.callback(result);
                 }
                 catch(e) {
@@ -264,6 +263,47 @@ define(["dojo/main", "ppwcode/contracts/doh", "../../persistence/polymorphAmdRev
                 deferred.errback(err);
               }
             )
+            return deferred;
+          },
+          tearDown: function() {
+            this.parsedJson = null;
+          }
+        },
+
+        {
+          name: "Array (mixed content)",
+          setUp: function() {
+            this.parsedJson = [1, "a", Math, JSON, { name: "a NAme"}, [], null, undefined, [4, 6, 88, "a", [24, { another: "ANother"}]]];
+          },
+          runTest: function() {
+            var deferred = new doh.Deferred();
+            var parsedJson = this.parsedJson;
+            var resultPromise = revive(parsedJson, referer, serverType2Mid, cache);
+            doh.is("object", typeOf(resultPromise)); // a Promise
+            doh.t(resultPromise instanceof Promise);
+            resultPromise.then(
+              function(result) {
+                try {
+                  doh.is("array", typeOf(result));
+                  doh.is(9, result.length);
+                  doh.is(parsedJson, result);
+                  doh.f(parsedJson === result);
+                  doh.f(parsedJson[4] === result[4]);
+                  doh.f(parsedJson[8] === result[8]);
+                  doh.f(parsedJson[8][4] === result[8][4]);
+                  doh.f(parsedJson[8][4][1] === result[8][4][1]);
+                  console.log(cache.report());
+                  deferred.callback(result);
+                }
+                catch(e) {
+                  deferred.errback(e);
+                }
+              },
+              function(err) {
+                deferred.errback(err);
+              }
+            )
+            return deferred;
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -277,14 +317,15 @@ define(["dojo/main", "ppwcode/contracts/doh", "../../persistence/polymorphAmdRev
           },
           runTest: function() {
             var deferred = new doh.Deferred();
-            var resultPromise = amdRevive(this.parsedJson);
-            doh.is("object", toType(resultPromise)); // a Promise
+            var resultPromise = revive(this.parsedJson, referer, serverType2Mid, cache);
+            doh.is("object", typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
             resultPromise.then(
               function(result) {
                 try {
-                  doh.is("object", toType(result));
+                  doh.is("object", typeOf(result));
                   doh.is(0, Object.keys(result));
+                  console.log(cache.report());
                   deferred.callback(result);
                 }
                 catch(e) {
@@ -295,6 +336,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "../../persistence/polymorphAmdRev
                 deferred.errback(err);
               }
             )
+            return deferred;
           },
           tearDown: function() {
             this.parsedJson = null;
