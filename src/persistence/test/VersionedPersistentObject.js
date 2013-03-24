@@ -22,7 +22,8 @@ define(["dojo/main", "ppwcode/contracts/doh", "../VersionedPersistentObject"],
         function testConstructor1() {
           var persistenceId = 1;
           var persistenceVersion = 2;
-          var subject = new VersionedPersistentObject({persistenceId: persistenceId, persistenceVersion: persistenceVersion});
+          var subject = new VersionedPersistentObject();
+          subject.reload({persistenceId: persistenceId, persistenceVersion: persistenceVersion});
           doh.invars(subject);
           // post
           doh.is(persistenceId, subject.persistenceId);
@@ -32,18 +33,6 @@ define(["dojo/main", "ppwcode/contracts/doh", "../VersionedPersistentObject"],
         },
 
         function testConstructor2() {
-          var persistenceId = 1;
-          var persistenceVersion = 2;
-          var subject = new VersionedPersistentObject({});
-          doh.invars(subject);
-          // post
-          doh.is(null, subject.persistenceId);
-          doh.is(null, subject.get("persistenceId"));
-          doh.is(null, subject.persistenceVersion);
-          doh.is(null, subject.get("persistenceVersion"));
-        },
-
-        function testConstructor3() {
           var persistenceId = 1;
           var persistenceVersion = 2;
           var subject = new VersionedPersistentObject();
@@ -59,7 +48,8 @@ define(["dojo/main", "ppwcode/contracts/doh", "../VersionedPersistentObject"],
 
         function testReload1() {
           //noinspection MagicNumberJS
-          var subject = new VersionedPersistentObject({persistenceId: 1, persistenceVersion: 884});
+          var subject = new VersionedPersistentObject();
+          subject.reload({persistenceId: 1, persistenceVersion: 884});
           subject.reload();
 
           doh.invars(subject);
@@ -70,9 +60,10 @@ define(["dojo/main", "ppwcode/contracts/doh", "../VersionedPersistentObject"],
 
         function testReload2a() {
           //noinspection MagicNumberJS
-          var subject = new VersionedPersistentObject({persistenceId: 1, persistenceVersion: 884});
+          var subject = new VersionedPersistentObject();
+          subject.reload({persistenceId: 1, persistenceVersion: 884});
           //noinspection MagicNumberJS
-          subject.reload({persistenceVersion: 885});
+          subject.reload({persistenceId: 1, persistenceVersion: 885});
 
           doh.invars(subject);
           // post
@@ -82,7 +73,8 @@ define(["dojo/main", "ppwcode/contracts/doh", "../VersionedPersistentObject"],
 
         function testReload2b() {
           //noinspection MagicNumberJS
-          var subject = new VersionedPersistentObject({persistenceId: 1, persistenceVersion: 884});
+          var subject = new VersionedPersistentObject();
+          subject.reload({persistenceId: 1, persistenceVersion: 884});
           //noinspection MagicNumberJS
           subject.reload({persistenceId: 1, persistenceVersion: 885});
 
@@ -94,8 +86,9 @@ define(["dojo/main", "ppwcode/contracts/doh", "../VersionedPersistentObject"],
 
         function testReload3() {
           //noinspection MagicNumberJS
-          var subject = new VersionedPersistentObject({persistenceId: 1, persistenceVersion: 884});
-          subject.reload({});
+          var subject = new VersionedPersistentObject();
+          subject.reload({persistenceId: 1, persistenceVersion: 884});
+          subject.reload();
 
           doh.invars(subject);
           // post
@@ -105,7 +98,8 @@ define(["dojo/main", "ppwcode/contracts/doh", "../VersionedPersistentObject"],
 
         function testReload4() {
           //noinspection MagicNumberJS
-          var subject = new VersionedPersistentObject({persistenceId: 1, persistenceVersion: 884});
+          var subject = new VersionedPersistentObject();
+          subject.reload({persistenceId: 1, persistenceVersion: 884});
           //noinspection MagicNumberJS
           subject.reload({persistenceId: 1, persistenceVersion: 884});
 
@@ -136,7 +130,8 @@ define(["dojo/main", "ppwcode/contracts/doh", "../VersionedPersistentObject"],
 
         function testToJSON2() {
           //noinspection MagicNumberJS
-          var subject = new VersionedPersistentObject({persistenceId: 5, persistenceVersion: 8848});
+          var subject = new VersionedPersistentObject();
+          subject.reload({persistenceId: 5, persistenceVersion: 8848});
           var result = subject.toJSON();
 
           doh.invars(subject);
@@ -148,7 +143,8 @@ define(["dojo/main", "ppwcode/contracts/doh", "../VersionedPersistentObject"],
         function testToString1() {
           var persistenceId = 1;
           var persistenceVersion = 2;
-          var subject = new VersionedPersistentObject({persistenceId: persistenceId, persistenceVersion: persistenceVersion});
+          var subject = new VersionedPersistentObject();
+          subject.reload({persistenceId: persistenceId, persistenceVersion: persistenceVersion});
           var result = subject.toString();
           doh.isNot(null, result);
           doh.t(typeof result === "string");
@@ -157,7 +153,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "../VersionedPersistentObject"],
         },
 
         function testToString2() {
-          var subject = new VersionedPersistentObject({});
+          var subject = new VersionedPersistentObject();
           var result = subject.toString();
           doh.isNot(null, result);
           doh.t(typeof result === "string");
