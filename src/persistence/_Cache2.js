@@ -43,9 +43,6 @@ define(["dojo/_base/declare",
       //   This can never change.
       payload: null,
 
-
-      // TODO watch the payload for change of persistenceId --> null; remove then; only for PersistentObject
-
       // _referers: Set
       //   The set of referers.
       // tags:
@@ -60,12 +57,20 @@ define(["dojo/_base/declare",
       //    introduced to do memory leak detection
       createdAt: null,
 
-      constructor: function(/*PersistentObject*/ po) {
+      constructor: function(/*PersistentObject*/ po, /*_Cache*/ cache) {
         this._c_pre(function() {return po;});
         this._c_pre(function() {return po.isInstanceOf && po.isInstanceOf(PersistentObject);});
         this._c_pre(function() {return po.getKey() != null;});
+        this._c_pre(function() {return cache;});
 
         this.payload = po;
+        var watcher = po.watch("persistenceId", function(propertyName, oldValue, newValue) {
+          if (!newValue) {
+            watcher.unwatch();
+            watcher = null;
+            cache.stopTrackingCompletely(po);
+          }
+        });
         this._referers = new Set();
         this.createdAt = new Date();
       },
@@ -155,7 +160,7 @@ define(["dojo/_base/declare",
 
         var entry = this._data[key];
         if (!entry) {
-          entry = new _Entry(po);
+          entry = new _Entry(po, this);
           this._data[key] = entry;
           console.log("Entry added to cache: " + po.toString());
         }
@@ -244,6 +249,22 @@ define(["dojo/_base/declare",
         this._track(key, po, referer);
       },
 
+      _lookupKeyOf: function (po) {
+        var key = po.getKey();
+        if (!key) {
+          // it can already be deleted from the server, and then persistenceId is null
+          // we need to travel all entries
+          var propertyNames = Object.keys(this._data);
+          for (var i = 0; i < propertyNames.length; i++) {
+            if (this._data[propertyNames[i]].payload === po) {
+              key = propertyNames[i];
+              break;
+            }
+          }
+        }
+        return key;
+      },
+
       stopTracking: function(/*PersistentObject*/ po, /*Object*/ referer) {
         // summary:
         //   We note that referer no longer uses po.
@@ -257,18 +278,7 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return po && po.isInstanceOf;});
         this._c_pre(function() {return referer;});
 
-        var key = po.getKey();
-        if (!key) {
-          // it can already be deleted from the server, and then persistenceId is null
-          // we need to travel all entries
-          var propertyNames = Object.keys(this._data);
-          for (var i = 0; i < propertyNames.length; i++) {
-            if (this._data[propertyNames[i]].payload === po) {
-              key = propertyNames[i];
-              break;
-            }
-          }
-        }
+        var key = this._lookupKeyOf(po);
         if (key) {
           this._removeReferer(key, referer);
         }
@@ -278,25 +288,10 @@ define(["dojo/_base/declare",
       stopTrackingCompletely: function(/*PersistentObject*/ po) {
         this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
 
-        var key = po.getKey();
-        var entry;
+        var key = this._lookupKeyOf(po);
         if (key) {
-          entry = this._data[key];
-        }
-        else {
-          // it can already be deleted from the server, and then persistenceId is null
-          // we need to travel all entries
-          var propertyNames = Object.keys(this._data);
-          for (var i = 0; i < propertyNames.length; i++) {
-            if (this._data[propertyNames[i]].payload === po) {
-              key = propertyNames[i];
-              entry = this._data[propertyNames[i]];
-              break;
-            }
-          }
-        }
-        if (entry) {
           var self = this;
+          var entry = this._data[key];
           entry._referers.forEach(function(r) {
             self._removeReferer(key, r);
           });
