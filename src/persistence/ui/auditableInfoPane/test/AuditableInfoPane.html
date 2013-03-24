@@ -36,7 +36,7 @@
 
         var parsePromise = parser.parse();
         parsePromise.then(function() {
-          var json = {createdAt: new Date(), createdBy: "Jos2", lastModifiedAt: new Date(), lastModifiedBy: "Mieke"};
+          var json = {persistenceId: 7363, createdAt: new Date(), createdBy: "Jos2", lastModifiedAt: new Date(), lastModifiedBy: "Mieke"};
 
           function createAO() {
             var ao = new AuditableObject();
