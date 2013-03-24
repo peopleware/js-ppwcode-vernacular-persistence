@@ -52,6 +52,15 @@ define(["dojo/_base/declare",
 
       // urlBuilder: UrlBuilder
       urlBuilder: null,
+
+      // revive: Function
+      //   Object x Object x _Cache -> Object|Promise of Object
+      //   Function that returns the Promise of a revived object graph, based on an
+      //   object tree (intended to be parsed JSON) of which the objects are to be reloaded
+      //   in PersistentObjects, new or found in _Cache. Objects are added to the given _Cache
+      //   with the second argument as referer on the first level, and the resulting PersistentObjects
+      //   as referer for PersistentObject further down in the tree.
+      //   As this might require module loading, the result might be a Promise.
       revive: null,
 
       // _cache: Object
@@ -100,8 +109,8 @@ define(["dojo/_base/declare",
         //   objects of that type.
         this._c_pre(function() {return this.isOperational();});
         this._c_pre(function() {return result && result.isInstanceOf;});
-// Cannot really formulate what we want, because of stupid Observable Store wrapper
-//        this._c_pre(function() {return result && result.isInstanceOf && result.isInstanceOf(StoreOfStateful);});
+        // Cannot really formulate what we want, because of stupid Observable Store wrapper
+        // this._c_pre(function() {return result && result.isInstanceOf && result.isInstanceOf(StoreOfStateful);});
         this._c_pre(function() {return typeOf(url) === "string";});
         this._c_pre(function() {return !query || typeOf(query) === "object";});
 
