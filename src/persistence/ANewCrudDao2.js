@@ -1,3 +1,19 @@
+/*
+ Copyright 2013 - $Date $ by PeopleWare n.v.
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ */
+
 define(["dojo/_base/declare",
         "ppwcode/contracts/_Mixin",
         "./UrlBuilder", "./_Cache2", "./PersistentObject", "./IdNotFoundException",
@@ -56,18 +72,23 @@ define(["dojo/_base/declare",
         return exc;
       },
 
-      _refresh: function(/*StoreOfStateful*/ result, /*String*/ url, /*Object?*/ query) {
+      _refresh: function(/*PersistentObjectStore|Observable(PersistentObjectStore)*/ result,
+                         /*String*/ url,
+                         /*Object?*/ query,
+                         /*Object?*/ referer) {
         // summary:
         //   Get all the objects with `url` and the optional `query` from the remote server,
         //   and update `result` to reflect the returned collection when an answer arrives.
         //   This returns a Promise, that resolves to result.
-        //   *The resulting objects are not tracked* // MUDO is dit wel goed?
-        // result: StoreOfStateful
+        //   *The resulting objects are tracked with referer, if there is one.*
+        // result: PersistentObjectStore|Observable(PersistentObjectStore)
         //   Mandatory. When the promise is resolved, it will contain exactly the objects that were returned.
         // url: String
         //   Mandatory.
         // query: Object?
         //   Optional. The semantics of these parameters are left to the server.
+        // referer: Object?
+        //   Optional. This object will be used as referer in the _Cache for objects revived in the result.
         // description:
         //   The objects might be in result or the cache beforehand. Those objects are reloaded,
         //   and might send changed events.
@@ -87,7 +108,6 @@ define(["dojo/_base/declare",
         console.log("GET URL is: " + url);
         console.log("query: " + query);
         var self = this;
-        var deferred = new Deferred();
         var loadPromise = request(
           url,
           {
@@ -98,31 +118,27 @@ define(["dojo/_base/declare",
             withCredentials: true
           }
         );
-        loadPromise.then(
-          function (data) {
+        var revivePromise = loadPromise.then(
+          function(/*Array*/ data) {
             if (typeOf(data) !== "array") {
               throw new Error("expected array from remote call");
             }
             console.info("Retrieved successfully from server: " + data.length + " items");
-            var revivePromise = self.revive(data, null, self._cache);
-            revivePromise.then(
-              function (revived) {
-                if (typeOf(data) !== "array") {
-                  throw new Error("expected array from remote call");
-                }
-                result.loadAll(revived);
-                deferred.resolve(result);
-              },
-              function (exc) {
-                deferred.reject(self._handleException(exc));
-              }
-            );
+            // the then Promise resolves with the resolution of the revive Promise, an Array
+            return self.revive(data, referer, self._cache); // return Promise
           },
-          function (exc) {
-            deferred.reject(self._handleException(exc));
+          function(err) {
+            self._handleException(err); // of the request or the revive (require)
           }
         );
-        return deferred.promise;
+        var storePromise = revivePromise.then(function(/*Array*/ revived) {
+          if (typeOf(data) !== "array") {
+            throw new Error("expected array from remote call");
+          }
+          result.loadAll(revived);
+          return result; // return PersistentObjectStore|Observable(PersistentObjectStore)
+        });
+        return storePromise; // return Promise
       },
 
       _poAction: function(/*String*/ method, /*PersistentObject*/ po, /*Any?*/ referer) {
@@ -385,50 +401,51 @@ define(["dojo/_base/declare",
         return this._poAction("DELETE", po);
       },
 
-      retrieveToMany: function(/*PersistentObject*/ po, /*String*/ serverPropertyName) {
+      retrieveToMany: function(/*Observable(PersistentObjectStore)*/ result, /*PersistentObject*/ po, /*String*/ serverPropertyName) {
         // summary:
         //   Load the objects of a to-many relationship from the remote server.
-        //   These are the many objects of po[serverPropertyName].
-        //   This returns a StoreOfStafeful, containing PersistentObjects.
-        //   The resulting objects are tracked, with the store as referer. The store itself is also tracked,
-        //   with po a referer.
+        //   These are the many objects of `po[serverPropertyName]`.
+        //   This returns the Promise of a filled-out `result`.
+        //   The resulting objects are tracked, with the `result` as referer.
+        // result: Observable(PersistentObjectStore)
+        //   Resulting objects are loaded in this store. If they already there, they are reloaded.
+        //   Objects that are not in the response from the server are removed. Objects that appear
+        //   in the server response, that are not already in the store, are added. The store sends
+        //   events for all changes.
+        //   Finally, the returned Promise resolves to this object.
         // po: PersistentObject
         //   po should be in the cache beforehand
         // serverPropertyName: String
         //   The name of the to-many property in server lingo.
         // description:
-        //   If we find a StoreOfStateful in our cache for po[serverPropertyName], it will be returned, without
-        //   change.
-        //   If we don't find a StoreOfStateful in our cache, we create one, and start tracking it, and then
-        //   return it to the caller, empty.
         //   Asynchronously, we get up-to-date content from the server, and will
         //   update the content of the store when the server returns a response.
         //   The store will send events (if reload is implemented correctly).
-        //
-        //   In other words, the  method returns a StoreOfStateful immediately, but it might be
-        //   reloaded soon afterwards, and change.
         //
         //   The remote retrieve might fail, with an error, or an `IdNotFoundException`, or a
         //   `SecurityException`.
         //   TODO find a way to signal this as a state of the StoreOfStateful
         this._c_pre(function() {return this.isOperational();});
+        this._c_pre(function() {return result && result.isInstanceOf;});
+// Cannot really formulate what we want, because of stupid Observable Store wrapper
+//        this._c_pre(function() {return result && result.isInstanceOf && result.isInstanceOf(PersistentObjectStore);});
         this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
+        // po should be in the cache, but we don't enforce it; your problem
         this._c_pre(function() {return typeOf(serverPropertyName) === "string";});
 
         console.log("Requested GET of to many: '" + po + "[" + serverPropertyName+ "]'");
         var url = this.urlBuilder.toMany(po.get("persistenceType"), po.get("persistenceId"), serverPropertyName);
-        // MUDO store from cache
-        var store = Observable(new PersistentObjectStore());
-        return this._refresh(store, url, null); // IDEA: we can even add a query here
+        var resultPromise = this._refresh(result, url, null, result); // IDEA: we can even add a query here
+        return resultPromise; // return Promise
       },
 
-      searchInto: function(/*StoreOfStateful*/ result, /*String?*/ serverType, /*Object?*/ query) {
+      searchInto: function(/*PersistentObjectStore*/ result, /*String?*/ serverType, /*Object?*/ query) {
         // summary:
         //   Get all the objects of type `serverType` given the query from the remote server,
         //   and update `result` to reflect the returned collection when an answer arrives.
         //   This returns a Promise, that resolves to result.
-        //   *The resulting objects are not tracked*
-        // result: StoreOfStateful
+        //   *The resulting objects are not tracked.*
+        // result: PersistentObjectStore
         //   Mandatory. When the promise is resolved, it will contain exactly the objects that were returned.
         // serverType: String?
         //   Optional.
@@ -452,7 +469,8 @@ define(["dojo/_base/declare",
 
         console.log("Requested GET of matching instances: '" + serverType +"' matching '" + query + "'");
         var url = this.urlBuilder.search(serverType, query);
-        return this._refresh(result, url, query);
+        var resultPromise = this._refresh(result, url, query, null); // no referer
+        return resultPromise; // return Promise
       }
 
     });
