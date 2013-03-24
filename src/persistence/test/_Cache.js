@@ -1,5 +1,5 @@
 define(["dojo/main", "ppwcode/contracts/doh",
-        "../_Cache",
+        "../_Cache2",
         "./mock/Person", "../PersistentObjectStore", "dojo/store/Observable",
         "ppwcode/oddsAndEnds/typeOf"],
   function(dojo, doh,
@@ -27,54 +27,21 @@ define(["dojo/main", "ppwcode/contracts/doh",
     function getAndTestPersonEntry(cache, po, persistenceId, expectedNrOfReferers) {
       var tracked;
       if (expectedNrOfReferers) {
-        tracked = cache.getPoByTypeAndId(Person.prototype.persistenceType, persistenceId);
+        tracked = cache.getByTypeAndId(Person.prototype.persistenceType, persistenceId);
         doh.is(po, tracked);
-        tracked = cache.getPo(po);
+        tracked = cache.get(po);
         doh.is(po, tracked);
         // IDEA test breaks encapsulation -- whenever this fails, just remove the test
         doh.is(expectedNrOfReferers, cache._data[po.get("persistenceType") + "@" + persistenceId].getNrOfReferers());
       }
       else {
-        tracked = cache.getPo(po);
+        tracked = cache.get(po);
         doh.f(tracked);
       }
     }
 
     var aPersistentObject = createPerson(99999);
     var toManyPropertyName = "TOMANY";
-
-    function createStoreOfStateful() {
-      var person1 = createPerson(personId1);
-      var person2 = createPerson(9424);
-      var person3 = createPerson(42525);
-      var person4 = createPerson(25216);
-      var sos = Observable(new PersistentObjectStore());
-      sos.put(person1);
-      sos.put(person2);
-      sos.put(person3);
-      sos.put(person4);
-      return sos;
-    }
-
-    function getAndTestStoreOfStateful(cache, sos, expectedNrOfReferers) {
-      var tracked;
-      if (expectedNrOfReferers) {
-        tracked = cache.getToManyStore(aPersistentObject, toManyPropertyName);
-        doh.is(sos, tracked);
-        // IDEA test breaks encapsulation -- whenever this fails, just remove the test
-        doh.is(
-          expectedNrOfReferers,
-          cache._data[aPersistentObject.get("persistenceType") + "@" +
-                      aPersistentObject.get("persistenceId") + "/" +
-                      toManyPropertyName].
-            getNrOfReferers()
-        );
-      }
-      else {
-        tracked = cache.getToManyStore(aPersistentObject, toManyPropertyName);
-        doh.f(tracked);
-      }
-    }
 
     function generateTests(what, payloadCreator, track, getAndTest) {
       return [
@@ -207,23 +174,11 @@ define(["dojo/main", "ppwcode/contracts/doh",
             return createPerson(personId1);
           },
           function(cache, po, referer) {
-            cache.trackPo(po, referer);
+            cache.track(po, referer);
           },
           function(cache, payload, expectedNrOfReferers) {
             getAndTestPersonEntry(cache, payload, personId1, expectedNrOfReferers);
           }
-        )
-      )
-      .concat(
-        generateTests(
-          "PersistentObjectStore",
-          function() {
-            return createStoreOfStateful();
-          },
-          function(cache, store, referer) {
-            cache.trackStore(aPersistentObject, toManyPropertyName, store, referer);
-          },
-          getAndTestStoreOfStateful
         )
       )
       .concat([{
@@ -240,46 +195,46 @@ define(["dojo/main", "ppwcode/contracts/doh",
           this.referer2 = {};
         },
         runTest: function() {
-          this.subject.trackPo(this.person1, this);
-          this.subject.trackPo(this.person1, this.referer1);
-          this.subject.trackPo(this.person1, this.referer2);
+          this.subject.track(this.person1, this);
+          this.subject.track(this.person1, this.referer1);
+          this.subject.track(this.person1, this.referer2);
 
-          this.subject.trackPo(this.person2, this.referer1);
-          this.subject.trackPo(this.person3, this.person2);
-          this.subject.trackPo(this.person5, this.person4);
-          this.subject.trackPo(this.person4, this.person1);
-          this.subject.trackPo(this.person6, this.person5);
-          this.subject.trackPo(this.person6, this.referer1);
+          this.subject.track(this.person2, this.referer1);
+          this.subject.track(this.person3, this.person2);
+          this.subject.track(this.person5, this.person4);
+          this.subject.track(this.person4, this.person1);
+          this.subject.track(this.person6, this.person5);
+          this.subject.track(this.person6, this.referer1);
 
           this.subject.stopTracking(this.person1, this.referer1);
           this.subject.stopTracking(this.person1, this.referer2);
           this.subject.stopTracking(this.person1, this);
 
-          var tracked = this.subject.getPo(this.person1);
+          var tracked = this.subject.get(this.person1);
           doh.f(tracked);
-          tracked = this.subject.getPo(this.person4);
+          tracked = this.subject.get(this.person4);
           doh.f(tracked);
-          tracked = this.subject.getPo(this.person5);
+          tracked = this.subject.get(this.person5);
           doh.f(tracked);
-          tracked = this.subject.getPo(this.person2);
+          tracked = this.subject.get(this.person2);
           doh.t(tracked);
-          tracked = this.subject.getPo(this.person3);
+          tracked = this.subject.get(this.person3);
           doh.t(tracked);
-          tracked = this.subject.getPo(this.person6);
+          tracked = this.subject.get(this.person6);
           doh.t(tracked);
 
           this.subject.stopTracking(this.person6, this.referer1);
-          tracked = this.subject.getPo(this.person6);
+          tracked = this.subject.get(this.person6);
           doh.f(tracked);
-          tracked = this.subject.getPo(this.person2);
+          tracked = this.subject.get(this.person2);
           doh.t(tracked);
-          tracked = this.subject.getPo(this.person3);
+          tracked = this.subject.get(this.person3);
           doh.t(tracked);
 
           this.subject.stopTracking(this.person2, this.referer1);
-          tracked = this.subject.getPo(this.person2);
+          tracked = this.subject.get(this.person2);
           doh.f(tracked);
-          tracked = this.subject.getPo(this.person3);
+          tracked = this.subject.get(this.person3);
           doh.f(tracked);
 
           console.log(JSON.stringify(this.subject.report()));
