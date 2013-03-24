@@ -18,12 +18,14 @@ define(["dojo/_base/declare",
         "../../ANewCrudDao2",
         "../../_Cache2", "../../UrlBuilder",
         "../../PersistentObject", "../../VersionedPersistentObject", "../../AuditableObject", "../../IdNotFoundException",
-        "dojo/Deferred"],
+        "./Person", "ppwcode/oddsAndEnds/typeOf",
+        "dojo/Deferred", "require"],
   function(declare,
            CrudDao,
            _Cache, UrlBuilder,
            PersistentObject, VersionedPersistentObject, AuditableObject, IdNotFoundException,
-           Deferred) {
+           Person, typeOf,
+           Deferred, require) {
 
     function markDeletedFromServer(cache, p) {
       var entry = cache.get(p);
@@ -44,6 +46,12 @@ define(["dojo/_base/declare",
       p.reload(json); // should remove from cache
     }
 
+    var UrlBuilderMock = declare([UrlBuilder], {
+      toMany: function(serverType, id, serverPropertyName) {
+        return require.toUrl("./persons.json");
+      }
+    });
+
     var CrudDaoMock = declare([CrudDao], {
       // summary:
       //   This is a mock of CrudDao. We inherit from CrudDao, and overwrite meaningful methods.
@@ -52,9 +60,18 @@ define(["dojo/_base/declare",
       //   Private. Contains a CacheEntry for each retrieved object, that is not yet released.
 
       constructor: function() {
-        this.urlBuilder = new UrlBuilder();
-        this.revive = function(/*Object*/ json, /*Object*/ referer, /*_Cache*/ cache) {
-          return null; // TODO rewrite to use the reviver
+        this.urlBuilder = new UrlBuilderMock();
+        this.revive = function revive(/*Object*/ json, /*Object*/ referer, /*_Cache*/ cache) {
+          if (typeOf(json) === "array") {
+            return json.map(function(e) {
+              return revive(e, referer, cache);
+            });
+          }
+          else {
+            var p = new Person();
+            p.reload(json);
+            return p;
+          }
         }
       },
 
@@ -240,41 +257,41 @@ define(["dojo/_base/declare",
           );
         }
         return resultDeferred.promise;
-      },
-
-      _refresh: function(result, url, query, referer) {
-        // description:
-        //   result.error will result in that error
-        //   result.semanticException will result in that exception
-        //   result.waitMillis is the time the promise will take
-        //   Promise resolves to result.arrayOfResult
-        var resultDeferred = new Deferred();
-        if (result.error) {
-          setTimeout(
-            function() {
-              resultDeferred.reject("ERROR: could not GET all from" + url + " (" + result.error + ")");
-            },
-            result.waitMillis
-          );
-        }
-        else if (result.semanticException) {
-          setTimeout(
-            function() {
-              resultDeferred.reject(result.semanticException);
-            },
-            result.waitMillis
-          );
-        }
-        else {
-          setTimeout(
-            function() {
-              result.loadAll(result.arrayOfResult);
-            },
-            result.waitMillis
-          );
-        }
-        return resultDeferred.promise;
       }
+
+//      _refresh: function(result, url, query, referer) {
+//        // description:
+//        //   result.error will result in that error
+//        //   result.semanticException will result in that exception
+//        //   result.waitMillis is the time the promise will take
+//        //   Promise resolves to result.arrayOfResult
+//        var resultDeferred = new Deferred();
+//        if (result.error) {
+//          setTimeout(
+//            function() {
+//              resultDeferred.reject("ERROR: could not GET all from" + url + " (" + result.error + ")");
+//            },
+//            result.waitMillis
+//          );
+//        }
+//        else if (result.semanticException) {
+//          setTimeout(
+//            function() {
+//              resultDeferred.reject(result.semanticException);
+//            },
+//            result.waitMillis
+//          );
+//        }
+//        else {
+//          setTimeout(
+//            function() {
+//              result.loadAll(result.arrayOfResult);
+//            },
+//            result.waitMillis
+//          );
+//        }
+//        return resultDeferred.promise;
+//      }
 
     });
 
