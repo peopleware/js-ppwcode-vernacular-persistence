@@ -35,7 +35,7 @@ define(["dojo/main", "ppwcode/contracts/doh",
 
     function createPerson(persistenceId) {
       var person = new Person();
-      person.persistenceId = persistenceId;
+      personJson.persistenceId = persistenceId;
       person.reload(personJson);
       return person;
     }
