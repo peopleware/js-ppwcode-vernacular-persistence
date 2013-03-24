@@ -7,6 +7,8 @@ define(["dojo/_base/declare", "ppwcode/collections/StoreOfStateful",
 
     var PersistentObjectStore = declare([StoreOfStateful], {
       // summary:
+      //   A Store for PersistentObjects. This extends StoreOfStateful
+      //   with a getIdentity function for PersistentObjects.
       //   Instance should be wrapped in dojo/store/Observable
 
       getIdentity: PersistentObject.keyForObject,
