@@ -14,11 +14,14 @@
  limitations under the License.
  */
 
-define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject", "dojo/_base/lang"],
-  function(declare, SemanticObject, lang) {
+define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject", "dojo/_base/lang", "ppwcode/oddsAndEnds/typeOf"],
+  function(declare, SemanticObject, lang, typeOf) {
 
     function internalReload(/*PersistentObject*/ self, /*Object*/ json) {
-      if (json && json.persistenceId /* TODO json.persistenceId undefined, but not null */) {
+      if (json) {
+        if (typeOf(json.persistenceId) === "undefined") {
+          throw "ERROR: json.persistenceId must be defined (but can be null)";
+        }
         if (self.persistenceId && json.persistenceId != null && json.persistenceId != self.persistenceId) {
           throw "ERROR: cannot change from an existing persistenceId to another (" +
             json.toString() + ")"; // TODO precondition
