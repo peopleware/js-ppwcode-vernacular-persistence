@@ -141,7 +141,7 @@ define(["dojo/_base/declare",
           }
         );
         var storePromise = revivePromise.then(function(/*Array*/ revived) {
-          if (typeOf(data) !== "array") {
+          if (typeOf(revived) !== "array") {
             throw new Error("expected array from remote call");
           }
           result.loadAll(revived);
