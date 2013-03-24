@@ -1,0 +1,26 @@
+[
+  {
+    "persistenceId": 9871,
+    "name":"Pete Peeters",
+    "street":"Avenue de rue 93",
+    "zip":"1040 CAA",
+    "city":"Cité de Beauté",
+    "tel":"0322 44 442 22"
+  },
+  {
+    "persistenceId": 9872,
+    "name":"Mieke Maaike",
+    "street":"Rijstraat 83",
+    "zip":"7773",
+    "city":"t Stad",
+    "tel":"111 222 333"
+  },
+  {
+    "persistenceId": 9873,
+    "name":"Frank Franken",
+    "street":"The street House",
+    "zip":"HHDH 883 DF",
+    "city":"A City",
+    "tel":"883 3993 424"
+  }
+]
