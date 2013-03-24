@@ -25,7 +25,8 @@ define(["dojo/main", "ppwcode/contracts/doh", "../AuditableObject"],
           var createdBy = "creator";
           var lastModifiedAt = new Date();
           var lastModifiedBy = "modifier";
-          var subject = new AuditableObject({persistenceId: persistenceId,
+          var subject = new AuditableObject();
+          subject.reload({persistenceId: persistenceId,
             createdAt: createdAt, createdBy: createdBy, lastModifiedAt: lastModifiedAt, lastModifiedBy: lastModifiedBy});
           doh.invars(subject);
           // post
@@ -36,7 +37,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "../AuditableObject"],
         },
 
         function testConstructor2() {
-          var subject = new AuditableObject({});
+          var subject = new AuditableObject();
           doh.invars(subject);
           // post
           doh.is(null, subject.get("createdAt"));
@@ -143,7 +144,8 @@ define(["dojo/main", "ppwcode/contracts/doh", "../AuditableObject"],
           var createdBy = "creator";
           var lastModifiedAt = new Date();
           var lastModifiedBy = "modifier";
-          var subject = new AuditableObject({persistenceId: persistenceId,
+          var subject = new AuditableObject();
+          subject.reload({persistenceId: persistenceId,
             createdAt: createdAt, createdBy: createdBy, lastModifiedAt: lastModifiedAt, lastModifiedBy: lastModifiedBy});
           var result = subject.toString();
           doh.isNot(null, result);
@@ -153,7 +155,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "../AuditableObject"],
         },
 
         function testToString2() {
-          var subject = new AuditableObject({});
+          var subject = new AuditableObject();
           var result = subject.toString();
           doh.isNot(null, result);
           doh.t(typeof result === "string");
