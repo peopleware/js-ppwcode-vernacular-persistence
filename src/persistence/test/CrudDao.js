@@ -14,52 +14,49 @@
  limitations under the License.
  */
 
-define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObject", "../IdNotFoundException", "dojo/_base/declare"],
+define(["dojo/main", "ppwcode/contracts/doh", "./mock/CrudDao1",
+        "../PersistentObject", "../IdNotFoundException", "dojo/_base/declare"],
     function(dojo, doh, CrudDaoMock, PersistentObject, IdNotFoundException, declare) {
 
-      var baseUrl1 = "http://www.ppwcode.org/some/path/";
-
-      function cacheKey(/*String*/ type, /*Number*/ persistenceId) {
-        // summary:
-        //   Returns a key.
-        // description:
-        //   Returns `type + "@" + persistenceId`
-
-        return type + "@" + persistenceId;
-      }
-
-      function poCacheKey(/*PersistentObject*/ p) {
-        // summary:
-        //   Returns a key, intended to be unique, for this entry.
-        // description:
-        //   Returns `persistentObject.declaredClass + "@" + persistentObject.persistenceId`
-
-        return cacheKey(p.declaredClass, p.persistenceId);
-      }
-
-      subjectSetup = function() {
+      var subjectSetup = function() {
         var subject = new CrudDaoMock();
-        subject.baseUrl = baseUrl1;
         this.subject = subject;
       };
 
+      var persistenceType = "A PERSISTENCE TYPE";
+
       var MockPo = declare([PersistentObject], {
 
-        constructor: function(kwargs) {
+        persistenceType: persistenceType,
+
+        testProperty: 5,
+
+        constructor: function() {
           this.testProperty = 3;
         },
 
         reload: function(kwargs) {
-          this.set("testProperty", kwargs.testProperty);
+          if (kwargs.testProperty) {
+            this.set("testProperty", kwargs.testProperty);
+          }
         },
 
         _extendJsonObject: function(/*Object*/ json) {
           json.testProperty = this.testProperty;
-        },
-
-        testProperty: 5
+        }
 
       });
+
+      function createMockPo() {
+        var result = new MockPo();
+        result.reload({persistenceId: 777});
+        return result;
+      }
+
+      function getCacheEntry(crudDao, po) {
+        var key = crudDao._cache._lookupKeyOf(po);
+        return crudDao._cache._data[key];
+      }
 
       function testCreate(subject, waitMillis, semanticException, error) {
         var p = new MockPo({persistenceId: null});
@@ -82,11 +79,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           }
         });
         var deferred = new doh.Deferred();
-        var result = subject.create(p, tracker1);
-        doh.t(result);
-        doh.t(result.persistentObject);
-        doh.is(p, result.persistentObject);
-        var resultPromise = result.promise;
+        var resultPromise = subject.create(p, tracker1);
         doh.t(resultPromise);
         resultPromise.then(
           function(pSuccess) {
@@ -97,9 +90,9 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
               doh.is("persistenceId", persistenceIdEvent.propertyName);
               doh.is(null, persistenceIdEvent.oldValue);
               doh.is(p.get("persistenceId"), persistenceIdEvent.newValue);
-              var ce = subject._getExistingCacheEntry(p);
+              var ce = getCacheEntry(subject, p);
               doh.t(ce);
-              doh.is(p, ce.persistentObject);
+              doh.is(p, ce.payload);
               doh.is(1, ce.getNrOfReferers());
               doh.t(ce._referers.contains(tracker1));
               deferred.callback(true);
@@ -135,9 +128,9 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
         doh.t(p.persistenceId);
         doh.is(777, p.get("persistenceId"));
         doh.f(persistenceIdEvent);
-        var ce = subject._getExistingCacheEntry(p);
+        var ce = getCacheEntry(subject, p);
         doh.t(ce);
-        doh.is(p, ce.persistentObject);
+        doh.is(p, ce.payload);
         doh.is(1, ce.getNrOfReferers());
         doh.t(ce._referers.contains(tracker));
         doh.is(9, p.get("testProperty"));
@@ -150,14 +143,14 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
         doh.is("persistenceId", persistenceIdEvent.propertyName);
         doh.is(777, persistenceIdEvent.oldValue);
         doh.is(null, persistenceIdEvent.newValue);
-        var ce = subject._cache[poCacheKey(p)];
+        var ce = getCacheEntry(subject, p);
         doh.f(ce);
         doh.is(testPropertyValue, p.get("testProperty"));
         doh.is(firstTestPropertyEvent, testPropertyEvent);
       }
 
       function testUpdate(subject, waitMillis, semanticException, error) {
-        var p = new MockPo({persistenceId: 777});
+        var p = createMockPo();
         if (waitMillis) {
           p.waitMillis = waitMillis;
         }
@@ -192,11 +185,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
         doh.is(3, testPropertyEvent.oldValue);
         doh.is(9, testPropertyEvent.newValue);
         var deferred = new doh.Deferred();
-        var result = subject.update(p);
-        doh.t(result);
-        doh.t(result.persistentObject);
-        doh.is(p, result.persistentObject);
-        var resultPromise = result.promise;
+        var resultPromise = subject.update(p);
         doh.t(resultPromise);
         resultPromise.then(
           function(pSuccess) {
@@ -243,7 +232,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
         doh.is("persistenceId", persistenceIdEvent.propertyName);
         doh.is(777, persistenceIdEvent.oldValue);
         doh.is(null, persistenceIdEvent.newValue);
-        var ce = subject._cache[poCacheKey(p)];
+        var ce = getCacheEntry(subject, p);
         doh.f(ce);
         testDeleteNoChange(p, testPropertyEvent);
       }
@@ -253,9 +242,9 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
         doh.is(777, p.get("persistenceId"));
         doh.f(persistenceIdEvent);
 
-        var ce = subject._getExistingCacheEntry(p);
+        var ce = getCacheEntry(subject, p);
         doh.t(ce);
-        doh.is(p, ce.persistentObject);
+        doh.is(p, ce.payload);
         doh.is(1, ce.getNrOfReferers());
         doh.t(ce._referers.contains(tracker));
         testDeleteNoChange(p, testPropertyEvent);
@@ -267,7 +256,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
       }
 
       function testDelete(subject, waitMillis, semanticException, error) {
-        var p = new MockPo({persistenceId: 777});
+        var p = createMockPo();
         if (waitMillis) {
           p.waitMillis = waitMillis;
         }
@@ -296,11 +285,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           }
         });
         var deferred = new doh.Deferred();
-        var result = subject.remove(p);
-        doh.t(result);
-        doh.t(result.persistentObject);
-        doh.is(p, result.persistentObject);
-        var resultPromise = result.promise;
+        var resultPromise = subject.remove(p);
         doh.t(resultPromise);
         resultPromise.then(
           function(pSuccess) {
@@ -341,9 +326,9 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
         doh.f(persistenceIdEvent);
         doh.is(p.get("testProperty"), oldTestValue);
         doh.f(testPropertyEvent);
-        var ce = subject._getExistingCacheEntry(p);
+        var ce = getCacheEntry(subject, p);
         doh.t(ce);
-        doh.is(p, ce.persistentObject);
+        doh.is(p, ce.payload);
         doh.is(2, ce.getNrOfReferers());
         doh.t(ce._referers.contains(tracker1));
         doh.t(ce._referers.contains(tracker2));
@@ -351,7 +336,8 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
 
       function testGetCached(subject, waitMillis, idNotFoundException, error) {
         var id = 777;
-        var p = new MockPo({persistenceId: id});
+        var p = new MockPo();
+        p.reload({persistenceId: id});
         var oldTestValue = p.get("testProperty");
         var tracker1 = {};
         subject.track(p, tracker1);
@@ -372,6 +358,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           }
         });
         var tracker2 = {};
+        tracker2.PoType = MockPo;
         tracker2.resultJson = { persistenceId: 777 };
         var newTestValue = 9;
         tracker2.resultJson.testProperty = newTestValue;
@@ -385,14 +372,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           tracker2.error = error;
         }
         var deferred = new doh.Deferred();
-        var result = subject.get(MockPo, id, tracker2);
-        doh.t(result);
-        doh.t(result.persistentObject);
-        doh.is(p, result.persistentObject);
-        doh.is(oldTestValue, p.get("testProperty"));
-        doh.f(persistenceIdEvent);
-        doh.f(testPropertyEvent);
-        var resultPromise = result.promise;
+        var resultPromise = subject.retrieve(persistenceType, id, tracker2);
         doh.t(resultPromise);
         resultPromise.then(
           function(pSuccess) {
@@ -405,9 +385,9 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
               doh.is("testProperty", testPropertyEvent.propertyName);
               doh.is(oldTestValue, testPropertyEvent.oldValue);
               doh.is(newTestValue, testPropertyEvent.newValue);
-              var ce = subject._getExistingCacheEntry(p);
+              var ce = getCacheEntry(subject, p);
               doh.t(ce);
-              doh.is(p, ce.persistentObject);
+              doh.is(p, ce.payload);
               doh.is(2, ce.getNrOfReferers());
               doh.t(ce._referers.contains(tracker1));
               doh.t(ce._referers.contains(tracker2));
@@ -456,45 +436,18 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           tracker2.error = error;
         }
         var deferred = new doh.Deferred();
-        var result = subject.get(MockPo, id, tracker2);
-        doh.t(result);
-        doh.t(result.persistentObject);
-        var p = result.persistentObject;
-        doh.is(id, p.get("persistenceId"));
-        doh.t(p.isInstanceOf(MockPo));
-        var oldTestValue = p.get("testProperty");
-        var persistenceIdEvent = null;
-        p.watch("persistenceId", function(propertyName, oldValue, newValue) {
-          persistenceIdEvent = {
-            propertyName: propertyName,
-            oldValue: oldValue,
-            newValue: newValue
-          }
-        });
-        var testPropertyEvent = null;
-        p.watch("testProperty", function(propertyName, oldValue, newValue) {
-          testPropertyEvent = {
-            propertyName: propertyName,
-            oldValue: oldValue,
-            newValue: newValue
-          }
-        });
-        var resultPromise = result.promise;
+        var resultPromise = subject.retrieve(MockPo, id, tracker2);
         doh.t(resultPromise);
         resultPromise.then(
           function(pSuccess) {
             try {
-              doh.is(p, pSuccess);
-              doh.is(id, p.persistenceId);
-              doh.f(persistenceIdEvent);
-              doh.is(newTestValue, p.get("testProperty"));
-              doh.t(testPropertyEvent);
-              doh.is("testProperty", testPropertyEvent.propertyName);
-              doh.is(oldTestValue, testPropertyEvent.oldValue);
-              doh.is(newTestValue, testPropertyEvent.newValue);
-              var ce = subject._getExistingCacheEntry(p);
+              doh.t(pSuccess);
+              doh.is(id, pSuccess.get("persistenceId"));
+              doh.t(pSuccess.isInstanceOf(MockPo));
+              doh.is(newTestValue, pSuccess.get("testProperty"));
+              var ce = getCacheEntry(subject, p);
               doh.t(ce);
-              doh.is(p, ce.persistentObject);
+              doh.is(pSuccess, ce.payload);
               doh.is(1, ce.getNrOfReferers());
               doh.t(ce._referers.contains(tracker2));
               deferred.callback(true);
@@ -507,17 +460,10 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
             try {
               if (error) {
                 console.log("Expected error message: " + error);
-                doh.t(p.persistenceId);
-                doh.is(id, p.persistenceId);
-                doh.f(persistenceIdEvent);
-                doh.is(oldTestValue, p.get("testProperty"));
-                doh.f(testPropertyEvent);
-                var ce = subject._cache[cacheKey(MockPo, id)];
-                doh.f(ce);
               }
               else if (idNotFoundException) {
                 doh.is(idNotFoundException, problem);
-                removedFromServer(subject, p, persistenceIdEvent, oldTestValue, testPropertyEvent, testPropertyEvent);
+//                removedFromServer(subject, p, persistenceIdEvent, oldTestValue, testPropertyEvent, testPropertyEvent);
               }
               else {
                 doh.fail();
@@ -536,38 +482,19 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
 
         function testConstructor() {
           var subject = new CrudDaoMock();
-        },
-
-        {
-          name: "base url 1",
-          setUp: subjectSetup,
-          runTest: function(){
-            var result = this.subject.getUrl(PersistentObject, "777");
-            console.log(result);
-            doh.is(baseUrl1 + PersistentObject.prototype.declaredClass.replace(/\./g, "/") + "/777", result);
-          }
-        },
-
-        {
-          name: "base url 2",
-          setUp: subjectSetup,
-          runTest: function(){
-            var result = this.subject.getUrl(PersistentObject);
-            console.log(result);
-            doh.is(baseUrl1 + PersistentObject.prototype.declaredClass.replace(/\./g, "/"), result);
-          }
+          doh.invars(subject);
         },
 
         {
           name: "track1",
           setUp: subjectSetup,
           runTest: function() {
-            var p = new MockPo({persistenceId: 777});
+            var p = createMockPo();
             var tracker = {};
             this.subject.track(p, tracker);
-            var ce = this.subject._getExistingCacheEntry(p);
-            doh.t(this.subject._getExistingCacheEntry(p));
-            doh.is(p, ce.persistentObject);
+            var ce = getCacheEntry(this.subject, p);
+            doh.t(ce);
+            doh.is(p, ce.payload);
             doh.is(1, ce.getNrOfReferers());
             doh.t(ce._referers.contains(tracker));
           }
@@ -577,13 +504,13 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           name: "track2",
           setUp: subjectSetup,
           runTest: function() {
-            var p = new MockPo({persistenceId: 777});
+            var p = createMockPo();
             var tracker = {};
             this.subject.track(p, tracker);
             this.subject.track(p, tracker);
-            var ce = this.subject._getExistingCacheEntry(p);
-            doh.t(this.subject._getExistingCacheEntry(p));
-            doh.is(p, ce.persistentObject);
+            var ce = getCacheEntry(this.subject, p);
+            doh.t(ce);
+            doh.is(p, ce.payload);
             doh.is(1, ce.getNrOfReferers());
             doh.t(ce._referers.contains(tracker));
           }
@@ -593,14 +520,14 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           name: "track3",
           setUp: subjectSetup,
           runTest: function() {
-            var p = new MockPo({persistenceId: 777});
+            var p = createMockPo();
             var tracker1 = {};
             var tracker2 = 6;
             this.subject.track(p, tracker1);
             this.subject.track(p, tracker2);
-            var ce = this.subject._getExistingCacheEntry(p);
-            doh.t(this.subject._getExistingCacheEntry(p));
-            doh.is(p, ce.persistentObject);
+            var ce = getCacheEntry(this.subject, p);
+            doh.t(ce);
+            doh.is(p, ce.payload);
             doh.is(2, ce.getNrOfReferers());
             doh.t(ce._referers.contains(tracker1));
             doh.t(ce._referers.contains(tracker2));
@@ -611,15 +538,15 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           name: "stopTracking1",
           setUp: subjectSetup,
           runTest: function() {
-            var p = new MockPo({persistenceId: 777});
+            var p = createMockPo();
             var tracker1 = {};
             var tracker2 = 6;
             this.subject.track(p, tracker1);
             this.subject.track(p, tracker2);
             this.subject.stopTracking(p, tracker2);
-            var ce = this.subject._getExistingCacheEntry(p);
-            doh.t(this.subject._getExistingCacheEntry(p));
-            doh.is(p, ce.persistentObject);
+            var ce = getCacheEntry(this.subject, p);
+            doh.t(ce);
+            doh.is(p, ce.payload);
             doh.is(1, ce.getNrOfReferers());
             doh.t(ce._referers.contains(tracker1));
           }
@@ -629,16 +556,16 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           name: "stopTracking2",
           setUp: subjectSetup,
           runTest: function() {
-            var p = new MockPo({persistenceId: 777});
+            var p = createMockPo();
             var tracker1 = {};
             var tracker2 = 6;
             this.subject.track(p, tracker1);
             this.subject.track(p, tracker2);
             this.subject.stopTracking(p, tracker2);
-            var ce = this.subject._getExistingCacheEntry(p);
-            var key = ce.getKey();
+            var ce = getCacheEntry(this.subject, p);
+            doh.t(ce);
             this.subject.stopTracking(p, tracker1);
-            ce = this.subject._cache[key];
+            ce = getCacheEntry(this.subject, p);
             doh.f(ce);
           }
         },
@@ -647,17 +574,17 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           name: "_noLongerInServer",
           setUp: subjectSetup,
           runTest: function() {
-            var p = new MockPo({persistenceId: 777});
+            var p = createMockPo();
             var tracker1 = {};
             var tracker2 = 6;
             this.subject.track(p, tracker1);
             this.subject.track(p, tracker2);
-            var ce = this.subject._getExistingCacheEntry(p);
-            var key = ce.getKey();
-            this.subject._noLongerInServer(ce);
-            ce = this.subject._cache[key];
-            doh.f(ce);
+            var ce = getCacheEntry(this.subject, p);
+            doh.t(ce);
+            p._changeAttrValue("persistenceId", null);
             doh.is(null, p.persistenceId);
+            ce = getCacheEntry(this.subject, p);
+            doh.f(ce);
           }
         },
 
@@ -673,7 +600,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           name: "create2",
           setUp: subjectSetup,
           runTest: function() {
-            return testCreate(this.subject, 1500);
+            return testCreate(this.subject, 100);
           },
           timeout: 3000
         },
@@ -690,7 +617,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           name: "create4",
           setUp: subjectSetup,
           runTest: function() {
-            return testCreate(this.subject, 1500, "SemanticException");
+            return testCreate(this.subject, 100, "SemanticException");
           },
           timeout: 3000
         },
@@ -707,7 +634,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           name: "create6",
           setUp: subjectSetup,
           runTest: function() {
-            return testCreate(this.subject, 1500, null, "AN ERROR");
+            return testCreate(this.subject, 100, null, "AN ERROR");
           },
           timeout: 3000
         },
@@ -724,7 +651,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           name: "update2",
           setUp: subjectSetup,
           runTest: function() {
-            return testUpdate(this.subject, 1500);
+            return testUpdate(this.subject, 100);
           },
           timeout: 3000
         },
@@ -741,7 +668,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           name: "update4",
           setUp: subjectSetup,
           runTest: function() {
-            return testUpdate(this.subject, 1500, "SemanticException");
+            return testUpdate(this.subject, 100, "SemanticException");
           },
           timeout: 3000
         },
@@ -758,7 +685,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           name: "update6",
           setUp: subjectSetup,
           runTest: function() {
-            return testUpdate(this.subject, 1500, new IdNotFoundException());
+            return testUpdate(this.subject, 100, new IdNotFoundException());
           },
           timeout: 3000
         },
@@ -775,7 +702,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           name: "update8",
           setUp: subjectSetup,
           runTest: function() {
-            return testUpdate(this.subject, 1500, null, "AN ERROR");
+            return testUpdate(this.subject, 100, null, "AN ERROR");
           },
           timeout: 3000
         },
@@ -792,7 +719,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           name: "delete2",
           setUp: subjectSetup,
           runTest: function() {
-            return testDelete(this.subject, 1500);
+            return testDelete(this.subject, 100);
           },
           timeout: 3000
         },
@@ -809,7 +736,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           name: "delete4",
           setUp: subjectSetup,
           runTest: function() {
-            return testDelete(this.subject, 1500, "SemanticException");
+            return testDelete(this.subject, 100, "SemanticException");
           },
           timeout: 3000
         },
@@ -826,7 +753,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           name: "delete6",
           setUp: subjectSetup,
           runTest: function() {
-            return testDelete(this.subject, 1500, null, "AN ERROR");
+            return testDelete(this.subject, 100, null, "AN ERROR");
           },
           timeout: 3000
         },
@@ -844,7 +771,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           name: "get-Cached-2",
           setUp: subjectSetup,
           runTest: function() {
-            return testGetCached(this.subject, 1500);
+            return testGetCached(this.subject, 100);
           },
           timeout: 3000
         },
@@ -862,7 +789,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           name: "get-Cached-4",
           setUp: subjectSetup,
           runTest: function() {
-            return testGetCached(this.subject, 1500, new IdNotFoundException());
+            return testGetCached(this.subject, 100, new IdNotFoundException());
           },
           timeout: 3000
         },
@@ -880,7 +807,7 @@ define(["dojo/main", "ppwcode/contracts/doh", "./CrudDaoMock", "../PersistentObj
           name: "get-Cached-6",
           setUp: subjectSetup,
           runTest: function() {
-            return testGetCached(this.subject, 1500, null, "AN ERROR");
+            return testGetCached(this.subject, 100, null, "AN ERROR");
           },
           timeout: 3000
         },
