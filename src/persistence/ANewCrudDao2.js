@@ -54,12 +54,12 @@ define(["dojo/_base/declare",
       urlBuilder: null,
 
       // revive: Function
-      //   Object x Object x _Cache -> Object|Promise of Object
+      //   Object x Object x CrudDao -> Object|Promise of Object
       //   Function that returns the Promise of a revived object graph, based on an
       //   object tree (intended to be parsed JSON) of which the objects are to be reloaded
-      //   in PersistentObjects, new or found in _Cache. Objects are added to the given _Cache
-      //   with the second argument as referer on the first level, and the resulting PersistentObjects
-      //   as referer for PersistentObject further down in the tree.
+      //   in PersistentObjects, new or found in the cache of CrudDao. Objects are added to the cache
+      //   of the given CrudDao with the second argument as referer on the first level, and the
+      //   resulting PersistentObjects as referer for PersistentObject further down in the tree.
       //   As this might require module loading, the result might be a Promise.
       revive: null,
 
@@ -134,7 +134,7 @@ define(["dojo/_base/declare",
             }
             console.info("Retrieved successfully from server: " + data.length + " items");
             // the then Promise resolves with the resolution of the revive Promise, an Array
-            return self.revive(data, referer, self._cache); // return Promise
+            return self.revive(data, referer, self); // return Promise
           },
           function(err) {
             self._handleException(err); // of the request or the revive (require)
@@ -192,7 +192,7 @@ define(["dojo/_base/declare",
         loadPromise.then(
           function(data) {
             console.info("Create succes in server: " + data);
-            var revivePromise = self.revive(data, referer, self._cache);
+            var revivePromise = self.revive(data, referer, self);
             /*
              For create, tracking will only be added at the end, because we need a persistenceId for that.
              That is not a problem, since nobody should have a reference yet, except referer ...
@@ -226,6 +226,17 @@ define(["dojo/_base/declare",
 
       isOperational: function() {
         return this.urlBuilder && this.revive;
+      },
+
+      getCachedByTypeAndId: function(/*String*/ serverType, /*Number*/ persistenceId) {
+        // summary:
+        //   gets a cached PersistentObject by serverType and id
+        //   returns undefined or null if there is no such entry
+        this._c_pre(function() {return typeOf(serverType) === "string";});
+        // IDEA subtype of PersistentObject
+        this._c_pre(function() {return typeOf(persistenceId) === "number";});
+
+        return this._cache.getByTypeAndId(serverType, persistenceId);
       },
 
       track: function(/*PersistentObject*/ po, /*Any*/ referrer) {
@@ -313,7 +324,7 @@ define(["dojo/_base/declare",
         loadPromise.then(
           function(data) {
             console.info("Retrieved successfully from server: " + data);
-            var revivePromise = self.revive(data, referer, self._cache);
+            var revivePromise = self.revive(data, referer, self);
             revivePromise.then(
               function(revived) {
                 deferred.resolve(revived);

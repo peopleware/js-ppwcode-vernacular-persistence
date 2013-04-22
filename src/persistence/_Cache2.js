@@ -149,8 +149,19 @@ define(["dojo/_base/declare",
       //    The keys are getKey() for PersistentObject
       _data: null,
 
-      constructor: function() {
+      // extraOnRemove: Function?
+      //   PersistentObject x Cache --> undefined
+      //   Optional. If here, this function is called when an entry disappears from the trash.
+      _extraOnRemove: null,
+
+      constructor: function(/*Function?*/ extraOnRemove) {
+        // extraOnRemove: Function?
+        //   PersistentObject x Cache --> undefined
+        //   Optional. If here, this function is called when an entry disappears from the trash.
         this._data = {};
+        if (extraOnRemove) {
+          this._extraOnRemove = extraOnRemove;
+        }
       },
 
       _track: function (/*String*/ key, /*PersistentObject*/ po, /*Object*/ referer) {
@@ -195,15 +206,11 @@ define(["dojo/_base/declare",
               /* Concurrent modification: by the time we get here, the entry might no longer
                  exist (removed by an earlier branch of this backtrack). That is no problem
                  though, because we have if (entry) above. */
-              self._removeReferer(propertyName, entry.payload);
+              self._removeReferer(propertyName, entry.payload, extra);
               // also do this for all its payload's LazyToManies
-              // MUDO
-//              Object.keys(entry.payload).forEach(function(poPropName) {
-//                var propValue = entry.payload[poPropName];
-//                if (propValue && propValue.isInstanceOf && propValue.isInstanceOf(LazyToMany)) {
-//                  self._removeReferer(propertyName, propValue);
-//                }
-//              });
+              if (self._extraOnRemove) {
+                self._extraOnRemove(entry.payload, self);
+              }
             });
           }
         }
@@ -212,7 +219,7 @@ define(["dojo/_base/declare",
       getByTypeAndId: function(/*String*/ serverType, /*Number*/ persistenceId) {
         // summary:
         //   gets a cached PersistentObject by serverType and id
-        //   returns undefined if there is no such entry
+        //   returns undefined or null if there is no such entry
         this._c_pre(function() {return typeOf(serverType) === "string";});
         // IDEA subtype of PersistentObject
         this._c_pre(function() {return typeOf(persistenceId) === "number";});
