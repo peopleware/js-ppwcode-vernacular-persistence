@@ -206,8 +206,9 @@ define(["dojo/_base/declare",
               /* Concurrent modification: by the time we get here, the entry might no longer
                  exist (removed by an earlier branch of this backtrack). That is no problem
                  though, because we have if (entry) above. */
-              self._removeReferer(propertyName, entry.payload, extra);
+              self._removeReferer(propertyName, entry.payload);
               // also do this for all its payload's LazyToManies
+              // MUDO unfinished
               if (self._extraOnRemove) {
                 self._extraOnRemove(entry.payload, self);
               }
