@@ -104,6 +104,15 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin", "ppwcode/oddsAndEnds/t
           this._c_pre(function() {return typeOf(id) === "number";});
 
           this._c_ABSTRACT();
+        },
+
+        allPersistenceIds: function(serverType) {
+          // summary:
+          //   Returns a URL to get all the persistenceIds that exist for the given
+          //   `serverType`.
+          this._c_pre(function() {return typeOf(serverType) === "string";});
+
+          this._c_ABSTRACT();
         }
 
       });
