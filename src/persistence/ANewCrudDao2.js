@@ -491,6 +491,26 @@ define(["dojo/_base/declare",
         var url = this.urlBuilder.search(serverType, query);
         var resultPromise = this._refresh(result, url, query, null); // no referer
         return resultPromise; // return Promise
+      },
+
+      retrieveAllPersistenceIds: function(/*String*/ serverType) {
+        // summary:
+        //   Returns the Promise of an array with all the persistenceIds that
+        //   exist for the given serverType.
+        this._c_pre(function() {return typeOf(serverType) === "string";});
+
+        console.log("Requested GET of all persistenceIds of " + serverType);
+        var url = this.urlBuilder.allPersistenceIds(serverType);
+        var loadPromise = request(
+          url,
+          {
+            method:"GET",
+            handleAs:"json",
+            headers:{"Accept":"application/json"},
+            withCredentials: true
+          }
+        );
+        return loadPromise; // return Promise
       }
 
     });
