@@ -182,6 +182,16 @@ define(["dojo/_base/declare",
         return this._data[key] && this._data[key].payload; // return PersistentObject
       },
 
+      stopTrackingAsReferer: function (referer) {
+        var self = this;
+        Object.keys(this._data).forEach(function (propertyName) {
+          /* Concurrent modification: by the time we get here, the entry might no longer
+             exist (removed by an earlier branch of this backtrack). That is no problem
+             though, because we have if (entry) above. */
+          self._removeReferer(propertyName, referer);
+        });
+      },
+
       _removeReferer: function(/*String*/ key, /*Object*/ referer) {
         // summary:
         //   Remove referer as referer to the payload of the entry with `key`
@@ -201,18 +211,12 @@ define(["dojo/_base/declare",
             delete this._data[key];
             console.log("Entry removed from cache: " + entry.payload.toString());
             // now, if payload was itself a referer, we need to remove if everywhere as referer
-            var self = this;
-            Object.keys(this._data).forEach(function(propertyName) {
-              /* Concurrent modification: by the time we get here, the entry might no longer
-                 exist (removed by an earlier branch of this backtrack). That is no problem
-                 though, because we have if (entry) above. */
-              self._removeReferer(propertyName, entry.payload);
-              // also do this for all its payload's LazyToManies
-              // MUDO unfinished
-              if (self._extraOnRemove) {
-                self._extraOnRemove(entry.payload, self);
-              }
-            });
+            this.stopTrackingAsReferer(entry.payload);
+            // also do this for all its payload's LazyToManies
+            // MUDO unfinished
+            if (self._extraOnRemove) {
+              self._extraOnRemove(entry.payload, self);
+            }
           }
         }
       },
