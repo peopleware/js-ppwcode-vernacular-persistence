@@ -137,9 +137,10 @@ define(["dojo/_base/declare",
             return self.revive(data, referer, self); // return Promise
           },
           function(err) {
-            self._handleException(err); // of the request or the revive (require)
+            throw self._handleException(err); // of the request
           }
         );
+        // no need to handle errors of revive: they are errors
         var storePromise = revivePromise.then(function(/*Array*/ revived) {
           if (typeOf(revived) !== "array") {
             throw new Error("expected array from remote call");
@@ -178,7 +179,6 @@ define(["dojo/_base/declare",
         var url = this.urlBuilder.get(method)(po.get("persistenceType"), po.get("persistenceId"));
         console.log(method + " URL is: " + url);
         var self = this;
-        var deferred = new Deferred();
         var loadPromise = request(
           url,
           {
@@ -189,39 +189,29 @@ define(["dojo/_base/declare",
             withCredentials: true
           }
         );
-        loadPromise.then(
+        var revivePromise = loadPromise.then(
           function(data) {
             console.info("Create succes in server: " + data);
-            var revivePromise = self.revive(data, referer, self);
-            /*
-             For create, tracking will only be added at the end, because we need a persistenceId for that.
-             That is not a problem, since nobody should have a reference yet, except referer ...
-             unless somebody does a very fast intermediate retrieve (which would be bad code, since
-             that retrieve needs to have the persistenceId, which we don't even know yet).
-             So with this caveat, there will only be 1 version of this new object in our RAM.
-
-             For delete, the po will have persistenceId == null afterwards. It can no longer be cached,
-             and is removed, as payload and referer.
-
-             MUDO: the same happens when we get an IdNotFoundException in the other methods
-             */
-            revivePromise.then(
-              function(revived) {
-                if (po && revived !== po) {
-                  throw new Error("revive promise should have provided po");
-                }
-                deferred.resolve(revived);
-              },
-              function(exc) {
-                deferred.reject(self._handleException(exc));
-              }
-            );
+            return self.revive(data, referer, self);
           },
-          function(exc) {
-            deferred.reject(self._handleException(exc)); // communication error or IdNotFoundException of related objects
+          function(err) {
+            throw self._handleException(err); // of the request
           }
         );
-        return deferred.promise;
+        // no need to handle errors of revive: they are errors
+        /*
+         For create, tracking will only be added at the end, because we need a persistenceId for that.
+         That is not a problem, since nobody should have a reference yet, except referer ...
+         unless somebody does a very fast intermediate retrieve (which would be bad code, since
+         that retrieve needs to have the persistenceId, which we don't even know yet).
+         So with this caveat, there will only be 1 version of this new object in our RAM.
+
+         For delete, the po will have persistenceId == null afterwards. It can no longer be cached,
+         and is removed, as payload and referer.
+
+         MUDO: the same happens when we get an IdNotFoundException in the other methods
+         */
+        return revivePromise;
       },
 
       isOperational: function() {
@@ -310,7 +300,6 @@ define(["dojo/_base/declare",
         var url = this.urlBuilder.retrieve(serverType, persistenceId);
         console.log("GET URL is: " + url);
         var self = this;
-        var deferred = new Deferred();
         var loadPromise = request(
           url,
           {
@@ -321,24 +310,17 @@ define(["dojo/_base/declare",
             withCredentials: true
           }
         );
-        loadPromise.then(
+        var revivePromise = loadPromise.then(
           function(data) {
             console.info("Retrieved successfully from server: " + data);
-            var revivePromise = self.revive(data, referer, self);
-            revivePromise.then(
-              function(revived) {
-                deferred.resolve(revived);
-              },
-              function(exc) {
-                deferred.reject(self._handleException(exc));
-              }
-            );
+            return self.revive(data, referer, self);
           },
-          function(exc) {
-            deferred.reject(self._handleException(exc)); // communication error or IdNotFoundException of related objects
+          function(err) {
+            throw self._handleException(err); // of the request
           }
         );
-        return deferred.promise;
+        // no need to handle errors of revive: they are errors
+        return revivePromise;
       },
 
       create: function(/*PersistentObject*/ po, /*Any*/ referer) {

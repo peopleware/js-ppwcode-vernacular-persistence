@@ -143,10 +143,21 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
         return all(elementsOrPromises); // all does when internally, and puts all results in an array
       }
 
-      function processObject(/*Object*/ o, /*Object*/ referer) {
-        var propertyValuesOrPromises = Object.keys(o).reduce(
+      function processObject(/*Object*/ jsonObject, /*Object*/ referer) {
+        // summary:
+        //   Returns the promise of a new object with revived versions
+        //   of all own enumerable properties of jsonPo, recursively.
+        // jsonObject: Object
+        //   A low level, native object. All its properties must be
+        //   primitives, other jsonObjects, recursively, or Arrays with
+        //   primitive or jsonObject elements, recursively.
+        // referer: Object
+        //   This object, if given, is used as referer in reviving the
+        //   the properties of jsonObject.
+
+        var propertyValuesOrPromises = Object.keys(jsonObject).reduce(
           function (acc, pName) {
-            acc[pName] = reviveBackTrack(o[pName], referer);
+            acc[pName] = reviveBackTrack(jsonObject[pName], referer);
             return acc;
           },
           {} // a fresh intermediate object
@@ -154,15 +165,40 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
         return all(propertyValuesOrPromises);  // all does when internally, and puts all results in an object
       }
 
-      function reloadTypedObject(o, po, referer, deferred) {
-        var intermediateObjectPromise = processObject(o, po); // po is referer going deep
+      function reloadTypedObject(jsonPo, po, referer, deferred) {
+        // summary:
+        //   Resolves `deferred` with `po`, reloaded with jsonPo,
+        //   and tracked in `crudDao` by `referer`.
+        // jsonPo: Object
+        //   A low level, native object. All its properties must be
+        //   primitives, other jsonPos, recursively, or Arrays with
+        //   primitive or jsonPo elements, recursively.
+        //   Must conform to the rules of json objects to reload PersistentObjects in general,
+        //   and of po in particular.
+        // po: PersistentObject
+        //   The PersistentObject in which to reload the data.
+        //   Also used as referer when reviving `jsonPo` property values
+        //   recursively.
+        // referer: Object
+        //   This object, if given, will track `po` in `crudDao` when
+        //   `deferred` is resolved.
+        // deferred: Deferred
+        //   After successful reload, resolve this deferred.
+        //   Reject it if anything goes wrong.
+
+        var intermediateObjectPromise = processObject(jsonPo, po); // po is referer going deep
         var reloadPromise = intermediateObjectPromise.then(
           function (intermediateObject) {
-            po.reload(intermediateObject);
-            if (referer) {
-              crudDao.track(po, referer);
+            try {
+              po.reload(intermediateObject);
+              if (referer) {
+                crudDao.track(po, referer);
+              }
+              deferred.resolve(po);
             }
-            deferred.resolve(po);
+            catch (err) {
+              deferred.reject(e);
+            }
           },
           function (e) {
             deferred.reject(e);
@@ -194,28 +230,66 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
         });
       }
 
-      function processTypedObject2(/*Object*/ o, /*Object*/ referer, /*Deferred*/ deferred) {
-        var mid = serverType2Mid(o["$type"]);
+      function createTypedObject(/*Object*/ jsonPo, /*Object*/ referer, /*Deferred*/ deferred) {
+        // summary:
+        //   `deferred` is resolved with a new object of a type defined by jsonPo["$type"], reloaded
+        //   with a revived version of jsonPo.
+        //   The new object is also used as referer when reviving `jsonPo` property values
+        //   recursively.
+        // jsonPo: Object
+        //   A low level, native object. All its properties must be
+        //   primitives, other jsonPos, recursively, or Arrays with
+        //   primitive or jsonPo elements, recursively.
+        //   Must conform to the rules of json objects to reload PersistentObjects in general,
+        //   and of type jsonPo["$type"] in particular.
+        // referer: Object
+        //   This object, if given, will track the new object in `crudDao`
+        //   when the `deferred` is resolved.
+
+        var mid = serverType2Mid(jsonPo["$type"]);
           // we don't want to wait for the promises on the intermediateObject
           // we can use the original value: strings are not revived in any special way
         var requireErrorHandle = require.on("error", function (err) {
           requireErrorHandle.remove(); // handler did its work
           deferred.reject(err); // this turns out to be a different structure than documented, but whatever
-          // can't return anything here
         });
         require([mid], function (Constructor) {
-          requireErrorHandle.remove(); // require worked successfully
-          var fresh = new Constructor();
-          instantiateLazyToMany(fresh);
-          reloadTypedObject(o, fresh, referer, deferred);
+          try {
+            requireErrorHandle.remove(); // require worked successfully
+            var fresh = new Constructor();
+            instantiateLazyToMany(fresh);
+            reloadTypedObject(jsonPo, fresh, referer, deferred);
+          }
+          catch (err) {
+            deferred.reject(err);
+          }
         });
       }
 
-      function processTypedObject(value, referer) {
-        var type = value["$type"];
-        var id = value.persistenceId;
+      function processTypedObject(jsonPo, referer) {
+        // summary:
+        //   Returns the Promise of a PersistentObject, of the type described in
+        //   `jsonPo["$type"]`, reloaded with `jsonPo`.
+        //   It is either an object from the `crudDao` cache, or a new one.
+        //   When the Promise resolves, referer will be tracking the resolved object.
+        // jsonPo: Object
+        //   A low level, native object. All its properties must be
+        //   primitives, other jsonPos, recursively, or Arrays with
+        //   primitive or jsonPo elements, recursively.
+        //   Must conform to the rules of json objects to reload PersistentObjects in general,
+        //   and of type jsonPo["$type"] in particular.
+        //   jsonPo.persistenceId cannot be null or undefined.
+        // referer: Object
+        //   This object, if given, will track the resulting object in `crudDao`
+        //   when the Promise resolves.
+
+        var type = jsonPo["$type"];
+        var id = jsonPo.persistenceId;
         var key = PersistentObject.keyForId(type, id);
         var cachedPromise = promiseCache[key];
+
+        // reviving this semantic instance already; we piggyback
+        // on the existing revive
         if (cachedPromise) {
           return cachedPromise.then(
             function(po) {
@@ -223,22 +297,23 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
                 crudDao.track(po, referer);
               }
               return po;
-            },
-            function(err) {
-              return err;
             }
           );
         }
 
         // not encountered this key yet
+        //   We want the promise in the promiseCache before we go deep. Therefor, we
+        //   do not store the resulting promise of the deep call, but create a deferred first.
+        //   createTypedObject needs a deferred anyway, to deal with the require/promise impedance
+        //   mismatch.
         var deferred = new Deferred();
         promiseCache[key] = deferred.promise;
         var cachedPo = crudDao.getCachedByTypeAndId(type, id);
         if (cachedPo) {
-          reloadTypedObject(value, cachedPo, referer, deferred);
+          reloadTypedObject(jsonPo, cachedPo, referer, deferred);
         }
         else { // we need a new object
-          processTypedObject2(value, referer, deferred);
+          createTypedObject(jsonPo, referer, deferred);
         }
         return deferred.promise;
       }
