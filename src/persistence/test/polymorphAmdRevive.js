@@ -16,21 +16,42 @@
 
 define(["dojo/main", "ppwcode/contracts/doh",
         "../polymorphAmdRevive",
-        "../_Cache",
-        "ppwcode/oddsAndEnds/typeOf", "dojo/promise/Promise"],
+        "../_Cache", "../CrudDao",
+        "ppwcode/oddsAndEnds/typeOf", "dojo/promise/Promise", "dojo/Deferred",
+        "require"],
   // NOTE: don't require Person; this will ruin the test (reviver must find it itself)
 
 
     function(dojo, doh,
              revive,
-             _Cache,
-             typeOf, Promise) {
+             _Cache, CrudDao,
+             typeOf, Promise, Deferred,
+             require) {
 
       var referer = {};
-      var serverType2Mid = function(serverType) {
-        return "ppwcode/persistence/test/mock/" + serverType;
+      var serverType2Constructor = function(serverType) {
+        var deferred = new Deferred();
+        var mid = "./mock/" + serverType;
+        var requireErrorHandle = require.on("error", function (err) {
+          requireErrorHandle.remove(); // handler did its work
+          deferred.reject(err); // this turns out to be a different structure than documented, but whatever
+        });
+        require([mid], function (Constructor) {
+          try {
+            requireErrorHandle.remove(); // require worked successfully
+            deferred.resolve(Constructor);
+          }
+          catch (err) {
+            deferred.reject(err);
+          }
+        });
+        return deferred.promise;
       };
-      var cache = new _Cache();
+      var crudDao = new CrudDao();
+      crudDao.revive = function(data, referer, crudDao) {
+        return revive(data, referer, serverType2Constructor, crudDao);
+      };
+//      crudDao.urlBuilder = ???; not needed for test
 
       doh.register("ppwcode vernacular semantics revive", [
 
@@ -40,9 +61,9 @@ define(["dojo/main", "ppwcode/contracts/doh",
             this.parsedJson = undefined;
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
             doh.is(undefined, result);
-            console.log(cache.report());
+            console.log(crudDao._cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -55,9 +76,9 @@ define(["dojo/main", "ppwcode/contracts/doh",
             this.parsedJson = null;
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
             doh.is(null, result);
-            console.log(cache.report());
+            console.log(crudDao._cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -70,10 +91,10 @@ define(["dojo/main", "ppwcode/contracts/doh",
             this.parsedJson = "This is a string";
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
             doh.is("string", typeOf(result));
             doh.is(this.parsedJson, result);
-            console.log(cache.report());
+            console.log(crudDao._cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -86,10 +107,10 @@ define(["dojo/main", "ppwcode/contracts/doh",
             this.parsedJson = "";
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
             doh.is("string", typeOf(result));
             doh.is(this.parsedJson, result);
-            console.log(cache.report());
+            console.log(crudDao._cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -102,10 +123,10 @@ define(["dojo/main", "ppwcode/contracts/doh",
             this.parsedJson = 5;
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
             doh.is("number", typeOf(result));
             doh.is(this.parsedJson, result);
-            console.log(cache.report());
+            console.log(crudDao._cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -118,10 +139,10 @@ define(["dojo/main", "ppwcode/contracts/doh",
             this.parsedJson = 0;
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
             doh.is("number", typeOf(result));
             doh.is(this.parsedJson, result);
-            console.log(cache.report());
+            console.log(crudDao._cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -134,10 +155,10 @@ define(["dojo/main", "ppwcode/contracts/doh",
             this.parsedJson = -5.4;
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
             doh.is("number", typeOf(result));
             doh.is(this.parsedJson, result);
-            console.log(cache.report());
+            console.log(crudDao._cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -150,10 +171,10 @@ define(["dojo/main", "ppwcode/contracts/doh",
             this.parsedJson = true;
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
             doh.is("boolean", typeOf(result));
             doh.is(this.parsedJson, result);
-            console.log(cache.report());
+            console.log(crudDao._cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -166,10 +187,10 @@ define(["dojo/main", "ppwcode/contracts/doh",
             this.parsedJson = false;
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
             doh.is("boolean", typeOf(result));
             doh.is(this.parsedJson, result);
-            console.log(cache.report());
+            console.log(crudDao._cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -182,10 +203,10 @@ define(["dojo/main", "ppwcode/contracts/doh",
             this.parsedJson = JSON;
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
             doh.is("json", typeOf(result));
             doh.is(this.parsedJson, result);
-            console.log(cache.report());
+            console.log(crudDao._cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -198,10 +219,10 @@ define(["dojo/main", "ppwcode/contracts/doh",
             this.parsedJson = Math;
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
             doh.is("math", typeOf(result));
             doh.is(this.parsedJson, result);
-            console.log(cache.report());
+            console.log(crudDao._cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -214,10 +235,10 @@ define(["dojo/main", "ppwcode/contracts/doh",
             this.parsedJson = new ReferenceError();
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
             doh.is("error", typeOf(result));
             doh.is(this.parsedJson, result);
-            console.log(cache.report());
+            console.log(crudDao._cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -230,10 +251,10 @@ define(["dojo/main", "ppwcode/contracts/doh",
             this.parsedJson = new Date();
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
             doh.is("date", typeOf(result));
             doh.is(this.parsedJson, result);
-            console.log(cache.report());
+            console.log(crudDao._cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -246,10 +267,10 @@ define(["dojo/main", "ppwcode/contracts/doh",
             this.parsedJson = /abc/g;
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Mid, cache);
+            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
             doh.is("regexp", typeOf(result));
             doh.is(this.parsedJson, result);
-            console.log(cache.report());
+            console.log(crudDao._cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -263,7 +284,7 @@ define(["dojo/main", "ppwcode/contracts/doh",
           },
           runTest: function() {
             var deferred = new doh.Deferred();
-            var resultPromise = revive(this.parsedJson, referer, serverType2Mid, cache);
+            var resultPromise = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
             doh.is("object", typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
             resultPromise.then(
@@ -271,7 +292,7 @@ define(["dojo/main", "ppwcode/contracts/doh",
                 try {
                   doh.is("array", typeOf(result));
                   doh.is(0, result.length);
-                  console.log(cache.report());
+                  console.log(crudDao._cache.report());
                   deferred.callback(result);
                 }
                 catch(e) {
@@ -297,7 +318,7 @@ define(["dojo/main", "ppwcode/contracts/doh",
           runTest: function() {
             var deferred = new doh.Deferred();
             var parsedJson = this.parsedJson;
-            var resultPromise = revive(parsedJson, referer, serverType2Mid, cache);
+            var resultPromise = revive(parsedJson, referer, serverType2Constructor, crudDao);
             doh.is("object", typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
             resultPromise.then(
@@ -311,7 +332,7 @@ define(["dojo/main", "ppwcode/contracts/doh",
                   doh.f(parsedJson[8] === result[8]);
                   doh.f(parsedJson[8][4] === result[8][4]);
                   doh.f(parsedJson[8][4][1] === result[8][4][1]);
-                  console.log(cache.report());
+                  console.log(crudDao._cache.report());
                   deferred.callback(result);
                 }
                 catch(e) {
@@ -336,7 +357,7 @@ define(["dojo/main", "ppwcode/contracts/doh",
           },
           runTest: function() {
             var deferred = new doh.Deferred();
-            var resultPromise = revive(this.parsedJson, referer, serverType2Mid, cache);
+            var resultPromise = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
             doh.is("object", typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
             resultPromise.then(
@@ -344,7 +365,7 @@ define(["dojo/main", "ppwcode/contracts/doh",
                 try {
                   doh.is("object", typeOf(result));
                   doh.is(0, Object.keys(result));
-                  console.log(cache.report());
+                  console.log(crudDao._cache.report());
                   deferred.callback(result);
                 }
                 catch(e) {
@@ -386,7 +407,7 @@ define(["dojo/main", "ppwcode/contracts/doh",
           runTest: function() {
             var deferred = new doh.Deferred();
             var parsedJson = this.parsedJson;
-            var resultPromise = revive(parsedJson, referer, serverType2Mid, cache);
+            var resultPromise = revive(parsedJson, referer, serverType2Constructor, crudDao);
             doh.is("object", typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
             resultPromise.then(
@@ -401,7 +422,7 @@ define(["dojo/main", "ppwcode/contracts/doh",
                   doh.f(parsedJson.nestedObject2.pDate === result.nestedObject2.pDate);
                   doh.f(parsedJson.nestedObject2.nestedObject === result.nestedObject2.nestedObject);
                   doh.f(parsedJson.nestedObject2.nestedObject.arrayProp === result.nestedObject2.nestedObject.arrayProp);
-                  console.log(cache.report());
+                  console.log(crudDao._cache.report());
                   deferred.callback(result);
                 }
                 catch(e) {
@@ -434,7 +455,7 @@ define(["dojo/main", "ppwcode/contracts/doh",
           },
           runTest: function() {
             var deferred = new doh.Deferred();
-            var resultPromise = revive(this.parsedJson, referer, serverType2Mid, cache);
+            var resultPromise = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
             doh.is("object", typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
             resultPromise.then(
@@ -443,7 +464,7 @@ define(["dojo/main", "ppwcode/contracts/doh",
                   doh.is("object", typeOf(result));
                   doh.t(result.isInstanceOf && Object.getPrototypeOf(result).persistenceType === "PERSON");
                   doh.is(7, result.get("persistenceId"));
-                  console.log(cache.report());
+                  console.log(crudDao._cache.report());
                   deferred.callback(result);
                 }
                 catch(e) {
@@ -513,7 +534,7 @@ define(["dojo/main", "ppwcode/contracts/doh",
           },
           runTest: function() {
             var deferred = new doh.Deferred();
-            var resultPromise = revive(this.parsedJson, referer, serverType2Mid, cache);
+            var resultPromise = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
             doh.is("object", typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
             var parsedJson = this.parsedJson;
@@ -525,7 +546,7 @@ define(["dojo/main", "ppwcode/contracts/doh",
                   doh.t(result[0] === result[2]);
                   doh.f(result[0] === result[1]);
                   doh.f(result[0] === result[3]);
-                  console.log(cache.report());
+                  console.log(crudDao._cache.report());
                   deferred.callback(result);
                 }
                 catch(e) {
@@ -622,7 +643,7 @@ define(["dojo/main", "ppwcode/contracts/doh",
           },
           runTest: function() {
             var deferred = new doh.Deferred();
-            var resultPromise = revive(this.parsedJson, referer, serverType2Mid, cache);
+            var resultPromise = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
             doh.is("object", typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
             var parsedJson = this.parsedJson;
@@ -635,7 +656,7 @@ define(["dojo/main", "ppwcode/contracts/doh",
                   doh.t(result[1].parent === result[3].parent);
                   doh.f(result[0].parent === result[1].parent);
                   doh.f(result[2].parent === result[3].parent);
-                  console.log(cache.report());
+                  console.log(crudDao._cache.report());
                   deferred.callback(result);
                 }
                 catch(e) {

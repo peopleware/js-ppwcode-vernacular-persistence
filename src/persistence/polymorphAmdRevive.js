@@ -23,7 +23,7 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
 
     function revive(/*Object*/   graphRoot,
                     /*Object*/   referer,
-                    /*Function*/ serverType2Mid,
+                    /*Function*/ serverType2Constructor,
                     /*CrudDao*/  crudDao) {
       // summary:
       //   Returns the Promise of a result, or a result, transforming
@@ -39,21 +39,23 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
       //   This should be a tree (no cross-references, no loops).
       // referer: Object
       //   The first referer when adding resulting objects to the cache of `crudDao`.
-      // serverType2Mid: Function
-      //   String --> String
+      // serverType2Constructor: Function
+      //   String --> Promise<Constructor>
       //   Will be called with the value of type-properties of objects in the value-graph,
-      //   and is expected to return the MID of the class in JavaScript that matches
-      //   the server type defined by the given type-property.
-      //   We suggest to use Convention over Configuration here, to have an easy conversion,
+      //   and is expected to return a Promise for the Constructor of the class in JavaScript
+      //   that matches the server type defined by the given type-property. The Constructor
+      //   must be for a subtype of PersistentObject.
+      //   For this, most often an AMD module should be loaded, transforming the type-property
+      //   in a MID. We suggest to use Convention over Configuration here, to have an easy conversion,
       //   but in general, this may be a dictionary lookup.
       // crudDao: CrudDao
       //   When an object with a "$type"-property is encountered in
       //   the graph of which `graphRoot` is the root, we first check if an object
       //   with that `persistenceType` and `persistenceId` exists in the cache of `crudDao`.
       //   If it does, it is reloaded with the revival of the properties of the graph-object.
-      //   If such an object does not exist in the cache, a new object is created of the
-      //   type defined in the module referred to by the MID returned by `serverType2Mid`,
-      //   and this object is added to the cache of `crudDao` with a referer.
+      //   If such an object does not exist in the cache, a new object is created with the
+      //   Constructor returned by `serverType2Constructor` given the type defined in the object,
+      //   and this new object is added to the cache of `crudDao` with a referer.
       //   The referer is the given `referer` for the first levels of the graph, but
       //   the found or created PersistentObjects for the revival of their properties.
       //
@@ -105,9 +107,10 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
       //   and a non-null persistenceId for which there is no Promise in the private revive-cache,
       //   we will try to create an object of the given type. This is the reason this reviver
       //   returns Promises.
-      //   The value of the "$type"-property is offered to `serverType2Mid`, which should
-      //   return the MID. We will try to load a module with this MID. It should return
-      //   a constructor for a subclass of PersistentObject. An object is created with
+      //   The value of the "$type"-property is offered to `serverType2Constructor`, which should
+      //   return the Constructor of a subclass of PersistentObject. This returns a Promise, because
+      //   it will probably need to load an AMD module using the "$type"-property value as the basis
+      //   for a MID. An object is created with
       //   this constructor, without arguments. This object will be reloaded with a new object
       //   that contains the result of a recursive revive of all the property values of the
       //   original object, where the found object is used as referer. Once reloaded, the new
@@ -246,24 +249,16 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
         //   This object, if given, will track the new object in `crudDao`
         //   when the `deferred` is resolved.
 
-        var mid = serverType2Mid(jsonPo["$type"]);
-          // we don't want to wait for the promises on the intermediateObject
-          // we can use the original value: strings are not revived in any special way
-        var requireErrorHandle = require.on("error", function (err) {
-          requireErrorHandle.remove(); // handler did its work
-          deferred.reject(err); // this turns out to be a different structure than documented, but whatever
-        });
-        require([mid], function (Constructor) {
-          try {
-            requireErrorHandle.remove(); // require worked successfully
-            var fresh = new Constructor();
-            instantiateLazyToMany(fresh);
-            reloadTypedObject(jsonPo, fresh, referer, deferred);
+        // for the $type, we don't want to wait for the promises on the intermediateObject
+        // we can use the original value: strings are not revived in any special way
+        var poConstructorPromise = serverType2Constructor(jsonPo["$type"]);
+        // we can't process jsonPo in parallel, because we need a po as referer for deep revival beforehand
+        poConstructorPromise.then(function(/*Function*/ Constructor) {
+            var freshPo = new Constructor();
+            instantiateLazyToMany(freshPo);
+            reloadTypedObject(jsonPo, freshPo, referer, deferred);
           }
-          catch (err) {
-            deferred.reject(err);
-          }
-        });
+        );
       }
 
       function processTypedObject(jsonPo, referer) {
