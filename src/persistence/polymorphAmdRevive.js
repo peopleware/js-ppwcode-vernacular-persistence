@@ -15,7 +15,7 @@
  */
 
 define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
-        "./ANewCrudDao2", "./LazyToManyDefinition", "./LazyToManyStore",
+        "./CrudDao", "./LazyToManyDefinition", "./LazyToManyStore",
         "dojo/Deferred", "require"],
   function(typeOf, all, PersistentObject,
            CrudDao, LazyToManyDefinition, LazyToManyStore,

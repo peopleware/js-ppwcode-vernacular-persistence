@@ -17,7 +17,7 @@
 define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
         "./LazyToManyDefinition", "./PersistentObject",
         "./PersistentObjectStore", "dojo/store/Observable",
-        "./ANewCrudDao2"],
+        "./CrudDao"],
   function(declare, _ContractsMixin,
            LazyToManyDefinition, PersistentObject,
            PersistentObjectStore, Observable,

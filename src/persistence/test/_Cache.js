@@ -15,7 +15,7 @@
  */
 
 define(["dojo/main", "ppwcode/contracts/doh",
-        "../_Cache2",
+        "../_Cache",
         "./mock/Person", "../PersistentObjectStore", "dojo/store/Observable",
         "ppwcode/oddsAndEnds/typeOf"],
   function(dojo, doh,

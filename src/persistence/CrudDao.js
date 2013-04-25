@@ -16,7 +16,7 @@
 
 define(["dojo/_base/declare",
         "ppwcode/contracts/_Mixin",
-        "./UrlBuilder", "./_Cache2", "./PersistentObject", "./IdNotFoundException",
+        "./UrlBuilder", "./_Cache", "./PersistentObject", "./IdNotFoundException",
         "ppwcode/collections/ArraySet", "./PersistentObjectStore", "dojo/store/Observable",
         "dojo/Deferred", "dojo/request", "dojo/_base/lang", "ppwcode/oddsAndEnds/typeOf"],
   function(declare,

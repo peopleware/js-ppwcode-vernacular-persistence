@@ -16,7 +16,7 @@
 
 define(["dojo/main", "ppwcode/contracts/doh",
         "../polymorphAmdRevive",
-        "../_Cache2",
+        "../_Cache",
         "ppwcode/oddsAndEnds/typeOf", "dojo/promise/Promise"],
   // NOTE: don't require Person; this will ruin the test (reviver must find it itself)
 

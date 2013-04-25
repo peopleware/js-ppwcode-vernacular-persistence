@@ -15,8 +15,8 @@
  */
 
 define(["dojo/_base/declare",
-        "../../ANewCrudDao2",
-        "../../_Cache2", "../../UrlBuilder",
+        "../../CrudDao",
+        "../../_Cache", "../../UrlBuilder",
         "../../PersistentObject", "../../VersionedPersistentObject", "../../AuditableObject", "../../IdNotFoundException",
         "./Person", "ppwcode/oddsAndEnds/typeOf",
         "dojo/Deferred", "require"],
