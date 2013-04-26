@@ -16,10 +16,10 @@
 
 define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
         "./CrudDao", "./LazyToManyDefinition", "./LazyToManyStore",
-        "dojo/Deferred", "require"],
+        "dojo/Deferred"],
   function(typeOf, all, PersistentObject,
            CrudDao, LazyToManyDefinition, LazyToManyStore,
-           Deferred, require) {
+           Deferred) {
 
     function revive(/*Object*/   graphRoot,
                     /*Object*/   referer,
@@ -137,16 +137,18 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
           valueType === "error";
       }
 
-      function processArrayLike(/*Array|Arguments*/ ar, /*Object*/ referer) {
+      function processArrayLike(/*Array|Arguments*/ ar, /*Object*/ referer, debugPrefix) {
+        console.debug(debugPrefix + "processing array: " + ar);
         var elementsOrPromises = [];
         // don't use map, because arguments doesn't support it
         for (var i = 0; i < ar.length; i++) {
-          elementsOrPromises[i] =  reviveBackTrack(ar[i], referer);
+          console.debug(debugPrefix + "  processing array element: " + ar[i] + " (going deep)");
+          elementsOrPromises[i] =  reviveBackTrack(ar[i], referer, debugPrefix + "    ");
         }
         return all(elementsOrPromises); // all does when internally, and puts all results in an array
       }
 
-      function processObject(/*Object*/ jsonObject, /*Object*/ referer) {
+      function processObject(/*Object*/ jsonObject, /*Object*/ referer, debugPrefix) {
         // summary:
         //   Returns the promise of a new object with revived versions
         //   of all own enumerable properties of jsonPo, recursively.
@@ -158,9 +160,12 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
         //   This object, if given, is used as referer in reviving the
         //   the properties of jsonObject.
 
+        console.debug(debugPrefix + "processing " + jsonObject + " (going deep)");
         var propertyValuesOrPromises = Object.keys(jsonObject).reduce(
           function (acc, pName) {
-            acc[pName] = reviveBackTrack(jsonObject[pName], referer);
+            console.debug(debugPrefix + "  processing object property: " +
+              pName + ": " + jsonObject[pName] + " (going deep)");
+            acc[pName] = reviveBackTrack(jsonObject[pName], referer, debugPrefix + "    ");
             return acc;
           },
           {} // a fresh intermediate object
@@ -168,7 +173,7 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
         return all(propertyValuesOrPromises);  // all does when internally, and puts all results in an object
       }
 
-      function reloadTypedObject(jsonPo, po, referer, deferred) {
+      function reloadTypedObject(jsonPo, po, referer, deferred, debugPrefix) {
         // summary:
         //   Resolves `deferred` with `po`, reloaded with jsonPo,
         //   and tracked in `crudDao` by `referer`.
@@ -189,14 +194,19 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
         //   After successful reload, resolve this deferred.
         //   Reject it if anything goes wrong.
 
-        var intermediateObjectPromise = processObject(jsonPo, po); // po is referer going deep
-        var reloadPromise = intermediateObjectPromise.then(
+        console.debug(debugPrefix + "reloading object for " + jsonPo["$type"] + "@" + jsonPo.persistenceId);
+        var intermediateObjectPromise = processObject(jsonPo, po, debugPrefix + "  "); // po is referer going deep
+        intermediateObjectPromise.then(
           function (intermediateObject) {
+            console.debug(debugPrefix + "intermediate object ready for reloading " + jsonPo["$type"] + "@" + jsonPo.persistenceId);
             try {
               po.reload(intermediateObject);
+              console.debug(debugPrefix + "reloaded: " + po.toString());
               if (referer) {
+                console.debug(debugPrefix + "tracking: " + po.toString() + " by " + referer);
                 crudDao.track(po, referer);
               }
+              console.debug(debugPrefix + "ready: " + po.toString());
               deferred.resolve(po);
             }
             catch (err) {
@@ -224,16 +234,16 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
         // entries.
       }
 
-      function extraOnRemove(/*PersistentObject*/ po, /*CrudDao*/ crudDao) {
-        Object.keys(po).forEach(function(poPropName) {
-          var propValue = entry.payload[poPropName];
-          if (propValue && propValue.isInstanceOf && propValue.isInstanceOf(LazyToManyStore)) {
-            crudDao._cache._removeReferer(propertyName, propValue);
-          }
-        });
-      }
+//      function extraOnRemove(/*PersistentObject*/ po, /*CrudDao*/ crudDao) {
+//        Object.keys(po).forEach(function(poPropName) {
+//          var propValue = entry.payload[poPropName];
+//          if (propValue && propValue.isInstanceOf && propValue.isInstanceOf(LazyToManyStore)) {
+//            crudDao._cache._removeReferer(propertyName, propValue);
+//          }
+//        });
+//      }
 
-      function createTypedObject(/*Object*/ jsonPo, /*Object*/ referer, /*Deferred*/ deferred) {
+      function createTypedObject(/*Object*/ jsonPo, /*Object*/ referer, /*dojo.Deferred*/ deferred, debugPrefix) {
         // summary:
         //   `deferred` is resolved with a new object of a type defined by jsonPo["$type"], reloaded
         //   with a revived version of jsonPo.
@@ -249,19 +259,31 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
         //   This object, if given, will track the new object in `crudDao`
         //   when the `deferred` is resolved.
 
+        console.debug(debugPrefix + "creating new object for " + jsonPo["$type"] + "@" + jsonPo.persistenceId);
         // for the $type, we don't want to wait for the promises on the intermediateObject
         // we can use the original value: strings are not revived in any special way
         var poConstructorPromise = serverType2Constructor(jsonPo["$type"]);
         // we can't process jsonPo in parallel, because we need a po as referer for deep revival beforehand
-        poConstructorPromise.then(function(/*Function*/ Constructor) {
-            var freshPo = new Constructor();
-            instantiateLazyToMany(freshPo);
-            reloadTypedObject(jsonPo, freshPo, referer, deferred);
+        poConstructorPromise.then(
+          function(/*Function*/ Constructor) {
+            try {
+              console.debug(debugPrefix + "constructor retrieved for " + jsonPo["$type"] + "@" + jsonPo.persistenceId);
+              //noinspection JSValidateTypes
+              var /*PersistentObject*/ freshPo = new Constructor();
+              instantiateLazyToMany(freshPo);
+              reloadTypedObject(jsonPo, freshPo, referer, deferred, debugPrefix + "  ");
+            }
+            catch(err) {
+              deferred.reject(err);
+            }
+          },
+          function(err) {
+            deferred.reject(err);
           }
         );
       }
 
-      function processTypedObject(jsonPo, referer) {
+      function processTypedObject(jsonPo, referer, debugPrefix) {
         // summary:
         //   Returns the Promise of a PersistentObject, of the type described in
         //   `jsonPo["$type"]`, reloaded with `jsonPo`.
@@ -281,11 +303,13 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
         var type = jsonPo["$type"];
         var id = jsonPo.persistenceId;
         var key = PersistentObject.keyForId(type, id);
+        console.debug(debugPrefix + "asked to revive " + key);
         var cachedPromise = promiseCache[key];
 
         // reviving this semantic instance already; we piggyback
         // on the existing revive
         if (cachedPromise) {
+          console.debug(debugPrefix + "already reviving " + key);
           return cachedPromise.then(
             function(po) {
               if (referer) {
@@ -305,19 +329,22 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
         promiseCache[key] = deferred.promise;
         var cachedPo = crudDao.getCachedByTypeAndId(type, id);
         if (cachedPo) {
-          reloadTypedObject(jsonPo, cachedPo, referer, deferred);
+          console.debug(debugPrefix + "found in cache: " + key);
+          reloadTypedObject(jsonPo, cachedPo, referer, deferred, debugPrefix + "  ");
         }
         else { // we need a new object
-          createTypedObject(jsonPo, referer, deferred);
+          console.debug(debugPrefix + "not found in cache: " + key);
+          createTypedObject(jsonPo, referer, deferred, debugPrefix + "  ");
         }
         return deferred.promise;
       }
 
-      function reviveBackTrack(/*Object*/ value, /*Object*/ referer) {
+      function reviveBackTrack(value, /*Object*/ referer, debugPrefix) {
         // decription:
         //    inner method in revive, because all calls of this method
         //    inside one revive call need to share the cache
 
+        console.debug(debugPrefix + "reviving " + value);
         if (!value) {
           // all falsy's can be returned immediately
           return value; // return Object
@@ -331,14 +358,14 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
           return new Date(value.getTime());
         }
         if (valueType === "array" || valueType === "arguments") {
-          return processArrayLike(value, referer);
+          return processArrayLike(value, referer, debugPrefix + "  ");
         }
         if (valueType === "object") {
           if (! (value.hasOwnProperty("$type") && value.persistenceId)) {
-            return processObject(value, referer);
+            return processObject(value, referer, debugPrefix + "  ");
           }
           else {
-            return processTypedObject(value, referer);
+            return processTypedObject(value, referer, debugPrefix + "  ");
           }
         }
         // default
@@ -347,7 +374,8 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
       }
 
       // the real method
-      var topResultOrPromise = reviveBackTrack(graphRoot, referer);
+      console.debug("asked to revive " + graphRoot);
+      var topResultOrPromise = reviveBackTrack(graphRoot, referer, "  ");
       return topResultOrPromise; // return /*Object|Promise*/
 
     }
