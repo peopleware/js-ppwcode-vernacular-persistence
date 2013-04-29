@@ -166,6 +166,15 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
           elementsOrPromises[i] =  reviveBackTrack(ar[i], referer, debugPrefix + "    ");
         }
         return all(elementsOrPromises); // all does when internally, and puts all results in an array
+//          then( // TODO the then is here for debugging purposes; it should not be needed; remove when done
+//            function(resultsArray) {
+//              return resultsArray;
+//            },
+//            function(err) {
+//              console.error("ERROR processing array " + ar + " -- " + err, err);
+//              throw err;
+//            }
+//          );
       }
 
       function processObject(/*Object*/ jsonObject, /*Object*/ referer, debugPrefix) {
