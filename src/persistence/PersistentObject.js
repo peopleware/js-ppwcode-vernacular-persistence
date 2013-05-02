@@ -68,13 +68,23 @@ define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject", "dojo/_base/la
         /* we don't care about the format of the persistenceId here; we just keep it, and return it to the server
          like we got it. */
 
-        this.persistenceId = null; // init for when there are no props
-        internalReload(this, props);
+        if (props && props.persistenceId) {
+          this.persistenceId = props.persistenceId;
+        }
+        else {
+          this.persistenceId = null;
+        }
       },
 
       reload: function(/*Object*/ json) {
-        // persistenceId can change from null to an actual number
-        internalReload(this, json);
+        this._c_pre(function() {return json;});
+        this._c_pre(function() {return this._c_prop("persistenceId");});
+        // persistenceId can change from null to an actual number, but not the other way around
+        // this will happen with the JSON response from a creation or IdNotFoundException, and during construction
+        this._c_pre(function() {return !this.get("persistenceId") || (json.persistenceId  === this.get("persistenceId"));});
+
+        //noinspection JSUnresolvedFunction
+        this._changeAttrValue("persistenceId", json.persistenceId);
       },
 
       _persistenceTypeSetter: function() {
