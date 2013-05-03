@@ -14,10 +14,10 @@
  limitations under the License.
  */
 
-define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
+define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject", "ppwcode/semantics/SemanticObject",
         "./CrudDao", "./LazyToManyDefinition", "./LazyToManyStore",
         "dojo/Deferred", "dojo/when", "dojo/has"],
-  function(typeOf, all, PersistentObject,
+  function(typeOf, all, PersistentObject, SemanticObject,
            CrudDao, LazyToManyDefinition, LazyToManyStore,
            Deferred, when, has) {
 
@@ -153,8 +153,8 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
           valueType === "error";
       }
 
-      function isSubtypeOfPersistentObject(Constructor) {
-        return Constructor.prototype.isInstanceOf && Constructor.prototype.isInstanceOf(PersistentObject);
+      function isSubtypeOf(SuperConstructor, Constructor) {
+        return Constructor.prototype.isInstanceOf && Constructor.prototype.isInstanceOf(SuperConstructor);
       }
 
       function processArrayLike(/*Array|Arguments*/ ar, /*Object*/ referer, debugPrefix) {
@@ -329,7 +329,33 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
         return deferred.promise;
       }
 
-      function processTypedNonPersistentObject(jsonObject, referer, Constructor, debugPrefix) {
+      function processSemanticNonPersistentObject(jsonObject, referer, Constructor, debugPrefix) {
+        // summary:
+        //   Returns the Promise of an object constructed with `Constructor` without arguments
+        //   and reloaded with the processed `jsonObject` as arguments.
+        // jsonObject: Object
+        //   A low level, native object. All its properties must be
+        //   primitives, other jsonObjects, recursively, or Arrays with
+        //   primitive or jsonObject elements, recursively.
+        //   Must conform to the rules of the arguments of Constructor.prototype.reload.
+        // referer: Object
+        //   This object is used as referer for the processing of jsonObject.
+
+        debugMsg(debugPrefix + "processing semantic non-persistent-object " + jsonObject +
+          " ($type = " + jsonObject["$type"] + ")");
+        var intermediateObjectPromise = processObject(jsonObject, referer, debugPrefix + "  ");
+        var objectPromise = intermediateObjectPromise.then(
+          function(intermediate) {
+            var fresh = new Constructor();
+            fresh.reload(intermediate);
+            debugMsg(debugPrefix + "created fresh object: " + fresh);
+            return fresh;
+          }
+        );
+        return objectPromise;
+      }
+
+      function processTypedNonSemanticObject(jsonObject, referer, Constructor, debugPrefix) {
         // summary:
         //   Returns the Promise of an object constructed with `Constructor` and the processed
         //   `jsonObject` as arguments.
@@ -394,15 +420,20 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject",
               debugMsg(debugPrefix + "serverType2Constructor returned no Constructor for " + jsonObject["$type"]);
               return processObject(jsonObject, referer, debugPrefix + "  ");
             }
-            else if (isSubtypeOfPersistentObject(Constructor)) {
+            else if (isSubtypeOf(PersistentObject, Constructor)) {
               debugMsg(debugPrefix + "serverType2Constructor returned Constructor, subtype of PersistentObject, for " +
                             jsonObject["$type"] + ": " + Constructor);
               return processPersistentObject(jsonObject, referer, Constructor, debugPrefix);
             }
-            else {
-              debugMsg(debugPrefix + "serverType2Constructor returned Constructor, not a subtype of PersistentObject, for " +
+            else if (isSubtypeOf(SemanticObject, Constructor)) {
+              debugMsg(debugPrefix + "serverType2Constructor returned Constructor, subtype of SemanticObject, for " +
                 jsonObject["$type"] + ": " + Constructor);
-              return processTypedNonPersistentObject(jsonObject, referer, Constructor, debugPrefix);
+              return processSemanticNonPersistentObject(jsonObject, referer, Constructor, debugPrefix);
+            }
+            else {
+              debugMsg(debugPrefix + "serverType2Constructor returned Constructor, not a subtype of SemanticObject, for " +
+                jsonObject["$type"] + ": " + Constructor);
+              return processTypedNonSemanticObject(jsonObject, referer, Constructor, debugPrefix);
             }
           }
         );
