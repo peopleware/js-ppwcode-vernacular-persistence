@@ -329,6 +329,14 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject", 
         return deferred.promise;
       }
 
+      // MUDO this is nonsense; SemanticObjects have a reload, and should be reloaded, but cannot be cached (no id)
+      // The only thing that makes sense is to return a "revived JSON object" to the caller, who should choose
+      // in which object to load the data. In casu, the caller "caches" himself.
+      // This means "do nothing", which we can already define by not returning any Constructor from
+      // serverType2Constructor.
+      // That leaves room for a default. Reloading a new object is the only sensible default possible.
+      // MUDO so this is not really nonsense, is it?
+
       function processSemanticNonPersistentObject(jsonObject, referer, Constructor, debugPrefix) {
         // summary:
         //   Returns the Promise of an object constructed with `Constructor` without arguments
