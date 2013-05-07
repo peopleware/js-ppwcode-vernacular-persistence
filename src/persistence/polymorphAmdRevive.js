@@ -430,17 +430,17 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject", 
             }
             else if (isSubtypeOf(PersistentObject, Constructor)) {
               debugMsg(debugPrefix + "serverType2Constructor returned Constructor, subtype of PersistentObject, for " +
-                            jsonObject["$type"] + ": " + Constructor);
+                            jsonObject["$type"]);
               return processPersistentObject(jsonObject, referer, Constructor, debugPrefix);
             }
             else if (isSubtypeOf(SemanticObject, Constructor)) {
               debugMsg(debugPrefix + "serverType2Constructor returned Constructor, subtype of SemanticObject, for " +
-                jsonObject["$type"] + ": " + Constructor);
+                jsonObject["$type"]);
               return processSemanticNonPersistentObject(jsonObject, referer, Constructor, debugPrefix);
             }
             else {
               debugMsg(debugPrefix + "serverType2Constructor returned Constructor, not a subtype of SemanticObject, for " +
-                jsonObject["$type"] + ": " + Constructor);
+                jsonObject["$type"]);
               return processTypedNonSemanticObject(jsonObject, referer, Constructor, debugPrefix);
             }
           }
