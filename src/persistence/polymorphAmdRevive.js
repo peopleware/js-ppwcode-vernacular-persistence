@@ -428,9 +428,9 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject", 
               debugMsg(debugPrefix + "serverType2Constructor returned no Constructor for " + jsonObject["$type"]);
               return processObject(jsonObject, referer, debugPrefix + "  ");
             }
-            else if (isSubtypeOf(PersistentObject, Constructor)) {
+            else if (isSubtypeOf(PersistentObject, Constructor) && jsonObject.persistenceId) {
               debugMsg(debugPrefix + "serverType2Constructor returned Constructor, subtype of PersistentObject, for " +
-                            jsonObject["$type"]);
+                jsonObject["$type"] + "@" + jsonObject.persistenceId);
               return processPersistentObject(jsonObject, referer, Constructor, debugPrefix);
             }
             else if (isSubtypeOf(SemanticObject, Constructor)) {
