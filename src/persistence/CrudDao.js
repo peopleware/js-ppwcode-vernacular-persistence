@@ -69,7 +69,7 @@ define(["dojo/_base/declare",
       //   As this might require module loading, the result might be a Promise.
       revive: null,
 
-      // _cache: Object
+      // _cache: _Cache
       //   Hash that stores all tracked objects and stores, using a cacheKey
       //   Contains an entry for each retrieved object, that is not yet released.
       // tags:
@@ -262,11 +262,15 @@ define(["dojo/_base/declare",
         this._cache.stopTracking(po, referer);
       },
 
-      retrieve: function(/*String*/ serverType, /*Number*/ persistenceId, /*Any*/ referer) {
+      retrieve: function(/*String*/ serverType, /*Number*/ persistenceId, /*Any*/ referer, /*Boolean*/ force) {
         // summary:
         //   Get the object of type `serverType` with `persistenceId` from the remote server.
         //   This returns a Promise.
         // description:
+        //   First we try to find the object in the cache. If we do find it, we check
+        //   whether it was reloaded recently. If so, we return a Promise for this object
+        //   that resolves immediately, and do not contact the server, unless force is true.
+        //
         //   In an earlier version, we returned an empty object immediately, created
         //   from a provided constructor. However, it is very well possible to ask for an
         //   instance of an Interface or other superclass, and thus get a result of more
@@ -303,30 +307,49 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return typeOf(referer) === "object";});
 
         infoMsg("Requested GET of: '" + serverType + "' with id '" + persistenceId + "'");
-        var url = this.urlBuilder.retrieve(serverType, persistenceId);
-        infoMsg("GET URL is: " + url);
-        var self = this;
-        var loadPromise = request(
-          url,
-          {
-            method: "GET",
-            handleAs: "json",
-            headers: {"Accept" : "application/json"},
-            preventCache: true,
-            withCredentials: true
+        var resultPromise;
+        if (!force) {
+          var cached = this.getCachedByTypeAndId(serverType, persistenceId);
+          if (cached) {
+            infoMsg("Found cached version; resolving Promise immediately (" + serverType + "@" + persistenceId + ")");
+            var deferred = new Deferred();
+            deferred.resolve(cached);
+            resultPromise = deferred.promise;
           }
-        );
-        var revivePromise = loadPromise.then(
-          function(data) {
-            infoMsg("Retrieved successfully from server: " + data);
-            return self.revive(data, referer, self);
-          },
-          function(err) {
-            throw self._handleException(err); // of the request
+        }
+        if (!cached || (Date.now() - cached.lastReloaded > CrudDao.durationToStale)) { // not recently reloaded
+          var url = this.urlBuilder.retrieve(serverType, persistenceId);
+          infoMsg("GET URL is: " + url);
+          var self = this;
+          var loadPromise = request(
+            url,
+            {
+              method: "GET",
+              handleAs: "json",
+              headers: {"Accept" : "application/json"},
+              preventCache: true,
+              withCredentials: true
+            }
+          );
+          var revivePromise = loadPromise.then(
+            function(data) {
+              infoMsg("Retrieved successfully from server: " + data);
+              return self.revive(data, referer, self);
+            },
+            function(err) {
+              throw self._handleException(err); // of the request
+            }
+          );
+          // no need to handle errors of revive: they are errors
+          if (!cached) {
+            resultPromise = revivePromise;
           }
-        );
-        // no need to handle errors of revive: they are errors
-        return revivePromise;
+        }
+        else {
+          infoMsg("Cached version was recently reloaded; will do no server interaction (" +
+            serverType + "@" + persistenceId + ")");
+        }
+        return resultPromise;
       },
 
       create: function(/*PersistentObject*/ po, /*Any*/ referer) {
@@ -502,6 +525,8 @@ define(["dojo/_base/declare",
       }
 
     });
+
+    CrudDao.durationToStale = 60000; // 1 minute
 
     return CrudDao; // return Function
   }
