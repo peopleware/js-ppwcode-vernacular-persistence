@@ -202,7 +202,7 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject", 
         return all(propertyValuesOrPromises);  // all does when internally, and puts all results in an object
       }
 
-      function reloadTypedObject(jsonPo, po, referer, debugPrefix) {
+      function reloadPersistentObject(jsonPo, po, referer, debugPrefix) {
         // summary:
         //   Returns Promise that resolves with po, reloaded with jsonPo,
         //   and tracked in `crudDao` by `referer`.
@@ -317,7 +317,7 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject", 
           reloadTarget = new Constructor();
           instantiateLazyToMany(reloadTarget);
         }
-        var reloadedPromise = reloadTypedObject(jsonPo, reloadTarget, referer, debugPrefix + "  ");
+        var reloadedPromise = reloadPersistentObject(jsonPo, reloadTarget, referer, debugPrefix + "  ");
         reloadedPromise.then(
           function(reloaded) {
             deferred.resolve(reloaded);
@@ -329,13 +329,13 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject", 
         return deferred.promise;
       }
 
-      // MUDO this is nonsense; SemanticObjects have a reload, and should be reloaded, but cannot be cached (no id)
+      // TODO this is nonsense; SemanticObjects have a reload, and should be reloaded, but cannot be cached (no id)
       // The only thing that makes sense is to return a "revived JSON object" to the caller, who should choose
       // in which object to load the data. In casu, the caller "caches" himself.
       // This means "do nothing", which we can already define by not returning any Constructor from
       // serverType2Constructor.
       // That leaves room for a default. Reloading a new object is the only sensible default possible.
-      // MUDO so this is not really nonsense, is it?
+      // TODO so this is not really nonsense, is it?
 
       function processSemanticNonPersistentObject(jsonObject, referer, Constructor, debugPrefix) {
         // summary:
