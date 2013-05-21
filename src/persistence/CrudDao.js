@@ -262,6 +262,12 @@ define(["dojo/_base/declare",
         this._cache.stopTracking(po, referer);
       },
 
+      stopTrackingAsReferer: function(/*Any*/ referer) {
+        this._c_pre(function() {return referer;});
+
+        this._cache.stopTrackingAsReferer(referer);
+      },
+
       retrieve: function(/*String*/ serverType, /*Number*/ persistenceId, /*Any*/ referer, /*Boolean*/ force) {
         // summary:
         //   Get the object of type `serverType` with `persistenceId` from the remote server.
