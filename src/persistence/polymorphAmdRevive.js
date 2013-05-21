@@ -282,7 +282,7 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject", 
             " that resolved to a Constructor that is a subtype of PersistentObject, but contained no " +
             "meaningful persistenceId - " + jsonPo;
         }
-        var type = jsonPo["$type"];
+        var type = Constructor.prototype.persistenceType;
         var id = jsonPo.persistenceId;
         var key = PersistentObject.keyForId(type, id);
         debugMsg(debugPrefix + "asked to revive " + key);

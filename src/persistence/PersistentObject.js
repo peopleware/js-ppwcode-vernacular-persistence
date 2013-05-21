@@ -129,6 +129,18 @@ define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject", "dojo/_base/la
 
     PersistentObject.keyForId = function(/*String*/ persistenceType, /*Number*/ id) {
       // IDEA can't use current form of precondition here
+
+      /* IDEA
+         after a major bug was found, it is clear that this should be changed to take a Constructor
+         as argument, and not a String
+         we can get the persistence type as Constructor.prototype.persistenceId now, and as
+         Constructor.mid later
+         This will propagate further over different classes, but it is a problem nowhere,
+         except in CrudDao retrieve. But maybe there we use a Constructor better too?
+         Also for the abstract classes?
+         If we don't want to do that, we cannot change it to a Constructor here either.
+       */
+
       if (! (persistenceType && lang.isString(persistenceType))) {
         throw new Error("precondition violation: persistenceType && lang.isString(persistenceType)");
       }
