@@ -102,6 +102,7 @@ define(["dojo/_base/declare",
       constructor: function() {
         this._cache = new _Cache();
         this.setCacheReportingPeriod(has("ppwcode/vernacular/persistence/CrudDao-info") ? 0 : -1);
+        this._retrievePromiseCache = {};
       },
 
       _handleException: function(exc) {
@@ -302,7 +303,7 @@ define(["dojo/_base/declare",
 
       // _retrievePromiseCache: Object
       //   This hash avoids loading the same object twice at the same time.
-      _retrievePromiseCache: {},
+      _retrievePromiseCache: null,
 
       retrieve: function(/*String*/ serverType, /*Number*/ persistenceId, /*Any*/ referer, /*Boolean*/ force) {
         // summary:
@@ -374,7 +375,8 @@ define(["dojo/_base/declare",
               handleAs: "json",
               headers: {"Accept" : "application/json"},
               preventCache: true,
-              withCredentials: true
+              withCredentials: true,
+              timeout: 7500
             }
           );
           var revivePromise = loadPromise.then(
