@@ -27,7 +27,7 @@ define(["dojo/_base/declare",
 
     function infoMsg(msg) {
       if (has("ppwcode/vernacular/persistence/CrudDao-info")) {
-        console.info(msg);
+        console.debug(msg);
       }
     }
 
@@ -76,8 +76,32 @@ define(["dojo/_base/declare",
       //   private
       _cache: null,
 
+      // reporting: Boolean
+      //   We report the state of the cache each _cacheReportingPeriod.
+      //   -1 means no reporting (default); 0 means report on every access, > 0 means report each ... ms
+      //   Use setCacheReportingPeriod to change, to trigger the intervals.
+      _cacheReportingPeriod: -1,
+      _cacheReportingTimer: null,
+
+      setCacheReportingPeriod: function(value) {
+        if (this._cacheReportingTimer) {
+          clearTimeout(this._cacheReportingTimer);
+        }
+        this._cacheReportingPeriod = value;
+        if (value > 0) {
+          this._cacheReportingTimer = setTimeout(lang.hitch(this._cache, this._cache.report), value);
+        }
+      },
+
+      _optionalCacheReporting: function() {
+        if (this._cacheReportingPeriod === 0) {
+          console.info(this._cache.report());
+        }
+      },
+
       constructor: function() {
         this._cache = new _Cache();
+        this.setCacheReportingPeriod(has("ppwcode/vernacular/persistence/CrudDao-info") ? 0 : -1);
       },
 
       _handleException: function(exc) {
@@ -151,9 +175,13 @@ define(["dojo/_base/declare",
           if (typeOf(revived) !== "array") {
             throw new Error("expected array from remote call");
           }
-          result.loadAll(revived);
+          var removed = result.loadAll(revived);
+          removed.forEach(function(r) {
+            self.stopTracking(r, referer);
+          });
           return result; // return PersistentObjectStore|Observable(PersistentObjectStore)
         });
+        storePromise.then(lang.hitch(this, this._optionalCacheReporting));
         return storePromise; // return Promise
       },
 
@@ -217,6 +245,7 @@ define(["dojo/_base/declare",
 
          MUDO: the same happens when we get an IdNotFoundException in the other methods
          */
+        revivePromise.then(lang.hitch(this, this._optionalCacheReporting));
         return revivePromise;
       },
 
@@ -246,6 +275,7 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return referrer;});
 
         this._cache.track(po, referrer); // TODO or store? not needed?
+        this._optionalCacheReporting();
       },
 
       stopTracking: function(/*PersistentObject*/ po, /*Any*/ referer) {
@@ -260,13 +290,19 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return referer;});
 
         this._cache.stopTracking(po, referer);
+        this._optionalCacheReporting();
       },
 
       stopTrackingAsReferer: function(/*Any*/ referer) {
         this._c_pre(function() {return referer;});
 
         this._cache.stopTrackingAsReferer(referer);
+        this._optionalCacheReporting();
       },
+
+      // _retrievePromiseCache: Object
+      //   This hash avoids loading the same object twice at the same time.
+      _retrievePromiseCache: {},
 
       retrieve: function(/*String*/ serverType, /*Number*/ persistenceId, /*Any*/ referer, /*Boolean*/ force) {
         // summary:
@@ -313,17 +349,21 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return typeOf(referer) === "object";});
 
         infoMsg("Requested GET of: '" + serverType + "' with id '" + persistenceId + "'");
-        var resultPromise;
+        var retrievePromiseCacheKey = serverType + "@" + persistenceId;
+        if (this._retrievePromiseCache[retrievePromiseCacheKey]) {
+          infoMsg("Already loading " + retrievePromiseCacheKey + "; returning existing promise.");
+          return this._retrievePromiseCache[retrievePromiseCacheKey];
+        }
         if (!force) {
           var cached = this.getCachedByTypeAndId(serverType, persistenceId);
           if (cached) {
             infoMsg("Found cached version; resolving Promise immediately (" + serverType + "@" + persistenceId + ")");
             var deferred = new Deferred();
+            this._retrievePromiseCache[retrievePromiseCacheKey] = deferred.promise;
             deferred.resolve(cached);
-            resultPromise = deferred.promise;
           }
         }
-        if (!cached || (Date.now() - cached.lastReloaded > CrudDao.durationToStale)) { // not recently reloaded
+        if (!cached || (Date.now() - cached.lastReloaded.getTime() > CrudDao.durationToStale)) { // not recently reloaded
           var url = this.urlBuilder.retrieve(serverType, persistenceId);
           infoMsg("GET URL is: " + url);
           var self = this;
@@ -340,22 +380,25 @@ define(["dojo/_base/declare",
           var revivePromise = loadPromise.then(
             function(data) {
               infoMsg("Retrieved successfully from server: " + data);
-              return self.revive(data, referer, self);
+              var revivePromise = self.revive(data, referer, self);
+              delete self._retrievePromiseCache[retrievePromiseCacheKey];
+              return revivePromise;
             },
             function(err) {
+              delete self._retrievePromiseCache[retrievePromiseCacheKey];
               throw self._handleException(err); // of the request
             }
           );
           // no need to handle errors of revive: they are errors
           if (!cached) {
-            resultPromise = revivePromise;
+            this._retrievePromiseCache[retrievePromiseCacheKey] = revivePromise;
           }
         }
         else {
-          infoMsg("Cached version was recently reloaded; will do no server interaction (" +
-            serverType + "@" + persistenceId + ")");
+          infoMsg("Cached version was recently reloaded; will do no server interaction (" + retrievePromiseCacheKey + ")");
         }
-        return resultPromise;
+        this._retrievePromiseCache[retrievePromiseCacheKey].then(lang.hitch(this, this._optionalCacheReporting));
+        return this._retrievePromiseCache[retrievePromiseCacheKey];
       },
 
       create: function(/*PersistentObject*/ po, /*Any*/ referer) {
@@ -507,6 +550,7 @@ define(["dojo/_base/declare",
         infoMsg("Requested GET of matching instances: '" + serverType +"' matching '" + query + "'");
         var url = this.urlBuilder.search(serverType, query);
         var resultPromise = this._refresh(result, url, query, null); // no referer
+        resultPromise.then(lang.hitch(this, this._optionalCacheReporting));
         return resultPromise; // return Promise
       },
 
@@ -527,6 +571,7 @@ define(["dojo/_base/declare",
             withCredentials: true
           }
         );
+        loadPromise.then(lang.hitch(this, this._optionalCacheReporting));
         return loadPromise; // return Promise
       }
 
