@@ -327,9 +327,9 @@ define(["dojo/_base/declare",
           null
         );
         var result = { nrOfEntries: pNames.length, earliestEntry:  minCreatedAt };
-//        result.entries = pNames.map(function(pn) {
-//          return self._data[pn].report();
-//        });
+        result.entries = pNames.map(function(pn) {
+          return self._data[pn].detailedReport();
+        });
         return result;
       }
 
