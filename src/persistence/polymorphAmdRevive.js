@@ -138,6 +138,12 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject", 
         }
       }
 
+      function infoMsg(msg) {
+        if (has("ppwcode/vernacular/persistence/polymorphAmdRevive-debug") || has("ppwcode/vernacular/persistence/polymorphAmdRevive-info")) {
+          console.debug(msg);
+        }
+      }
+
       var promiseCache = {};
       // we only cache promises for PersistentObjects
       // this is the reason for the call of reviveBackTrack method inside revive: this is shared
@@ -285,13 +291,13 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject", 
         var type = Constructor.prototype.persistenceType;
         var id = jsonPo.persistenceId;
         var key = PersistentObject.keyForId(type, id);
-        debugMsg(debugPrefix + "asked to revive " + key);
+        infoMsg(debugPrefix + "asked to revive " + key);
         var cachedPromise = promiseCache[key];
 
         // reviving this persistent object instance already; we piggyback
         // on the existing revive
         if (cachedPromise) {
-          debugMsg(debugPrefix + "already reviving " + key);
+          infoMsg(debugPrefix + "already reviving " + key);
           return cachedPromise.then(
             function(po) {
               if (referer) {
@@ -309,10 +315,10 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject", 
         promiseCache[key] = deferred.promise;
         var /*PersistentObject*/ reloadTarget = crudDao.getCachedByTypeAndId(type, id);
         if (reloadTarget) {
-          debugMsg(debugPrefix + "found in cache: " + key);
+          infoMsg(debugPrefix + "found in cache: " + key);
         }
         else {
-          debugMsg(debugPrefix + "not found in cache; creating new object for: " + key);
+          infoMsg(debugPrefix + "not found in cache; creating new object for: " + key);
           //noinspection JSValidateTypes
           reloadTarget = new Constructor();
           instantiateLazyToMany(reloadTarget);
