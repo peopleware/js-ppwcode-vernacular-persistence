@@ -38,7 +38,7 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin", "ppwcode/oddsAndEnds/t
             case "PUT":
               return lang.hitch(this, this.update);
             case "DELETE":
-              return lang.hitch(this, this.delete);
+              return lang.hitch(this, this.remove);
             default:
               throw new Error("Unknown method: " + method);
           }
@@ -97,9 +97,11 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin", "ppwcode/oddsAndEnds/t
           this._c_ABSTRACT();
         },
 
-        delete: function(serverType, id) {
+        remove: function(serverType, id) {
           // summary:
           //   Returns a URL to delete an object of the given `serverType`.
+          //   Note: cannot call this "delete", because IE9 is annoying
+
           this._c_pre(function() {return typeOf(serverType) === "string";});
           this._c_pre(function() {return typeOf(id) === "number";});
 
