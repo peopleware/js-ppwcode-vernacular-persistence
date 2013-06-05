@@ -17,14 +17,14 @@
 define(["dojo/_base/declare",
         "ppwcode/contracts/_Mixin",
         "./PersistentObject", "ppwcode/collections/ArraySet",
-        "dojo/request", "ppwcode/oddsAndEnds/typeOf", "dojo/has"],
+        "dojo/request", "ppwcode/oddsAndEnds/typeOf", "dojo/has", "module"],
   function(declare,
            _ContractMixin,
            PersistentObject, Set,
-           request, typeOf, has) {
+           request, typeOf, has, module) {
 
     function debugMsg(msg) {
-      if (has("ppwcode/vernacular/persistence/_Cache-debug")) {
+      if (has(module.id + "-debug")) {
         console.debug(msg);
       }
     }
