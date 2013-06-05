@@ -18,15 +18,15 @@ define(["dojo/_base/declare",
         "ppwcode/contracts/_Mixin",
         "./UrlBuilder", "./_Cache", "./PersistentObject", "./IdNotFoundException",
         "ppwcode/collections/ArraySet", "./PersistentObjectStore", "dojo/store/Observable",
-        "dojo/Deferred", "dojo/request", "dojo/_base/lang", "ppwcode/oddsAndEnds/typeOf", "dojo/has"],
+        "dojo/Deferred", "dojo/request", "dojo/_base/lang", "ppwcode/oddsAndEnds/js", "dojo/has", "module"],
   function(declare,
            _ContractMixin,
            UrlBuilder, _Cache, PersistentObject, IdNotFoundException,
            Set, PersistentObjectStore, Observable,
-           Deferred, request, lang, typeOf, has) {
+           Deferred, request, lang, js, has, module) {
 
     function infoMsg(msg) {
-      if (has("ppwcode/vernacular/persistence/CrudDao-info")) {
+      if (has(module.id + "-info")) {
         console.debug(msg);
       }
     }
@@ -87,7 +87,7 @@ define(["dojo/_base/declare",
         if (this._cacheReportingTimer) {
           clearTimeout(this._cacheReportingTimer);
         }
-        this._cacheReportingPeriod = value;
+        this._cacheReportingPeriod = (js.typeOf(value) === "number") ? value : (value ? 0 : -1);
         if (value > 0) {
           this._cacheReportingTimer = setTimeout(lang.hitch(this._cache, this._cache.report), value);
         }
@@ -101,7 +101,7 @@ define(["dojo/_base/declare",
 
       constructor: function() {
         this._cache = new _Cache();
-        this.setCacheReportingPeriod(has("ppwcode/vernacular/persistence/CrudDao-info") ? 0 : -1);
+        this.setCacheReportingPeriod(has(module.id + "-cacheReporting"));
         this._retrievePromiseCache = {};
       },
 
@@ -142,8 +142,8 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return result && result.isInstanceOf;});
         // Cannot really formulate what we want, because of stupid Observable Store wrapper
         // this._c_pre(function() {return result && result.isInstanceOf && result.isInstanceOf(StoreOfStateful);});
-        this._c_pre(function() {return typeOf(url) === "string";});
-        this._c_pre(function() {return !query || typeOf(query) === "object";});
+        this._c_pre(function() {return js.typeOf(url) === "string";});
+        this._c_pre(function() {return !query || js.typeOf(query) === "object";});
 
         infoMsg("GET URL is: " + url);
         infoMsg("query: " + query);
@@ -161,7 +161,7 @@ define(["dojo/_base/declare",
         );
         var revivePromise = loadPromise.then(
           function(/*Array*/ data) {
-            if (typeOf(data) !== "array") {
+            if (js.typeOf(data) !== "array") {
               throw new Error("expected array from remote call");
             }
             infoMsg("Retrieved successfully from server: " + data.length + " items");
@@ -174,7 +174,7 @@ define(["dojo/_base/declare",
         );
         // no need to handle errors of revive: they are errors
         var storePromise = revivePromise.then(function(/*Array*/ revived) {
-          if (typeOf(revived) !== "array") {
+          if (js.typeOf(revived) !== "array") {
             throw new Error("expected array from remote call");
           }
           var removed = result.loadAll(revived);
@@ -260,9 +260,9 @@ define(["dojo/_base/declare",
         // summary:
         //   gets a cached PersistentObject by serverType and id
         //   returns undefined or null if there is no such entry
-        this._c_pre(function() {return typeOf(serverType) === "string";});
+        this._c_pre(function() {return js.typeOf(serverType) === "string";});
         // IDEA subtype of PersistentObject
-        this._c_pre(function() {return typeOf(persistenceId) === "number";});
+        this._c_pre(function() {return js.typeOf(persistenceId) === "number";});
 
         return this._cache.getByTypeAndId(serverType, persistenceId);
       },
@@ -347,9 +347,9 @@ define(["dojo/_base/declare",
         //   If the object was in the cache, and we get a communication error, we only
         //   log it as a warning. The problem might be transient.
         this._c_pre(function() {return this.isOperational();});
-        this._c_pre(function() {return typeOf(serverType) === "string";});
-        this._c_pre(function() {return typeOf(persistenceId) === "number";});
-        this._c_pre(function() {return typeOf(referer) === "object";});
+        this._c_pre(function() {return js.typeOf(serverType) === "string";});
+        this._c_pre(function() {return js.typeOf(persistenceId) === "number";});
+        this._c_pre(function() {return js.typeOf(referer) === "object";});
 
         infoMsg("Requested GET of: '" + serverType + "' with id '" + persistenceId + "'");
         var retrievePromiseCacheKey = serverType + "@" + persistenceId;
@@ -515,7 +515,7 @@ define(["dojo/_base/declare",
 //        this._c_pre(function() {return result && result.isInstanceOf && result.isInstanceOf(PersistentObjectStore);});
         this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
         // po should be in the cache, but we don't enforce it; your problem
-        this._c_pre(function() {return typeOf(serverPropertyName) === "string";});
+        this._c_pre(function() {return js.typeOf(serverPropertyName) === "string";});
 
         infoMsg("Requested GET of to many: '" + po + "[" + serverPropertyName+ "]'");
         var url = this.urlBuilder.toMany(po.get("persistenceType"), po.get("persistenceId"), serverPropertyName);
@@ -548,8 +548,8 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return result && result.isInstanceOf;});
 // Cannot really formulate what we want, because of stupid Observable Store wrapper
 //        this._c_pre(function() {return result && result.isInstanceOf && result.isInstanceOf(StoreOfStateful);});
-        this._c_pre(function() {return !serverType || typeOf(serverType) === "string";});
-        this._c_pre(function() {return !query || typeOf(query) === "object";});
+        this._c_pre(function() {return !serverType || js.typeOf(serverType) === "string";});
+        this._c_pre(function() {return !query || js.typeOf(query) === "object";});
 
         infoMsg("Requested GET of matching instances: '" + serverType +"' matching '" + query + "'");
         var url = this.urlBuilder.search(serverType, query);
@@ -562,7 +562,7 @@ define(["dojo/_base/declare",
         // summary:
         //   Returns the Promise of an array with all the persistenceIds that
         //   exist for the given serverType.
-        this._c_pre(function() {return typeOf(serverType) === "string";});
+        this._c_pre(function() {return js.typeOf(serverType) === "string";});
 
         infoMsg("Requested GET of all persistenceIds of " + serverType);
         var url = this.urlBuilder.allPersistenceIds(serverType);
