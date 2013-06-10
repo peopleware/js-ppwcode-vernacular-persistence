@@ -426,7 +426,7 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject", 
         var poConstructorPromiseOrConstructor = serverType2Constructor(jsonObject["$type"]);
         var processedPromise = when(poConstructorPromiseOrConstructor).then(
           function(Constructor) {
-            if (typeOf(typeOf) !== "function") {
+            if (Constructor && (typeOf(Constructor) !== "function")) {
               throw "ERROR: serverType2Constructor returned something that is not a Function (" +
                 Constructor + ") for type " + jsonObject["$type"];
             }
