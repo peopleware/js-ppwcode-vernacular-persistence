@@ -160,7 +160,7 @@ define(["dojo/_base/declare",
             query:query,
             headers:{"Accept":"application/json"},
             withCredentials: true,
-            timeout: timeout
+            timeout: this.timeout
           }
         );
         var revivePromise = loadPromise.then(
@@ -227,7 +227,7 @@ define(["dojo/_base/declare",
             data: JSON.stringify(po),
             headers: {"Accept" : "application/json"},
             withCredentials: true,
-            timeout: timeout
+            timeout: this.timeout
           }
         );
         var revivePromise = loadPromise.then(
@@ -382,7 +382,7 @@ define(["dojo/_base/declare",
               headers: {"Accept" : "application/json"},
               preventCache: true,
               withCredentials: true,
-              timeout: timeout
+              timeout: this.timeout
             }
           );
           var revivePromise = loadPromise.then(
