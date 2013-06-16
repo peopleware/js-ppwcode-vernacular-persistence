@@ -56,6 +56,10 @@ define(["dojo/_base/declare",
         function() {return this.urlBuilder ? this.urlBuilder.isInstanceOf && this.urlBuilder.isInstanceOf(UrlBuilder) : true;}
       ],
 
+      // timeout: Number
+      //   The default timeout in ms
+      timeout: 5000,
+
       // urlBuilder: UrlBuilder
       urlBuilder: null,
 
@@ -156,7 +160,7 @@ define(["dojo/_base/declare",
             query:query,
             headers:{"Accept":"application/json"},
             withCredentials: true,
-            timeout: 5000
+            timeout: timeout
           }
         );
         var revivePromise = loadPromise.then(
@@ -223,7 +227,7 @@ define(["dojo/_base/declare",
             data: JSON.stringify(po),
             headers: {"Accept" : "application/json"},
             withCredentials: true,
-            timeout: 5000
+            timeout: timeout
           }
         );
         var revivePromise = loadPromise.then(
@@ -378,7 +382,7 @@ define(["dojo/_base/declare",
               headers: {"Accept" : "application/json"},
               preventCache: true,
               withCredentials: true,
-              timeout: 5000
+              timeout: timeout
             }
           );
           var revivePromise = loadPromise.then(
