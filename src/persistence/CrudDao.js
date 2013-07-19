@@ -576,7 +576,9 @@ define(["dojo/_base/declare",
             method:"GET",
             handleAs:"json",
             headers:{"Accept":"application/json"},
-            withCredentials: true
+            preventCache: true,
+            withCredentials: true,
+            timeout: this.timeout
           }
         );
         loadPromise.then(lang.hitch(this, this._optionalCacheReporting));
