@@ -71,7 +71,7 @@ define(["dojo/_base/declare", "ppwcode/semantics/Value", "module"],
         },
 
         _stateToString: function(/*Array of String*/ toStrings) {
-          toStrings.push("referenceType: " + this.referenceType);
+          toStrings.push("referenceType: " + (this.referenceType.mid && this.referenceType.mid ? this.referenceType.mid : "-- no MID in Constructor --"));
           toStrings.push("referenceId: " + this.referenceId);
         }
 
