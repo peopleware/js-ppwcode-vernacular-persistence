@@ -58,7 +58,8 @@ define(["dojo/_base/declare",
 
       // timeout: Number
       //   The default timeout in ms
-      timeout: 5000,
+      timeout: 10000, // needed for older hardware
+      // IDEA detect we are on older hardware, and set it to 10 then; e.g., count to 1 000 000, and depending on the speed ...
 
       // urlBuilder: UrlBuilder
       urlBuilder: null,
