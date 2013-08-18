@@ -37,10 +37,10 @@ define(["dojo/_base/declare", "ppwcode/semantics/Value", "module"],
 
         constructor: function(/*Object*/ props) {
           this._c_pre(function() {return props;});
-          this._c_pre(function() {return this._c_prop_mandatory(props, this.jsonReferenceIdName) || this._c_prop_mandatory(props, this.referenceId);});
-          this._c_pre(function() {return this._c_prop_int(props, this.jsonReferenceIdName) || this._c_prop_int(props, this.referenceId);});
+          this._c_pre(function() {return this._c_prop_mandatory(props, "referenceId") || this._c_prop_mandatory(props, this.jsonReferenceIdName);});
+          this._c_pre(function() {return this._c_prop_int(props, "referenceId") || this._c_prop_int(props, this.jsonReferenceIdName);});
 
-          this.referenceId = props[this.jsonReferenceIdName];
+          this.referenceId = props.referenceId || props[this.jsonReferenceIdName];
         },
 
         compare: function(/*ReferenceValue*/ other) {
@@ -57,12 +57,12 @@ define(["dojo/_base/declare", "ppwcode/semantics/Value", "module"],
           //   Corresponding types and `referenceId`
 
           return this.inherited(arguments) &&
-            (this.referenceType.isInstanceOf(other.referenceType) || other.referenceType.isInstanceOf(this.referenceType)) &&
+            (this.referenceType.prototype.isInstanceOf(other.referenceType) || other.referenceType.prototype.isInstanceOf(this.referenceType)) &&
             this.referenceId === other.referenceId;
         },
 
         getValue: function() {
-          return this.referenceId;
+          return "" + this.referenceId; // must be a String
         },
 
         _extendJsonObject: function(/*Object*/ json) {
