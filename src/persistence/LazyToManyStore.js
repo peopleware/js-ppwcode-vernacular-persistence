@@ -14,6 +14,10 @@
  limitations under the License.
  */
 
+OBSOLETE; MUDO REMOVE; THIS TEXT HERE TO BREAK ANY CODE THAT USES THIS
+// MUDO
+
+
 define(["dojo/_base/declare", "ppwcode/contracts/_Mixin",
         "./LazyToManyDefinition", "./PersistentObject",
         "./PersistentObjectStore", "dojo/store/Observable",
