@@ -17,7 +17,7 @@
 define(["dojo/_base/declare", "ppwcode/contracts/_Mixin", "ppwcode/oddsAndEnds/typeOf"],
   function(declare, _ContractsMixin, typeOf) {
 
-    var LazyToManyDefinition = declare([_ContractsMixin], {
+    var ToManyDefinition = declare([_ContractsMixin], {
       // summary:
       //   Instances define a to-many relationship, expressed as a bidirectional
       //   one-to-many association, from objects of a given subtype of PersistentObject
@@ -42,10 +42,14 @@ define(["dojo/_base/declare", "ppwcode/contracts/_Mixin", "ppwcode/oddsAndEnds/t
         this._c_pre(function() {return serverPropertyName && typeOf(serverPropertyName) === "string";});
 
         this.serverPropertyName = serverPropertyName;
+      },
+
+      toString: function() {
+        return "ToManyDefinition{" + this.serverPropertyName + "}";
       }
 
     });
 
-    return LazyToManyDefinition; // return LazyToManyDefinition
+    return ToManyDefinition; // return ToManyDefinition
   }
 );

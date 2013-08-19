@@ -17,17 +17,11 @@
 define(["dojo/_base/declare",
         "ppwcode/contracts/_Mixin",
         "./PersistentObject", "ppwcode/collections/ArraySet",
-        "dojo/request", "ppwcode/oddsAndEnds/typeOf", "dojo/has", "module"],
+        "ppwcode/oddsAndEnds/typeOf", "ppwcode/oddsAndEnds/log/logger!"],
   function(declare,
            _ContractMixin,
            PersistentObject, Set,
-           request, typeOf, has, module) {
-
-    function debugMsg(msg) {
-      if (has(module.id + "-debug")) {
-        console.debug(msg);
-      }
-    }
+           typeOf, logger) {
 
     var _Entry = declare([_ContractMixin], {
       // summary:
@@ -179,7 +173,7 @@ define(["dojo/_base/declare",
         if (!entry) {
           entry = new _Entry(po, this);
           this._data[key] = entry;
-          debugMsg("Entry added to cache: " + po.toString());
+          logger.info("Entry added to cache: " + po.toString());
         }
         entry.addReferer(referer);
       },
@@ -215,7 +209,7 @@ define(["dojo/_base/declare",
           entry.removeReferer(referer);
           if (entry.getNrOfReferers() <= 0) {
             delete this._data[key];
-            debugMsg("Entry removed from cache: " + entry.payload.toString());
+            logger.info("Entry removed from cache: " + entry.payload.toString());
             // now, if payload was itself a referer, we need to remove if everywhere as referer
             this.stopTrackingAsReferer(entry.payload);
             // also do this for all its payload's LazyToManies
