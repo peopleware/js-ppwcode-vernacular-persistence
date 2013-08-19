@@ -14,9 +14,11 @@
  limitations under the License.
  */
 
-define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject", "ppwcode/semantics/SemanticObject",
+define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all",
+        "./PersistentObject", "ppwcode/semantics/SemanticObject", "ppwcode/semantics/EnumerationValue",
         "dojo/Deferred", "dojo/when", "ppwcode/oddsAndEnds/log/logger!"],
-  function(typeOf, all, PersistentObject, SemanticObject,
+  function(typeOf, all,
+           PersistentObject, SemanticObject, EnumerationValue,
            Deferred, when, logger) {
 
     function revive(/*Object*/   graphRoot,
@@ -237,7 +239,7 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject", 
             " that resolved to a Constructor that is a subtype of PersistentObject, but contained no " +
             "meaningful persistenceId - " + jsonPo;
         }
-        var type = Constructor.prototype.persistenceType;
+        var type = Constructor.prototype.persistenceType || Constructor.mid;
         var id = jsonPo.persistenceId;
         var key = PersistentObject.keyForId(type, id);
         logger.debug(debugPrefix + "asked to revive " + key);
@@ -319,6 +321,23 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject", 
         return objectPromise;
       }
 
+      function processEnumerationValue(jsonObject, Constructor, debugPrefix) {
+        // summary:
+        //   Returns an object selected from `Constructor` based on
+        //   `jsonObject.representation`.
+        // jsonObject: Object
+        //   A low level, native object. It must have a String property `representation`.
+
+        logger.debug(debugPrefix + "processing typed enumeration value " + jsonObject +
+          " ($type = " + jsonObject["$type"] + ")");
+        var result = Constructor.revive(jsonObject.representation);
+        if (!result) {
+          throw "ERROR: could not revive " + jsonObject + ". No value with representation '" +
+            jsonObject.representation + "' in " + (Constructor.mid || Constructor.values());
+        }
+        return result;
+      }
+
       function processTypedNonSemanticObject(jsonObject, referer, Constructor, debugPrefix) {
         // summary:
         //   Returns the Promise of an object constructed with `Constructor` and the processed
@@ -393,6 +412,11 @@ define(["ppwcode/oddsAndEnds/typeOf", "dojo/promise/all", "./PersistentObject", 
               logger.debug(debugPrefix + "serverType2Constructor returned Constructor, subtype of SemanticObject, for " +
                 jsonObject["$type"]);
               return processSemanticNonPersistentObject(jsonObject, referer, Constructor, debugPrefix);
+            }
+            else if (isSubtypeOf(EnumerationValue, Constructor)) {
+              logger.debug(debugPrefix + "serverType2Constructor returned Constructor, subtype of EnumerationValue, for " +
+                jsonObject["$type"] + "@" + jsonObject.representation);
+              return processEnumerationValue(jsonObject, Constructor, debugPrefix);
             }
             else {
               logger.debug(debugPrefix + "serverType2Constructor returned Constructor, not a subtype of SemanticObject, for " +

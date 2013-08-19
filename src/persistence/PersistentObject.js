@@ -163,7 +163,7 @@ define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject", "dojo/_base/la
         throw new Error("precondition violation: po");
       }
 
-      var serverType = po.get("persistenceType");
+      var serverType = po.get("persistenceType") || po.constructor.mid;
       return PersistentObject.keyForId(serverType, po.get("persistenceId")); // return String
     };
 
