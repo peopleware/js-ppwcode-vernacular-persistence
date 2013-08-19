@@ -14,17 +14,15 @@
  limitations under the License.
  */
 
-define(["dojo/main", "ppwcode/contracts/doh",
-        "../LazyToManyDefinition"],
-  function(dojo, doh,
-           LazyToManyDefinition) {
+define(["ppwcode/contracts/doh", "../ToManyDefinition"],
+  function(doh, ToManyDefinition) {
 
     var aServerPropertyName = "A SERVER PROPERTY NAME";
 
-    doh.register("LazyToManyDefinition", [
+    doh.register("ToManyDefinition", [
 
       function testConstructor() {
-        var subject = new LazyToManyDefinition(aServerPropertyName);
+        var subject = new ToManyDefinition(aServerPropertyName);
         doh.invars(subject);
         // post
         doh.is(aServerPropertyName, subject.serverPropertyName);

@@ -22,8 +22,7 @@ define([
   "./_Cache",
   "./UrlBuilder",
   "./CrudDao",
-  "./LazyToManyDefinition",
-  "./LazyToManyStore",
+  "./ToManyDefinition",
   "./polymorphAmdRevive",
   "../ui/test/module"
 ], 1);
