@@ -14,18 +14,19 @@
  limitations under the License.
  */
 
-define(["ppwcode/contracts/doh", "../ToManyDefinition"],
-  function(doh, ToManyDefinition) {
+define(["ppwcode/contracts/doh", "../ToManyStore"],
+  function(doh, ToManyStore) {
 
     var aServerPropertyName = "A SERVER PROPERTY NAME";
 
-    doh.register("ToManyDefinition", [
+    doh.register("ToManyStore", [
 
       function testConstructor() {
-        var subject = new ToManyDefinition(aServerPropertyName);
+        var subject = new ToManyStore(aServerPropertyName);
         doh.invars(subject);
         // post
         doh.is(aServerPropertyName, subject.serverPropertyName);
+        doh.f(subject.lastReloaded);
       }
 
     ]);

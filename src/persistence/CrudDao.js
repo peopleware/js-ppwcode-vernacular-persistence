@@ -17,13 +17,11 @@
 define(["dojo/_base/declare",
         "ppwcode/contracts/_Mixin",
         "./UrlBuilder", "./_Cache", "./PersistentObject", "./IdNotFoundException",
-        "./ToManyDefinition", "./PersistentObjectStore", "dojo/store/Observable",
-        "dojo/Deferred", "ppwcode/oddsAndEnds/promise/Arbiter", "dojo/request", "dojo/_base/lang", "ppwcode/oddsAndEnds/js", "dojo/has", "ppwcode/oddsAndEnds/log/logger!", "module"],
+        "dojo/Deferred", "dojo/request", "dojo/_base/lang", "ppwcode/oddsAndEnds/js", "dojo/has", "ppwcode/oddsAndEnds/log/logger!", "module"],
   function(declare,
            _ContractMixin,
            UrlBuilder, _Cache, PersistentObject, IdNotFoundException,
-           ToManyDefinition, PersistentObjectStore, Observable,
-           Deferred, Arbiter, request, lang, js, has, logger, module) {
+           Deferred, request, lang, js, has, logger, module) {
 
     function isIdNotFoundException(/*String*/ exc) {
       return exc && exc.isInstanceOf && exc.isInstanceOf(IdNotFoundException);
@@ -532,9 +530,8 @@ define(["dojo/_base/declare",
         //   update the content of the store when the server returns a response.
         //   The store will send events (if reload is implemented correctly).
         //
-        //   This code expects to find at `po.constructor.prototype[propertyName]` a ToManyDefinition.
-        //   If the own property `po[propertyName]` is undefined, we create a new
-        //   Observable(PersistentObjectStore) there. Otherwise, we use the store we find.
+        //   This code expects to find at `po[propertyName]` an Observable ToManyStore.
+        //   We use the store we find.
         //
         //   The remote retrieve might fail, with an error, or an `IdNotFoundException`, or a
         //   `SecurityException`.
@@ -544,40 +541,23 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
         // po should be in the cache, but we don't enforce it; your problem
         this._c_pre(function() {return js.typeOf(propertyName) === "string";});
-        this._c_pre(function() {return po.constructor.prototype[propertyName] && po.constructor.prototype[propertyName].isInstanceOf(ToManyDefinition)});
-// Cannot really formulate what we want, because of stupid Observable Store wrapper
-//        this._c_pre(function() {
-//          return (po[propertyName] === po.constructor.prototype[propertyName]) ||
-//                  (po[propertyName].isInstanceOf && po[propertyName].isInstanceof(PersistentObjectStore));});
+        this._c_pre(function() {return po[propertyName] && po[propertyName].query});
+//        this._c_pre(function() {return po[propertyName] && po[propertyName].isInstanceOf && po[propertyName].isInstanceOf(ToManyStore)});
+        // Cannot really formulate what we want, because of stupid Observable Store wrapper
 
         var self = this;
         logger.debug("Requested GET of to many: '" + po + "[" + propertyName+ "]'");
-        if (!po["_toManyArbiters"]) {
-          logger.debug("No to-many arbiters yet. Creating.");
-          po["_toManyArbiters"] = {};
-        }
-        if (!po["_toManyArbiters"][propertyName]) {
-          logger.debug("No to-many arbiter for " + propertyName + " yet. Creating.");
-          po["_toManyArbiters"][propertyName] = new Arbiter();
-        }
-        var def = po.constructor.prototype[propertyName];
-        var url = self.urlBuilder.toMany(po.get("persistenceType"), po.get("persistenceId"), def.serverPropertyName);
         var store = po[propertyName];
-        if (store === po.constructor.prototype[propertyName]) {
-          logger.debug("We don't have a store yet at " + po + "[" + propertyName + "] for " + def + ". Creating.");
-          store = Observable(new PersistentObjectStore());
-        }
+        var url = self.urlBuilder.toMany(po.get("persistenceType"), po.get("persistenceId"), store.serverPropertyName);
         logger.debug("Refreshing to many store for " + po + "[" + propertyName+ "]");
-        var guardedPromise = po["_toManyArbiters"][propertyName].guard(
+        var guardedPromise = store._arbiter.guard(
           store,
           function() { // return Promise
-            var retrievePromise = self._refresh(store, url, null, po[propertyName]); // IDEA: we can even add a query here
-            var setPromise = retrievePromise.then(
+            var retrievePromise = self._refresh(store, url, null, store); // IDEA: we can even add a query here
+            var donePromise = retrievePromise.then(
               function(result) {
-                if (po[propertyName] === po.constructor.prototype[propertyName]) {
-                  logger.debug("We don't have a store yet at " + po + "[" + propertyName + "] for " + def + ". It was freshly created. Inserting.");
-                  po.set(propertyName, result);
-                }
+                logger.debug("To-many store for " + po + "[" + propertyName+ "] refreshed.");
+                result.lastReloaded = new Date();
                 return result;
               },
               function(err) {
@@ -585,7 +565,7 @@ define(["dojo/_base/declare",
                 throw err;
               }
             );
-            return setPromise; // return Promise
+            return donePromise; // return Promise
           },
           true
         );

@@ -33,10 +33,6 @@ define(["dojo/_base/declare", "ppwcode/collections/StoreOfStateful",
         function() {return this.getIdentity === PersistentObject.keyForObject;}
       ],
 
-      // lastReloaded: Date?
-      //   The time of last reload.
-      lastReloaded: null,
-
       loadAll: function(data) {
         // summary:
         //   replaces current data with new data; common objects
