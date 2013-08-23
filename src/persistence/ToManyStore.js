@@ -14,10 +14,10 @@
  limitations under the License.
  */
 
-define(["dojo/_base/declare", "./PersistentObjectStore", "ppwcode/oddsAndEnds/typeOf", "ppwcode/oddsAndEnds/promise/Arbiter"],
-  function(declare, PersistentObjectStore, typeOf, Arbiter) {
+define(["dojo/_base/declare", "./PersistentObjectStore", "dojo/Stateful", "ppwcode/oddsAndEnds/typeOf", "ppwcode/oddsAndEnds/promise/Arbiter"],
+  function(declare, PersistentObjectStore, Stateful, typeOf, Arbiter) {
 
-    var ToManyStore = declare([PersistentObjectStore], {
+    var ToManyStore = declare([PersistentObjectStore, Stateful], {
       // summary:
       //   Instances define a to-many relationship, expressed as a bidirectional
       //   one-to-many association, from objects of a given subtype of PersistentObject

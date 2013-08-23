@@ -557,7 +557,7 @@ define(["dojo/_base/declare",
             var donePromise = retrievePromise.then(
               function(result) {
                 logger.debug("To-many store for " + po + "[" + propertyName+ "] refreshed.");
-                result.lastReloaded = new Date();
+                result.set("lastReloaded", new Date());
                 return result;
               },
               function(err) {
