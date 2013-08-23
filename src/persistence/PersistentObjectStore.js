@@ -31,18 +31,7 @@ define(["dojo/_base/declare", "ppwcode/collections/StoreOfStateful",
 
       _c_invar: [
         function() {return this.getIdentity === PersistentObject.keyForObject;}
-      ],
-
-      loadAll: function(data) {
-        // summary:
-        //   replaces current data with new data; common objects
-        //   are not signalled as removed and added again;
-        //   returns array of removed elements
-
-        var result = this.inherited(arguments);
-        this.lastReloaded = new Date();
-        return result;
-      }
+      ]
 
     });
 
