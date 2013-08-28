@@ -127,6 +127,11 @@ define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject", "dojo/_base/la
 
 
 
+    PersistentObject.parseKey = function(/*String*/ key) {
+      var parts = key.split("@");
+      return {mid: parts[0], persistenceId: parts[1]};
+    };
+
     PersistentObject.keyForId = function(/*String*/ persistenceType, /*Number*/ id) {
       // IDEA can't use current form of precondition here
 
