@@ -64,17 +64,17 @@ define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject", "dojo/_base/la
       //   We actually don't care what type this is. We just store, and return to the server.
       persistenceId: null,
 
-      constructor: function(/*Object*/ props) {
-        /* we don't care about the format of the persistenceId here; we just keep it, and return it to the server
-         like we got it. */
-
-        if (props && props.persistenceId) {
-          this.persistenceId = props.persistenceId;
-        }
-        else {
-          this.persistenceId = null;
-        }
-      },
+//      constructor: function(/*Object*/ props) {
+//        /* we don't care about the format of the persistenceId here; we just keep it, and return it to the server
+//         like we got it. */
+//
+//        if (props && props.persistenceId) {
+//          this.persistenceId = props.persistenceId;
+//        }
+//        else {
+//          this.persistenceId = null;
+//        }
+//      },
 
       reload: function(/*Object*/ json) {
         this._c_pre(function() {return json;});
