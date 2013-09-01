@@ -14,7 +14,7 @@
  limitations under the License.
  */
 
-define(["ppwcode.util.contracts/doh",
+define(["ppwcode-util-contracts/doh",
         "../UrlBuilder"],
   function(doh,
            UrlBuilder) {

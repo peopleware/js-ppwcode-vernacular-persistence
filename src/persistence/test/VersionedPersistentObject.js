@@ -14,7 +14,7 @@
  limitations under the License.
  */
 
-define(["ppwcode.util.contracts/doh", "../VersionedPersistentObject"],
+define(["ppwcode-util-contracts/doh", "../VersionedPersistentObject"],
     function(doh, VersionedPersistentObject) {
 
       doh.register("ppwcode vernacular persistence VersionedPersistentObject", [

@@ -1,4 +1,4 @@
-define(["dojo/_base/declare", "ppwcode.vernacular.semantics/ui/_semanticObjectPane/_SemanticObjectPane",
+define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPane/_SemanticObjectPane",
         "../PersistentObject"],
   function(declare, _SemanticObjectPane,
            PersistentObject) {

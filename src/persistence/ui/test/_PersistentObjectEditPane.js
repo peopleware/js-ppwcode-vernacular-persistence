@@ -1,4 +1,4 @@
-define(["ppwcode.util.contracts/doh", "require"],
+define(["ppwcode-util-contracts/doh", "require"],
   function(doh, require) {
 
     // TODO there are no such tests

@@ -14,7 +14,7 @@
  limitations under the License.
  */
 
-define(["ppwcode.util.contracts/doh",
+define(["ppwcode-util-contracts/doh",
         "../PersistentObjectStore", "../PersistentObject", "dojo/store/Observable",
         "dojo/_base/declare", "dojo/_base/lang"],
   function(doh,

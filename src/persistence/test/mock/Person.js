@@ -14,7 +14,7 @@
  limitations under the License.
  */
 
-define(["ppwcode.vernacular.semantics/ui/test/mock/mockGenerator", "../../PersistentObject"],
+define(["ppwcode-vernacular-semantics/ui/test/mock/mockGenerator", "../../PersistentObject"],
     function (generator, PersistentObject) {
 
       var Person = generator.personClass(PersistentObject);

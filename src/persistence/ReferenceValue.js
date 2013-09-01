@@ -1,4 +1,4 @@
-define(["dojo/_base/declare", "ppwcode.vernacular.semantics/Value", "module"],
+define(["dojo/_base/declare", "ppwcode-vernacular-semantics/Value", "module"],
     function(declare, Value, module) {
 
       var ReferenceValue = declare([Value], {
