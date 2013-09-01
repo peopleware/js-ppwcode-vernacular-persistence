@@ -14,8 +14,8 @@
  limitations under the License.
  */
 
-define(["dojo/main", "ppwcode/contracts/doh", "../AuditableObject"],
-    function(dojo, doh, AuditableObject) {
+define(["ppwcode.contracts/doh", "../AuditableObject"],
+    function(doh, AuditableObject) {
 
       doh.register("ppwcode vernacular persistence AuditableObject", [
 

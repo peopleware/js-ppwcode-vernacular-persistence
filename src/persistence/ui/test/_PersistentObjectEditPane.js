@@ -1,5 +1,5 @@
-define(["dojo/main", "ppwcode/contracts/doh", "require"],
-  function(dojo, doh, require) {
+define(["ppwcode.contracts/doh", "require"],
+  function(doh, require) {
 
     // TODO there are no such tests
     doh.register("test _PersistentObjectEditPane Person",

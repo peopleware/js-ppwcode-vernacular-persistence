@@ -14,7 +14,7 @@
  limitations under the License.
  */
 
-define(["dojo/_base/declare", "ppwcode/semantics/SemanticObject", "dojo/_base/lang", "ppwcode/oddsAndEnds/typeOf"],
+define(["dojo/_base/declare", "ppwcode.semantics/SemanticObject", "dojo/_base/lang", "ppwcode.oddsAndEnds/typeOf"],
   function(declare, SemanticObject, lang, typeOf) {
 
     function internalReload(/*PersistentObject*/ self, /*Object*/ json) {

@@ -14,7 +14,7 @@
  limitations under the License.
  */
 
-define(["dojo/_base/declare", "ppwcode/contracts/_Mixin", "ppwcode/oddsAndEnds/typeOf", "dojo/_base/lang"],
+define(["dojo/_base/declare", "ppwcode.contracts/_Mixin", "ppwcode.oddsAndEnds/typeOf", "dojo/_base/lang"],
     function(declare, _ContractMixin, typeOf, lang) {
 
       var UrlBuilder = declare([_ContractMixin], {

@@ -14,10 +14,10 @@
  limitations under the License.
  */
 
-define(["dojo/main", "ppwcode/contracts/doh",
+define(["ppwcode.contracts/doh",
         "../PersistentObjectStore", "../PersistentObject", "dojo/store/Observable",
         "dojo/_base/declare", "dojo/_base/lang"],
-  function(dojo, doh,
+  function(doh,
            PersistentObjectStore, PersistentObject, Observable,
            declare, lang) {
 

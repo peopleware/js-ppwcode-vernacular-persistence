@@ -18,10 +18,10 @@
         "has-debug-messages": true
       },
       paths: {
-        "ppwcode/contracts": "../../ppwcode/util/contracts",
-        "ppwcode/oddsAndEnds": "../../ppwcode/util/oddsAndEnds",
-        "ppwcode/semantics": "../../ppwcode/vernacular/semantics",
-        "ppwcode/persistence": "../../ppwcode/vernacular/persistence",
+        "ppwcode.contracts": "../../ppwcode/util/contracts",
+        "ppwcode.oddsAndEnds": "../../ppwcode/util/oddsAndEnds",
+        "ppwcode.semantics": "../../ppwcode/vernacular/semantics",
+        "ppwcode.persistence": "../../ppwcode/vernacular/persistence",
         "xstyle": "../../xstyle"
       }
     };
@@ -32,11 +32,11 @@
   <script type="text/javascript">
     require(
       ["dojo/parser",
-        "ppwcode/contracts/doh",
-        "ppwcode/persistence/AuditableObject",
-        "ppwcode/persistence/ui/auditableInfoPane/AuditableInfoPane",
+        "ppwcode.contracts/doh",
+        "ppwcode.persistence/AuditableObject",
+        "ppwcode.persistence/ui/auditableInfoPane/AuditableInfoPane",
         "dijit/registry",
-        "ppwcode/semantics/ui/_semanticObjectPane/test/semanticObjectPaneTestGenerator",
+        "ppwcode.semantics/ui/_semanticObjectPane/test/semanticObjectPaneTestGenerator",
         "dojo/domReady!"
       ],
       function(parser, doh, AuditableObject, AuditableInfoPane, registry, generator) {
@@ -64,6 +64,6 @@
 </head>
 <body>
 <!-- Define an instance of the widget to test. -->
-<div id="subject" data-dojo-type="ppwcode/persistence/ui/auditableInfoPane/AuditableInfoPane"></div>
+<div id="subject" data-dojo-type="ppwcode.persistence/ui/auditableInfoPane/AuditableInfoPane"></div>
 </body>
 </html>

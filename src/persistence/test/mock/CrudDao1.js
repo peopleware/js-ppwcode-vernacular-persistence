@@ -16,14 +16,14 @@
 
 define(["dojo/_base/declare",
         "../../CrudDao",
-        "../../_Cache", "../../UrlBuilder",
-        "../../PersistentObject", "../../VersionedPersistentObject", "../../AuditableObject", "../../IdNotFoundException",
-        "./Person", "ppwcode/oddsAndEnds/typeOf",
+        "../../UrlBuilder",
+        "../../VersionedPersistentObject", "../../AuditableObject", "../../IdNotFoundException",
+        "./Person", "ppwcode.oddsAndEnds/typeOf",
         "dojo/Deferred", "require"],
   function(declare,
            CrudDao,
-           _Cache, UrlBuilder,
-           PersistentObject, VersionedPersistentObject, AuditableObject, IdNotFoundException,
+           UrlBuilder,
+           VersionedPersistentObject, AuditableObject, IdNotFoundException,
            Person, typeOf,
            Deferred, require) {
 

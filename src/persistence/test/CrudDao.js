@@ -14,9 +14,9 @@
  limitations under the License.
  */
 
-define(["dojo/main", "ppwcode/contracts/doh", "./mock/CrudDao1",
+define(["ppwcode.contracts/doh", "./mock/CrudDao1",
         "../PersistentObject", "../IdNotFoundException", "dojo/_base/declare"],
-    function(dojo, doh, CrudDaoMock, PersistentObject, IdNotFoundException, declare) {
+    function(doh, CrudDaoMock, PersistentObject, IdNotFoundException, declare) {
 
       var subjectSetup = function() {
         var subject = new CrudDaoMock();

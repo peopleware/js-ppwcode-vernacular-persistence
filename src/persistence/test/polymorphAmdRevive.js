@@ -14,17 +14,17 @@
  limitations under the License.
  */
 
-define(["dojo/main", "ppwcode/contracts/doh",
+define(["ppwcode.contracts/doh",
         "../polymorphAmdRevive",
-        "../_Cache", "../CrudDao",
-        "ppwcode/oddsAndEnds/typeOf", "dojo/promise/Promise", "dojo/Deferred",
+        "../CrudDao",
+        "ppwcode.oddsAndEnds/typeOf", "dojo/promise/Promise", "dojo/Deferred",
         "require"],
   // NOTE: don't require Person; this will ruin the test (reviver must find it itself)
 
 
-    function(dojo, doh,
+    function(doh,
              revive,
-             _Cache, CrudDao,
+             CrudDao,
              typeOf, Promise, Deferred,
              require) {
 

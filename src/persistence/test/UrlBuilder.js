@@ -14,9 +14,9 @@
  limitations under the License.
  */
 
-define(["dojo/main", "ppwcode/contracts/doh",
+define(["ppwcode.contracts/doh",
         "../UrlBuilder"],
-  function(dojo, doh,
+  function(doh,
            UrlBuilder) {
 
     doh.register("ppwcode vernacular persistence UrlBuilder", [

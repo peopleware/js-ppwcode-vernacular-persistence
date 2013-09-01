@@ -14,13 +14,13 @@
  limitations under the License.
  */
 
-define(["dojo/main", "ppwcode/contracts/doh",
+define(["ppwcode.contracts/doh",
         "../_Cache",
-        "./mock/Person", "../PersistentObjectStore", "dojo/store/Observable",
-        "ppwcode/oddsAndEnds/typeOf"],
-  function(dojo, doh,
+        "./mock/Person",
+        "ppwcode.oddsAndEnds/typeOf"],
+  function(doh,
            _Cache,
-           Person, PersistentObjectStore, Observable,
+           Person,
            typeOf) {
 
 
