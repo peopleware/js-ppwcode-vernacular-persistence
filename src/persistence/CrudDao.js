@@ -15,9 +15,9 @@
  */
 
 define(["dojo/_base/declare",
-        "ppwcode.contracts/_Mixin",
+        "ppwcode.util.contracts/_Mixin",
         "./UrlBuilder", "./_Cache", "./PersistentObject", "./IdNotFoundException",
-        "dojo/Deferred", "dojo/request", "dojo/_base/lang", "ppwcode.oddsAndEnds/js", "dojo/has", "ppwcode.oddsAndEnds/log/logger!", "module"],
+        "dojo/Deferred", "dojo/request", "dojo/_base/lang", "ppwcode.util.oddsAndEnds/js", "dojo/has", "ppwcode.util.oddsAndEnds/log/logger!", "module"],
   function(declare,
            _ContractMixin,
            UrlBuilder, _Cache, PersistentObject, IdNotFoundException,

@@ -15,9 +15,9 @@
  */
 
 define(["dojo/_base/declare",
-        "ppwcode.contracts/_Mixin",
-        "./PersistentObject", "ppwcode.collections/ArraySet",
-        "ppwcode.oddsAndEnds/typeOf", "ppwcode.oddsAndEnds/log/logger!"],
+        "ppwcode.util.contracts/_Mixin",
+        "./PersistentObject", "ppwcode.util.collections/ArraySet",
+        "ppwcode.util.oddsAndEnds/typeOf", "ppwcode.util.oddsAndEnds/log/logger!"],
   function(declare,
            _ContractMixin,
            PersistentObject, Set,

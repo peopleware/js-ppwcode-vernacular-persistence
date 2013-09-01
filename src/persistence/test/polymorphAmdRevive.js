@@ -14,10 +14,10 @@
  limitations under the License.
  */
 
-define(["ppwcode.contracts/doh",
+define(["ppwcode.util.contracts/doh",
         "../polymorphAmdRevive",
         "../CrudDao",
-        "ppwcode.oddsAndEnds/typeOf", "dojo/promise/Promise", "dojo/Deferred",
+        "ppwcode.util.oddsAndEnds/typeOf", "dojo/promise/Promise", "dojo/Deferred",
         "require"],
   // NOTE: don't require Person; this will ruin the test (reviver must find it itself)
 

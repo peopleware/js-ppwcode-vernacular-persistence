@@ -14,7 +14,7 @@
  limitations under the License.
  */
 
-define(["dojo/_base/declare", "./PersistentObjectStore", "dojo/Stateful", "ppwcode.oddsAndEnds/typeOf", "ppwcode.oddsAndEnds/promise/Arbiter"],
+define(["dojo/_base/declare", "./PersistentObjectStore", "dojo/Stateful", "ppwcode.util.oddsAndEnds/typeOf", "ppwcode.util.oddsAndEnds/promise/Arbiter"],
   function(declare, PersistentObjectStore, Stateful, typeOf, Arbiter) {
 
     var ToManyStore = declare([PersistentObjectStore, Stateful], {

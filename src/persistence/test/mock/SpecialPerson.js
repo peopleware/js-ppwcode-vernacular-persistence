@@ -14,7 +14,7 @@
  limitations under the License.
  */
 
-define(["ppwcode.semantics/ui/test/mock/mockGenerator", "./Person"],
+define(["ppwcode.vernacular.semantics/ui/test/mock/mockGenerator", "./Person"],
     function (generator, Person) {
 
       var SpecialPerson = generator.specialPersonClass(Person);

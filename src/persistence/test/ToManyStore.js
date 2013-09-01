@@ -14,7 +14,7 @@
  limitations under the License.
  */
 
-define(["ppwcode.contracts/doh", "../ToManyStore"],
+define(["ppwcode.util.contracts/doh", "../ToManyStore"],
   function(doh, ToManyStore) {
 
     var aServerPropertyName = "A SERVER PROPERTY NAME";

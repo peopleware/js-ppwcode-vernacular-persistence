@@ -14,9 +14,9 @@
  limitations under the License.
  */
 
-define(["ppwcode.oddsAndEnds/typeOf", "dojo/promise/all",
-        "./PersistentObject", "ppwcode.semantics/SemanticObject", "ppwcode.semantics/EnumerationValue",
-        "dojo/Deferred", "dojo/when", "ppwcode.oddsAndEnds/log/logger!"],
+define(["ppwcode.util.oddsAndEnds/typeOf", "dojo/promise/all",
+        "./PersistentObject", "ppwcode.vernacular.semantics/SemanticObject", "ppwcode.vernacular.semantics/EnumerationValue",
+        "dojo/Deferred", "dojo/when", "ppwcode.util.oddsAndEnds/log/logger!"],
   function(typeOf, all,
            PersistentObject, SemanticObject, EnumerationValue,
            Deferred, when, logger) {

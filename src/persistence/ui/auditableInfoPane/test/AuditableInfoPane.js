@@ -1,4 +1,4 @@
-define(["ppwcode.contracts/doh", "require"],
+define(["ppwcode.util.contracts/doh", "require"],
   function(doh, require) {
 
     doh.register("test AuditableInfoPane",

@@ -14,7 +14,7 @@
  limitations under the License.
  */
 
-define(["dojo/_base/declare", "ppwcode.collections/StoreOfStateful",
+define(["dojo/_base/declare", "ppwcode.util.collections/StoreOfStateful",
         "./PersistentObject",
         "dojo/_base/lang"],
   function(declare, StoreOfStateful,

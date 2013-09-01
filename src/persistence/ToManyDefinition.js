@@ -14,7 +14,7 @@
  limitations under the License.
  */
 
-define(["dojo/_base/declare", "ppwcode.contracts/_Mixin", "ppwcode.oddsAndEnds/typeOf"],
+define(["dojo/_base/declare", "ppwcode.util.contracts/_Mixin", "ppwcode.util.oddsAndEnds/typeOf"],
   function(declare, _ContractsMixin, typeOf) {
 
     var ToManyDefinition = declare([_ContractsMixin], {

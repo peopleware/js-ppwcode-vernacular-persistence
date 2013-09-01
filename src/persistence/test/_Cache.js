@@ -14,10 +14,10 @@
  limitations under the License.
  */
 
-define(["ppwcode.contracts/doh",
+define(["ppwcode.util.contracts/doh",
         "../_Cache",
         "./mock/Person",
-        "ppwcode.oddsAndEnds/typeOf"],
+        "ppwcode.util.oddsAndEnds/typeOf"],
   function(doh,
            _Cache,
            Person,
