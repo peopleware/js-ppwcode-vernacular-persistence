@@ -6,7 +6,7 @@
   <title>AuditableInfo Browser Tests</title>
 
   <!-- required: the default dijit theme: -->
-  <link id="themeStyles" rel="stylesheet" href="../../../../../dijit/themes/claro/claro.css"/>
+  <link id="themeStyles" rel="stylesheet" href="../../../../../../dojo/dijit/themes/claro/claro.css"/>
 
   <!-- SCRIPT -->
   <script>
@@ -16,11 +16,18 @@
       parseOnLoad: false,
       has: {
         "has-debug-messages": true
+      },
+      paths: {
+        "ppwcode/contracts": "../../ppwcode/util/contracts",
+        "ppwcode/oddsAndEnds": "../../ppwcode/util/oddsAndEnds",
+        "ppwcode/semantics": "../../ppwcode/vernacular/semantics",
+        "ppwcode/persistence": "../../ppwcode/vernacular/persistence",
+        "xstyle": "../../xstyle"
       }
     };
   </script>
 
-  <script src="../../../../../dojo/dojo.js"></script>
+  <script src="../../../../../../dojo/dojo/dojo.js"></script>
 
   <script type="text/javascript">
     require(
