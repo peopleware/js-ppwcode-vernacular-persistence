@@ -179,6 +179,22 @@ define(["dojo/_base/declare",
         return storePromise; // return Promise
       },
 
+      replacer: function(/*String*/ key, value) {
+        // summary:
+        //   When JSON-stringifying objects, this function is used as replacer
+        //   (see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify
+        //   and http://jsfiddle.net/jandockx/BAzdq/).
+        //   The this object is the object being stringified. First, we get an empty key, and the result
+        //   of the object's `toJSON` as a whole, next, we get all properties of the result of this first call,
+        //   as key-value pairs. The actual JSON value is what we return for each key.
+        //   Inserting information thus can be done on the first call with the empty key, and can be based
+        //   on the original object (this).
+        // description:
+        //   The default implementation always returns `value`.
+
+        return value;
+      },
+
       _poAction: function(/*String*/ method, /*PersistentObject*/ po, /*Any?*/ referer) {
         // summary:
         //   Ask the server to create, update, or delete po, track po on success,
@@ -204,7 +220,7 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return po.isInstanceOf && po.isInstanceOf(PersistentObject);});
 
         logger.debug("Requested " + method + " of: " + po);
-        var url = this.urlBuilder.get(method)(po.get("persistenceType"), po.get("persistenceId"));
+        var url = this.urlBuilder.get(method)(po);
         logger.debug(method + " URL is: " + url);
         var self = this;
         var loadPromise = request(
@@ -212,7 +228,7 @@ define(["dojo/_base/declare",
           {
             method: method,
             handleAs: "json",
-            data: JSON.stringify(po),
+            data: JSON.stringify(po, this.replacer),
             headers: {"Accept" : "application/json"},
             withCredentials: true,
             timeout: this.timeout
