@@ -98,8 +98,11 @@ define(["dojo/_base/declare",
       },
 
       _handleException: function(exc) {
-        // MUDO triage and log as error, warn or trace; return triaged
-//        console.warn(exc);
+        if (exc && exc.response && exc.response.status === 404) {
+          var infExc = new IdNotFoundException(exc.response.data);
+          logger.info("Not found: ", infExc);
+          return infExc;
+        }
         logger.error(exc);
         return exc;
       },
