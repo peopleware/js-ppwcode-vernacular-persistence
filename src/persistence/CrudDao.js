@@ -214,6 +214,10 @@ define(["dojo/_base/declare",
         //   If anything fails during the request or revival of the response,
         //   the errback of the Promise is called with the exception. This can be a SemanticException.
         //   All other kinds of exceptions or value are to be considered errors.
+        //
+        //   Revive is also used for delete, although the deleted object cannot be found in the cache,
+        //   since the JSON has no persistenceId anymore. This however will reload potential related
+        //   objects.
         this._c_pre(function() {return this.isOperational();});
         this._c_pre(function() {return method === "POST" || method === "PUT" || method === "DELETE";});
         this._c_pre(function() {return po;});
@@ -236,7 +240,7 @@ define(["dojo/_base/declare",
         );
         var revivePromise = loadPromise.then(
           function(data) {
-            logger.debug("Create succes in server: " + data);
+            logger.debug(method + " success in server: " + data);
             return self.revive(data, referer, self);
           },
           function(err) {
@@ -244,18 +248,7 @@ define(["dojo/_base/declare",
           }
         );
         // no need to handle errors of revive: they are errors
-        /*
-         For create, tracking will only be added at the end, because we need a persistenceId for that.
-         That is not a problem, since nobody should have a reference yet, except referer ...
-         unless somebody does a very fast intermediate retrieve (which would be bad code, since
-         that retrieve needs to have the persistenceId, which we don't even know yet).
-         So with this caveat, there will only be 1 version of this new object in our RAM.
-
-         For delete, the po will have persistenceId == null afterwards. It can no longer be cached,
-         and is removed, as payload and referer.
-
-         MUDO: the same happens when we get an IdNotFoundException in the other methods
-         */
+        // MUDO: when we get an IdNotFoundException
         revivePromise.then(lang.hitch(this, this._optionalCacheReporting));
         return revivePromise;
       },
@@ -415,17 +408,17 @@ define(["dojo/_base/declare",
 
       create: function(/*PersistentObject*/ po, /*Any*/ referer) {
         // summary:
-        //   Ask the server to create po, track po on success, with referer as the first referer.
-        //   Returns a Promise.
+        //   Ask the server to create po.
+        //   Returns a Promise for a fresh object that is tracked with referer as the first referer.
+        //   The original object should be discarded.
         // description:
         //   po must have po.get("persistenceId") === null on call.
-        //   The caller has a reference to po already. It is this object that will be reloaded
-        //   with the result from the remote call, and thus "magically" have its properties changed,
-        //   including the persistenceId.
-        //   Since po is Stateful, listeners will be notified of this change.
-        //   This means po can already be used.
-        //
-        //   The promise returns po after reload.
+        //   The promise returns a fresh object after reload.
+        //   The caller has a reference to po, but this should be discarded on Promise fulfilment, and replaced
+        //   with the result.
+        //   IDEA We could change the code to reuse po, but the issue is that po could contain references to other
+        //   objects that need to be created too, and the reviver currently has no mechanism to do that, but it is
+        //   an interesting idea.
         //
         //   If anything fails during the request or revival of the response,
         //   the errback of the Promise is called with the exception. This can be a SemanticException.
@@ -490,7 +483,16 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return po.isInstanceOf && po.isInstanceOf(PersistentObject);});
         this._c_pre(function() {return po.get("persistenceId") !== null;});
 
-        return this._poAction("DELETE", po);
+        var self = this;
+        var deletePromise = self._poAction("DELETE", po);
+        var cleanupPromise = deletePromise.then(
+          function(deletedCopy) {
+            self._cache.stopTrackingCompletely(po);
+            po._changeAttrValue("persistenceId", null); // signal deletion
+            return po;
+          }
+        );
+        return cleanupPromise;
       },
 
       retrieveToMany: function(/*Observable(PersistentObjectStore)*/ result, /*PersistentObject*/ po, /*String*/ serverPropertyName) {
