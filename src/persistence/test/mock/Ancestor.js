@@ -15,15 +15,14 @@
  */
 
 define(["dojo/_base/declare", "./Person",
-        "../../LazyToManyDefinition"],
-  function (declare, Person,
-            LazyToManyDefinition) {
+        "../../ToManyDefinition"],
+  function (declare, Person, ToManyDefinition) {
 
     var Ancestor = declare([Person], {
 
-      persistenceType: "Ancestor",
+      getTypeDescription: function() {return "Ancestor";},
 
-      descendants: new LazyToManyDefinition("Descendants")
+      descendants: new ToManyDefinition("Descendants")
 
     });
 

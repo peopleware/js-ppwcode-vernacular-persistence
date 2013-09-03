@@ -23,7 +23,7 @@ define(["ppwcode-util-contracts/doh",
 
     var type = "SOME TYPE DESCRIPTOR";
     var Mock = declare([PersistentObject], {
-      persistenceType: type
+      getTypeDescription: function() {return type;}
     });
 
     function generateMock(id) {

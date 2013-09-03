@@ -43,12 +43,12 @@ define(["ppwcode-util-contracts/doh",
     function getAndTestPersonEntry(cache, po, persistenceId, expectedNrOfReferers) {
       var tracked;
       if (expectedNrOfReferers) {
-        tracked = cache.getByTypeAndId(Person.prototype.persistenceType, persistenceId);
+        tracked = cache.getByTypeAndId(Person.prototype.getTypeDescription(), persistenceId);
         doh.is(po, tracked);
         tracked = cache.get(po);
         doh.is(po, tracked);
         // IDEA test breaks encapsulation -- whenever this fails, just remove the test
-        doh.is(expectedNrOfReferers, cache._data[po.get("persistenceType") + "@" + persistenceId].getNrOfReferers());
+        doh.is(expectedNrOfReferers, cache._data[po.getTypeDescription() + "@" + persistenceId].getNrOfReferers());
       }
       else {
         tracked = cache.get(po);

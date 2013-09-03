@@ -18,7 +18,7 @@ define(["ppwcode-vernacular-semantics/ui/test/mock/mockGenerator", "../../Persis
     function (generator, PersistentObject) {
 
       var Person = generator.personClass(PersistentObject);
-      Person.prototype.persistenceType = "PERSON";
+      Person.getTypeDescription = function() {return "PERSON";};
       return Person;
 
     }

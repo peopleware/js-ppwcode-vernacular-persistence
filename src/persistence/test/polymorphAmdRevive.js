@@ -462,7 +462,7 @@ define(["ppwcode-util-contracts/doh",
               function(result) {
                 try {
                   doh.is("object", typeOf(result));
-                  doh.t(result.isInstanceOf && Object.getPrototypeOf(result).persistenceType === "PERSON");
+                  doh.t(result.isInstanceOf && Object.getPrototypeOf(result).getTypeDescription() === "PERSON");
                   doh.is(7, result.get("persistenceId"));
                   console.log(crudDao._cache.report());
                   deferred.callback(result);

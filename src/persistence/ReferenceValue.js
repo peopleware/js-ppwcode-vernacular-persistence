@@ -96,7 +96,6 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/Value", "module"],
       };
 
       ReferenceValue.mid = module.id;
-      ReferenceValue.persistenceType = module.id;
 
       return ReferenceValue;
     }

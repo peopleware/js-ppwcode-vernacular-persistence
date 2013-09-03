@@ -531,7 +531,7 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return js.typeOf(serverPropertyName) === "string";});
 
         logger.debug("Requested GET of to many: '" + po + "[" + serverPropertyName+ "]'");
-        var url = this.urlBuilder.toMany(po.get("persistenceType"), po.get("persistenceId"), serverPropertyName);
+        var url = this.urlBuilder.toMany(po.getTypeDescription(), po.get("persistenceId"), serverPropertyName);
         var resultPromise = this._refresh(result, url, null, result); // IDEA: we can even add a query here
         return resultPromise; // return Promise
       },
@@ -569,7 +569,7 @@ define(["dojo/_base/declare",
         var self = this;
         logger.debug("Requested GET of to many: '" + po + "[" + propertyName+ "]'");
         var store = po[propertyName];
-        var url = self.urlBuilder.toMany(po.get("persistenceType"), po.get("persistenceId"), store.serverPropertyName);
+        var url = self.urlBuilder.toMany(po.getTypeDescription(), po.get("persistenceId"), store.serverPropertyName);
         logger.debug("Refreshing to many store for " + po + "[" + propertyName+ "]");
         var guardedPromise = store._arbiter.guard(
           store,

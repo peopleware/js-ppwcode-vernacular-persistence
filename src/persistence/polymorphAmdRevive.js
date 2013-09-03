@@ -55,7 +55,7 @@ define(["ppwcode-util-oddsAndEnds/typeOf", "dojo/promise/all",
       //   When an object with a "$type"-property is encountered in
       //   the graph of which `graphRoot` is the root, and serverType2Constructor returns a type
       //   that is a subtype of PersistentObject, we first check if an object
-      //   with that `persistenceType` and `persistenceId` exists in the cache of `crudDao`.
+      //   with that `typeDescription` and `persistenceId` exists in the cache of `crudDao`.
       //   If it does, it is reloaded with the revival of the properties of the graph-object.
       //   If such an object does not exist in the cache, a new object is created with the
       //   Constructor returned by `serverType2Constructor` given the type defined in the object,
@@ -239,7 +239,7 @@ define(["ppwcode-util-oddsAndEnds/typeOf", "dojo/promise/all",
             " that resolved to a Constructor that is a subtype of PersistentObject, but contained no " +
             "meaningful persistenceId - " + jsonPo;
         }
-        var type = Constructor.prototype.persistenceType || Constructor.mid;
+        var type = Constructor.prototype.getTypeDescription();
         var id = jsonPo.persistenceId;
         var key = PersistentObject.keyForId(type, id);
         logger.debug(debugPrefix + "asked to revive " + key);

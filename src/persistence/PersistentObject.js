@@ -76,7 +76,7 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/SemanticObject", "do
       return {mid: parts[0], persistenceId: parts[1]};
     };
 
-    PersistentObject.keyForId = function(/*String*/ persistenceType, /*Number*/ id) {
+    PersistentObject.keyForId = function(/*String*/ typeDescription, /*Number*/ id) {
       // IDEA can't use current form of precondition here
 
       /* IDEA
@@ -90,14 +90,14 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/SemanticObject", "do
          If we don't want to do that, we cannot change it to a Constructor here either.
        */
 
-      if (! (persistenceType && lang.isString(persistenceType))) {
-        throw new Error("precondition violation: persistenceType && lang.isString(persistenceType)");
+      if (! (typeDescription && lang.isString(typeDescription))) {
+        throw new Error("precondition violation: typeDescription && lang.isString(typeDescription)");
       }
 
       if (!id) {
         return null;
       }
-      return persistenceType + "@" + id; // return String
+      return typeDescription + "@" + id; // return String
     };
 
     PersistentObject.keyForObject = function(/*PersistentObject*/ po) {

@@ -19,7 +19,7 @@ define(["dojo/_base/declare", "./Person"],
 
       var Child = declare([Person], {
 
-        persistenceType: "Child",
+        getTypeDescription: function() {return "Child";},
 
         parent: null,
 

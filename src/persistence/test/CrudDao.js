@@ -23,11 +23,11 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1",
         this.subject = subject;
       };
 
-      var persistenceType = "A PERSISTENCE TYPE";
+      var typeDescription = "A PERSISTENCE TYPE";
 
       var MockPo = declare([PersistentObject], {
 
-        persistenceType: persistenceType,
+        getTypeDescription: function() {return typeDescription;},
 
         testProperty: 5,
 
@@ -372,7 +372,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1",
           tracker2.error = error;
         }
         var deferred = new doh.Deferred();
-        var resultPromise = subject.retrieve(persistenceType, id, tracker2);
+        var resultPromise = subject.retrieve(typeDescription, id, tracker2);
         doh.t(resultPromise);
         resultPromise.then(
           function(pSuccess) {

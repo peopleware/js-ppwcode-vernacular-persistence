@@ -18,7 +18,7 @@ define(["ppwcode-vernacular-semantics/ui/test/mock/mockGenerator", "./Person"],
     function (generator, Person) {
 
       var SpecialPerson = generator.specialPersonClass(Person);
-      SpecialPerson.prototype.persistenceType = "SPECIAL PERSON";
+      Person.getTypeDescription = function() {return "SPECIAL PERSON";};
       return SpecialPerson;
 
     }

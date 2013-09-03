@@ -46,8 +46,8 @@ define(["dojo/_base/declare", "ppwcode-util-collections/StoreOfStateful",
         throw new Error("precondition violation: Constructor && lang.isFunction(Constructor)");
       }
       // IDEA must be a subtype of PeristentObject
-      if (! (Constructor.prototype.persistenceType)) {
-        throw new Error("precondition violation: Constructor.prototype.persistenceType");
+      if (! (Constructor.prototype.getTypeDescription) || !(Constructor.prototype.getTypeDescription())) {
+        throw new Error("precondition violation: Constructor.prototype.getTypeDescription does not exist");
       }
       if (! (id)) {
         throw new Error("precondition violation: id");
@@ -56,7 +56,7 @@ define(["dojo/_base/declare", "ppwcode-util-collections/StoreOfStateful",
         throw new Error("precondition violation: toManyPropertyName && lang.isString(toManyPropertyName)");
       }
 
-      var result = PersistentObject.keyForId(Constructor.prototype.persistenceType, id) + "/" + toManyPropertyName;
+      var result = PersistentObject.keyForId(Constructor.prototype.getTypeDescription(), id) + "/" + toManyPropertyName;
       return result; // return String
     };
 
