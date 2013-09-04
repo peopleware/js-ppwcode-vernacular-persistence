@@ -104,6 +104,9 @@ define(["dojo/_base/declare",
           return infExc;
         }
         logger.error(exc);
+        if (exc.response && exc.response.data) {
+          logger.error(JSON.stringify(exc.response.data));
+        }
         return exc;
       },
 
