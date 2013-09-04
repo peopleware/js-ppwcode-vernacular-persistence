@@ -193,7 +193,8 @@ define(["dojo/_base/declare",
         //   Inserting information thus can be done on the first call with the empty key, and can be based
         //   on the original object (this).
         // description:
-        //   The default implementation always returns `value`.
+        //   The default implementation always returns `value`, which essentially means it does nothing apart
+        //   from using electricity.
 
         return value;
       },
