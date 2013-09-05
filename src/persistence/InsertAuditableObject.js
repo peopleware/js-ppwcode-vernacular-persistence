@@ -88,7 +88,10 @@ define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js
         _c_invar: [
           function() {return this._c_prop_string("createdBy");},
           function() {return this._c_prop_date("createdAt");},
-          function() {return compareDate(this.get("createdAt"), new Date()) <= 0;},
+          /*
+            createdAt must be in the past
+            but we cannot test that: server time and time of this local computer are incomparable
+           */
           function() {return !!this.get("createdBy") === !!this.get("createdAt");} // both exist together or not
         ],
 
@@ -116,9 +119,6 @@ define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js
           this._c_pre(function() {return !this.get("createdBy") || (this.get("createdBy") === json.createdBy);});
           this._c_pre(function() {return this._c_prop_string(json, "createdAt") || this._c_prop_date(json, "createdAt");});
           this._c_pre(function() {return this._c_prop_mandatory(json, "createdAt");});
-          this._c_pre(function() {
-            return InsertAuditableObject.compareDate(InsertAuditableObject.stringToDate(json.createdAt), new Date()) <= 0;
-          });
           this._c_pre(function() {return !this.get("createdAt") || compareDate(this.get("createdAt"), stringToDate(json.createdAt)) === 0;});
           this._c_pre(function() {return !!json.createdBy === !!json.createdAt;});
 

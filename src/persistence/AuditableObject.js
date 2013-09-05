@@ -27,7 +27,10 @@ define(["dojo/_base/declare", "./InsertAuditableObject", "module"],
         _c_invar: [
           function() {return this._c_prop_string("lastModifiedBy");},
           function() {return this._c_prop_date("lastModifiedAt");},
-          function() {return compareDate(this.get("lastModifiedAt"), new Date()) <= 0;},
+          /*
+           lastModifiedAt must be in the past
+           but we cannot test that: server time and time of this local computer are incomparable
+           */
           function() {return !!this.get("lastModifiedBy") === !!this.get("lastModifiedAt");} // both exist together or not
         ],
 
@@ -54,9 +57,6 @@ define(["dojo/_base/declare", "./InsertAuditableObject", "module"],
           this._c_pre(function() {return this._c_prop_mandatory(json, "lastModifiedBy");});
           this._c_pre(function() {return this._c_prop_string(json, "lastModifiedAt") || this._c_prop_date(json, "lastModifiedAt");});
           this._c_pre(function() {return this._c_prop_mandatory(json, "lastModifiedAt");});
-          this._c_pre(function() {
-            return InsertAuditableObject.compareDate(InsertAuditableObject.stringToDate(json.lastModifiedAt), new Date()) <= 0;
-          });
           this._c_pre(function() {
             return InsertAuditableObject.compareDate(this.get("lastModifiedAt"), InsertAuditableObject.stringToDate(json.lastModifiedAt)) <= 0;
           });
