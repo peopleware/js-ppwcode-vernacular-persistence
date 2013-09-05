@@ -14,162 +14,67 @@
  limitations under the License.
  */
 
-define(["dojo/_base/declare", "./PersistentObject", "dojo/date", "dojo/_base/lang"],
-    function(declare, PersistentObject, dojoDate, lang) {
+define(["dojo/_base/declare", "./InsertAuditableObject", "module"],
+    function(declare, InsertAuditableObject, module) {
 
-      function internalReload(/*AuditableObject*/ self, /*Object*/ json) {
-        // MUDO what about Sample, this only has a createdAt and not a lastModifiedAt, so now createdAt won't be set !!!
-        if (json && json.createdAt && json.createdBy && json.lastModifiedAt && json.lastModifiedBy /* TODO json.... undefined, but not null */) {
-          // all data or nothing;
-          // TODO add precondition for this
-          if ((self.createdAt || self.createdBy) &&
-              ((self.createdAt && (dojoDate.compare(json.createdAt, self.createdAt) !== 0)) ||
-               (self.createdBy && json.createdBy != self.createdBy))) {
-            throw "ERROR cannot change from existing created information"; // TODO precondition
-          }
-          var jsonLastModifiedAt = null;
-          if (lang.isString(json.lastModifiedAt)) {
-            // MUDO HACK see below
-            if (json.lastModifiedAt.indexOf("+00:00") < 0) {
-              // there is no timezone information in the string
-              json.lastModifiedAt += "+00:00";
-            }
-            // MUDO end hack
-            jsonLastModifiedAt = new Date(json.lastModifiedAt);
-          }
-          else {
-            jsonLastModifiedAt = json.lastModifiedAt; // presumed to be a data already
-          }
-          if (self.lastModifiedAt && 1000 < self.lastModifiedAt.getTime() - jsonLastModifiedAt.getTime()) {
-            // We use < 1000 (1s) instead of < 0, because the server stores dates only to the second.
-            // With the current server implementation, we see that if we retrieve quickly after an
-            // update or create, the retrieve lastModified at is later than the one in the response
-            // of the action. The reason is, that the data in the action response comes from RAM,
-            // and has values up to the nanosecond or so (23/6/2012 15:45:32.424242242), while the
-            // data in the retrieve comes from the DB, which only stores up to the second
-            // (23/6/2012 15:45:32). So, it seems that retrieve-date is earlier than the action
-            // response date, which is impossible. By giving our comparison a 1 second leeway,
-            // this is resolved.
-            // IDEA solve in the server
-            // MUDO There is a much worse problem: a RAM-created server Date is in the local time of the server
-            //      While the time in the DB has no timezone. A RAM-created server Date that is sent over JSON
-            //      contains timezone information. A date that is retrieved from the DB does not contain
-            //      timezone in RAM, and thus does also not contain timezone information when it is sent over
-            //      JSON.
-            //      When JavaScript parses a string with timezone information, it takes it into account.
-            //      When JavaScript parses a string without timezone information, it assumes the local
-            //      timezone.
-            //      When server and client are in a different timezone, when the JSON contains timezone information,
-            //      the string is interpreted in the timezone of the server. When the JSON does not contain
-            //      timezone information, the string is interpreted in the timezone of the client.
-            //      For webapplications, this in unacceptable.
-            // MUDO for now we work around this by NOT SENDING THE DATA TO THE SERVER IN THE FIRST PLACE
-            //      that was another workaround; the effect of this is that we will not see this data after update
-            // MUDO but it is obviously wrong
-            throw "ERROR cannot become an earlier modified version"; // TODO precondition
-          }
-          if (self.lastModifiedBy && !json.lastModifiedBy) {
-            throw "ERROR cannot change to lastModifiedBy == null"; // TODO precondition
-          }
-          // this will happen with the JSON response from a creation or update, and during construction
-          if (! self.createdBy) {
-            var jsonCreatedAt = null;
-            if (lang.isString(json.createdAt)) {
-              // MUDO HACK see above
-              if (json.createdAt.indexOf("+00:00") < 0) {
-                // there is no timezone information in the string
-                json.createdAt += "+00:00";
-              }
-              // MUDO end hack
-              jsonCreatedAt = new Date(json.createdAt);
-            }
-            else {
-              jsonCreatedAt = json.createdAt; // already is presumed a Date
-            }
-            //noinspection JSUnresolvedFunction
-            self._changeAttrValue("createdAt", jsonCreatedAt);
-            //noinspection JSUnresolvedFunction
-            self._changeAttrValue("createdBy", json.createdBy);
-          }
-          //noinspection JSUnresolvedFunction
-          self._changeAttrValue("lastModifiedAt", jsonLastModifiedAt);
-          //noinspection JSUnresolvedFunction
-          self._changeAttrValue("lastModifiedBy", json.lastModifiedBy);
-        }
-      }
-
-      var AuditableObject = declare([PersistentObject], {
-        // created.. can change from null to value, but then no more
-        // lastModified.. can change all the time, but ..At can only become bigger
+      var AuditableObject = declare([InsertAuditableObject], {
+        // summary:
+        //   Objects of this type also track who made the last change when.
+        //   They have a `lastModifiedAt` and `lastModifiedBy` property, which is set by the server.
+        //   These properties cannot be set in the UI, and are initially null. Once set, the server should always
+        //   return the same or later values for `lastModifiedAt`. `lastModifiedBy` can change at will.
 
         _c_invar: [
-          function() {return this.hasOwnProperty("createdAt");},
-          function() {return this.hasOwnProperty("createdBy");},
-          function() {return this.hasOwnProperty("lastModifiedAt");},
-          function() {return this.hasOwnProperty("lastModifiedBy");}
-          // TODO should be strings and times
+          function() {return this._c_prop_string("lastModifiedBy");},
+          function() {return this._c_prop_date("lastModifiedAt");},
+          function() {return compareDate(this.get("lastModifiedAt"), new Date()) <= 0;},
+          function() {return !!this.get("lastModifiedBy") === !!this.get("lastModifiedAt");} // both exist together or not
         ],
 
-        constructor: function(/*Object*/ props) {
-          /* we don't care about the format of the data here; we just keep it, and return it to the server
-           like we got it. */
+        // lastModifiedBy: String
+        lastModifiedBy: null,
 
-          this.createdAt = null;
-          this.createdBy = null;
-          this.lastModifiedAt = null;
-          this.lastModifiedBy = null;
-          internalReload(this, props);
-        },
-
-        reload: function(/*Object*/ json) {
-          // created.. can change from null to an actual date and username number after create,
-          // lastModified.. to, but then again with each update
-          internalReload(this, json);
-        },
-
-        // getters are implicit; create when needed (for documentation)
-        // TODO documentation
-
-        _createdAtSetter: function() {
-          // createdAt is read-only
-          throw "ERROR";
-        },
-
-        _createdBySetter: function() {
-          // createdBy is read-only
-          throw "ERROR";
-        },
+        // lastModifiedAt: Date
+        lastModifiedAt: null,
 
         _lastModifiedAtSetter: function() {
           // lastModifiedAt is read-only
-          throw "ERROR";
+          throw "ERROR lastModifiedAt is read-only";
         },
 
         _lastModifiedBySetter: function() {
           // lastModifiedBy is read-only
-          throw "ERROR";
+          throw "ERROR lastModifiedBy is read-only";
         },
 
-        _extendJsonObject: function(/*Object*/ json) {
-          // it makes no senses whatsoever to send this data back to the back-end
+        reload: function(/*Object*/ json) {
+          // created.. can change from null to an actual date and username number after create,
+          this._c_pre(function() {return json;});
+          this._c_pre(function() {return this._c_prop_string(json, "lastModifiedBy");});
+          this._c_pre(function() {return this._c_prop_mandatory(json, "lastModifiedBy");});
+          this._c_pre(function() {return this._c_prop_string(json, "lastModifiedAt") || this._c_prop_date(json, "lastModifiedAt");});
+          this._c_pre(function() {return this._c_prop_mandatory(json, "lastModifiedAt");});
+          this._c_pre(function() {
+            return InsertAuditableObject.compareDate(InsertAuditableObject.stringToDate(json.lastModifiedAt), new Date()) <= 0;
+          });
+          this._c_pre(function() {
+            return InsertAuditableObject.compareDate(this.get("lastModifiedAt"), InsertAuditableObject.stringToDate(json.lastModifiedAt)) <= 0;
+          });
+          this._c_pre(function() {return !!json.lastModifiedBy === !!json.lastModifiedAt;});
 
-
-          // HOWEVER due to an idiosyncrasy in our current server, it is much nicer
-          //         if we do send back the created-attributes
-          // In any case, it should be in nobody's way.
-          json.createdBy = this.createdBy;
-          json.createdAt = this.createdAt;
-          // IDEA resolve this issue in the server
+          this._changeAttrValue("lastModifiedBy", json.lastModifiedBy);
+          this._changeAttrValue("lastModifiedAt", InsertAuditableObject.stringToDate(json.lastModifiedAt));
         },
 
-        _stateToString: function(/*Array of String*/ toStrings) {
-          toStrings.push("createdAt: " + this.createdAt);
-          toStrings.push("createdBy: " + this.createdBy);
+        // it makes no senses whatsoever to send this data back to the back-end
+
+        _stateToString: function(/*String[]*/ toStrings) {
           toStrings.push("lastModifiedAt: " + this.lastModifiedAt);
           toStrings.push("lastModifiedBy: " + this.lastModifiedBy);
         }
       });
 
+      AuditableObject.mid = module.id;
       return AuditableObject;
     }
 );
