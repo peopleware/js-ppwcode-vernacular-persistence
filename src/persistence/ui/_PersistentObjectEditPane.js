@@ -78,7 +78,7 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
         //   so we can reset it on `cancel`.
 
         this._c_pre(function() {return this.get("target")});
-        this._c_pre(function() {return this.get("target").isEditable() || this.get("target").isDeletable();});
+        this._c_pre(function() {return this.get("target").get("editable") || this.get("target").get("deletable");});
 
         this._targetStateBeforeEdit = this.get("target").toJSON();
         this.set("presentationMode", this.EDIT);
@@ -138,7 +138,7 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
         //   be closed.
 
         this._c_pre(function() {return this.get("target");});
-        this._c_pre(function() {return this.get("target").isEditable();});
+        this._c_pre(function() {return this.get("target").get("editable");});
         this._c_pre(function() {return this.get("target").get("persistenceId") ? this.get("saver") : true;});
         this._c_pre(function() {return !this.get("target").get("persistenceId") ? this.get("creator") : true;});
 
@@ -173,7 +173,7 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
         //    widget accepts no user input.
 
         this._c_pre(function() {return this.get("target");});
-        this._c_pre(function() {return this.get("target").isDeletable();});
+        this._c_pre(function() {return this.get("target").get("deletable");});
         this._c_pre(function() {return this.get("remover");});
         this._c_pre(function() {return this.get("closer");});
 

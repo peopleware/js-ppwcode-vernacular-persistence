@@ -17,7 +17,7 @@ define(["dojo/_base/declare", "dojo/dom-style",
         domStyle.set(button.domNode, "display", displayStyle);
         button.set("disabled", !condition || busy);
 
-        // TODO should listen to isEditable and isDeletable
+        // TODO should listen to editable and deletable
       }
 
       return declare([_PersistentObjectEditPane, _TemplatedMixin, _WidgetsInTemplateMixin], {
@@ -161,10 +161,10 @@ define(["dojo/_base/declare", "dojo/dom-style",
 
           var po = this.get("target");
           var busy = (stylePresentationMode === this.BUSY);
-          setVisible(this._btnEdit, stylePresentationMode === this.VIEW && (po.isEditable() || po.isDeletable()), false);
+          setVisible(this._btnEdit, stylePresentationMode === this.VIEW && (po.get("editable") || po.get("deletable")), false);
           setVisible(this._btnCancel, this.isInEditMode(), busy);
-          setVisible(this._btnDelete, this.isInEditMode() && po.isDeletable(), busy);
-          setVisible(this._btnSave, this.isInEditMode() && po.isEditable(), busy);
+          setVisible(this._btnDelete, this.isInEditMode() && po.get("deletable"), busy);
+          setVisible(this._btnSave, this.isInEditMode() && po.get("editable"), busy);
         },
 
         _localPresentationModeChange: function(presentationMode) {
