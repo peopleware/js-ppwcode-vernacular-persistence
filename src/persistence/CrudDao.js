@@ -17,11 +17,13 @@
 define(["dojo/_base/declare",
         "ppwcode-util-contracts/_Mixin",
         "./UrlBuilder", "./_Cache", "./PersistentObject", "./IdNotFoundException",
-        "dojo/Deferred", "dojo/request", "dojo/_base/lang", "ppwcode-util-oddsAndEnds/js", "dojo/has", "ppwcode-util-oddsAndEnds/log/logger!", "module"],
+        "dojo/Deferred", "dojo/request", "dojo/_base/lang", "ppwcode-util-oddsAndEnds/js",
+        "dojo/has", "dojo/promise/all", "ppwcode-util-oddsAndEnds/log/logger!", "module"],
   function(declare,
            _ContractMixin,
            UrlBuilder, _Cache, PersistentObject, IdNotFoundException,
-           Deferred, request, lang, js, has, logger, module) {
+           Deferred, request, lang, js,
+           has, all, logger, module) {
 
     function isIdNotFoundException(/*String*/ exc) {
       return exc && exc.isInstanceOf && exc.isInstanceOf(IdNotFoundException);
@@ -357,7 +359,7 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return this.isOperational();});
         this._c_pre(function() {return js.typeOf(serverType) === "string";});
         this._c_pre(function() {return js.typeOf(persistenceId) === "number";});
-        this._c_pre(function() {return js.typeOf(referer) === "object";});
+        this._c_pre(function() {return !referer || js.typeOf(referer) === "object";});
 
         logger.debug("Requested GET of: '" + serverType + "' with id '" + persistenceId + "'");
         var retrievePromiseCacheKey = serverType + "@" + persistenceId;
@@ -479,6 +481,10 @@ define(["dojo/_base/declare",
         //   Since po is Stateful, listeners will be notified of this change.
         //   This means po can already be used.
         //
+        //   The rest of the graph returned by the server cannot be trusted to be up to date in this case.
+        //   Therefor, we do not revive the result, but instead stop tracking po, and retrieve fresh data
+        //   for all related elements if they are still cached.
+        //
         //   The promise returns po after reload.
         //
         //   If anything fails during the request or revival of the response,
@@ -491,15 +497,68 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return po.get("persistenceId") !== null;});
 
         var self = this;
-        var deletePromise = self._poAction("DELETE", po);
-        var cleanupPromise = deletePromise.then(
-          function(deletedCopy) {
-            self._cache.stopTrackingCompletely(po);
-            po._changeAttrValue("persistenceId", null); // signal deletion
-            return po;
+        logger.debug("Requested DELETE of: " + po);
+        var url = this.urlBuilder.get("DELETE")(po);
+        logger.debug("DELETE URL is: " + url);
+        var deletePromise = request.del(
+          url,
+          {
+            handleAs: "json",
+            data: JSON.stringify(po, this.replacer),
+            headers: {"Accept" : "application/json"},
+            withCredentials: true,
+            timeout: this.timeout
           }
         );
-        return cleanupPromise;
+        var cleanupPromise = deletePromise.then(
+          function(data) {
+            logger.debug("DELETE success in server: " + data);
+            self._cache.stopTrackingCompletely(po);
+            // signal deletion
+            po._changeAttrValue("persistenceId", null);
+            if (po.get("persistenceVersion")) {
+              po._changeAttrValue("persistenceVersion", null);
+            }
+            if (po.get("createdBy")) {
+              po._changeAttrValue("createdBy", null);
+              po._changeAttrValue("createdAt", null);
+            }
+            if (po.get("lastModifiedBy")) {
+              po._changeAttrValue("lastModifiedBy", null);
+              po._changeAttrValue("lastModifiedAt", null);
+            }
+            return all(js.getAllKeys(po).
+              filter(function(k) {return po[k] && po[k].isInstanceOf && po[k].isInstanceOf(PersistentObject) && self._cache.get(po[k]);}).
+              map(function(k) {
+                // this will update object in cache, but don't add a referer for my sake,
+                // and don't care about IdNotFoundExceptions (delete might have cascaded)
+                var dependentPo = po[k];
+                logger.debug("updating " + dependentPo + " after delete of " + po);
+                return self.
+                  retrieve(dependentPo.getTypeDescription(), dependentPo.get("persistenceId"), null, true).
+                  then(
+                    function(result) {
+                      return result;
+                    },
+                    function(err) {
+                      return err; // no throw // TODO filter on serious exceptions
+                    }
+                  );
+              })
+            );
+          }
+          // MUDO: when we get an IdNotFoundException
+        );
+        var deleteDonePromise = cleanupPromise.then(
+          function(allResult) {
+            logger.debug("All dependent objects refreshed. Delete done.");
+            return po;
+          },
+          function(err) {
+            throw self._handleException(err); // of the request
+          }
+        );
+        return deleteDonePromise;
       },
 
       retrieveToMany: function(/*Observable(PersistentObjectStore)*/ result, /*PersistentObject*/ po, /*String*/ serverPropertyName) {
