@@ -43,14 +43,7 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/Value", "module"],
           this.referenceId = props.referenceId || props[this.jsonReferenceIdName];
         },
 
-        compare: function(/*ReferenceValue*/ other) {
-          // summary:
-          //   We use the `referenceId` as basis for ordering, barring a better way. This does not make much
-          //   sense in a UI.
-          this._c_pre(function() {return !other || (other.isInstanceOf && other.isInstanceOf(this.constructor));});
-
-          return this.referenceId - other.referenceId;
-        },
+        // there is no sensible compare here; it remains abstract
 
         equals: function(/*ReferenceValue*/ other) {
           // summary:
