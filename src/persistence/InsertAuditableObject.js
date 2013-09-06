@@ -14,20 +14,19 @@
  limitations under the License.
  */
 
-define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js", "module"],
-    function(declare, PersistentObject, js, module) {
+define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js", "dojo/date/stamp", "module"],
+    function(declare, PersistentObject, js, dateStamp, module) {
 
       function stringToDate(candidate) {
+        //noinspection FallthroughInSwitchStatementJS
         switch (js.typeOf(candidate)) {
+          case "undefined":
+          case "null":
+            return null;
           case "date":
             return candidate;
           case "string":
-            var str = candidate;
-            if (candidate.indexOf("+") < 0) {
-              // there is no timezone information in the string
-              str += "+00:00";
-            }
-            return new Date(str);
+            return dateStamp.fromISOString(candidate);
           default:
             throw "ERROR: cannot convert to date: " + candidate;
         }
@@ -83,7 +82,7 @@ define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js
       var InsertAuditableObject = declare([PersistentObject], {
         // InsertAuditableObjects have a `createdAt` and `createdBy` property, which is set by the server.
         // These properties cannot be set in the UI, and are initially null. Once set, the server should always
-        // return the same values.
+        // return the same values, except after delete, when they all turn null together again.
 
         _c_invar: [
           function() {return this._c_prop_string("createdBy");},
@@ -92,6 +91,7 @@ define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js
             createdAt must be in the past
             but we cannot test that: server time and time of this local computer are incomparable
            */
+          function() {return !!this.get("persistenceId") === !!this.get("createdBy");}, // both exist together or not
           function() {return !!this.get("createdBy") === !!this.get("createdAt");} // both exist together or not
         ],
 
@@ -114,15 +114,20 @@ define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js
         reload: function(/*Object*/ json) {
           // created.. can change from null to an actual date and username number after create,
           this._c_pre(function() {return json;});
-          this._c_pre(function() {return this._c_prop_string(json, "createdBy");});
-          this._c_pre(function() {return this._c_prop_mandatory(json, "createdBy");});
-          this._c_pre(function() {return !this.get("createdBy") || (this.get("createdBy") === json.createdBy);});
-          this._c_pre(function() {return this._c_prop_string(json, "createdAt") || this._c_prop_date(json, "createdAt");});
-          this._c_pre(function() {return this._c_prop_mandatory(json, "createdAt");});
-          this._c_pre(function() {return !this.get("createdAt") || compareDate(this.get("createdAt"), stringToDate(json.createdAt)) === 0;});
+          this._c_pre(function() {return !!json.persistenceId === !!json.createdBy;});
           this._c_pre(function() {return !!json.createdBy === !!json.createdAt;});
+          this._c_pre(function() {return this._c_prop_string(json, "createdBy");});
+          /*
+          this._c_pre(function() {return !this.get("persistenceId") || !json.persistenceId || (this.get("createdBy") === json.createdBy);});
+          The above is true, from the outside, but we cannot test it here, with this contract framework, because persistenceId is set
+          by the superclass from null to the new value (on create) before we reach this test. It was true before reload, but not
+          halfway. What follows is an equivalent local version.
+          */
+          this._c_pre(function() {return !this.get("createdBy") || !json.persistenceId || (this.get("createdBy") === json.createdBy);});
+          this._c_pre(function() {return this._c_prop_string(json, "createdAt") || this._c_prop_date(json, "createdAt");});
+          this._c_pre(function() {return !this.get("createdBy") || !json.persistenceId || compareDate(this.get("createdAt"), stringToDate(json.createdAt)) === 0;});
 
-          if (!this.get("createdBy") || !this.get("createdAt")) {
+          if (!this.get("createdBy") || !json.createdBy) {
             this._changeAttrValue("createdBy", json.createdBy);
             this._changeAttrValue("createdAt", stringToDate(json.createdAt));
           }

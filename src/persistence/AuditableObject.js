@@ -22,7 +22,8 @@ define(["dojo/_base/declare", "./InsertAuditableObject", "module"],
         //   Objects of this type also track who made the last change when.
         //   They have a `lastModifiedAt` and `lastModifiedBy` property, which is set by the server.
         //   These properties cannot be set in the UI, and are initially null. Once set, the server should always
-        //   return the same or later values for `lastModifiedAt`. `lastModifiedBy` can change at will.
+        //   return the same or later values for `lastModifiedAt`. `lastModifiedBy` can change at will, but never to
+        //   null, except after delete, when they all turn null together again.
 
         _c_invar: [
           function() {return this._c_prop_string("lastModifiedBy");},
@@ -31,6 +32,7 @@ define(["dojo/_base/declare", "./InsertAuditableObject", "module"],
            lastModifiedAt must be in the past
            but we cannot test that: server time and time of this local computer are incomparable
            */
+          function() {return !!this.get("persistenceId") === !!this.get("lastModifiedBy");}, // both exist together or not
           function() {return !!this.get("lastModifiedBy") === !!this.get("lastModifiedAt");} // both exist together or not
         ],
 
@@ -53,14 +55,16 @@ define(["dojo/_base/declare", "./InsertAuditableObject", "module"],
         reload: function(/*Object*/ json) {
           // created.. can change from null to an actual date and username number after create,
           this._c_pre(function() {return json;});
+          this._c_pre(function() {return !!json.persistenceId === !!json.lastModifiedBy;});
+          this._c_pre(function() {return !!json.lastModifiedBy === !!json.lastModifiedBy;});
           this._c_pre(function() {return this._c_prop_string(json, "lastModifiedBy");});
-          this._c_pre(function() {return this._c_prop_mandatory(json, "lastModifiedBy");});
           this._c_pre(function() {return this._c_prop_string(json, "lastModifiedAt") || this._c_prop_date(json, "lastModifiedAt");});
-          this._c_pre(function() {return this._c_prop_mandatory(json, "lastModifiedAt");});
           this._c_pre(function() {
-            return InsertAuditableObject.compareDate(this.get("lastModifiedAt"), InsertAuditableObject.stringToDate(json.lastModifiedAt)) <= 0;
+            return !json.persistenceId ||
+              InsertAuditableObject.compareDate(
+                this.get("lastModifiedAt"),
+                InsertAuditableObject.stringToDate(json.lastModifiedAt)) <= 0;
           });
-          this._c_pre(function() {return !!json.lastModifiedBy === !!json.lastModifiedAt;});
 
           this._changeAttrValue("lastModifiedBy", json.lastModifiedBy);
           this._changeAttrValue("lastModifiedAt", InsertAuditableObject.stringToDate(json.lastModifiedAt));
