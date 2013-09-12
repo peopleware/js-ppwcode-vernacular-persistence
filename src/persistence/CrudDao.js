@@ -361,25 +361,26 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return js.typeOf(persistenceId) === "number";});
         this._c_pre(function() {return !referer || js.typeOf(referer) === "object";});
 
+        var self = this;
         logger.debug("Requested GET of: '" + serverType + "' with id '" + persistenceId + "'");
         var retrievePromiseCacheKey = serverType + "@" + persistenceId;
-        if (this._retrievePromiseCache[retrievePromiseCacheKey]) {
+        if (self._retrievePromiseCache[retrievePromiseCacheKey]) {
           logger.debug("Already loading " + retrievePromiseCacheKey + "; returning existing promise.");
-          return this._retrievePromiseCache[retrievePromiseCacheKey];
+          return self._retrievePromiseCache[retrievePromiseCacheKey];
         }
+        var cached = null;
         if (!force) {
-          var cached = this.getCachedByTypeAndId(serverType, persistenceId);
+          cached = self.getCachedByTypeAndId(serverType, persistenceId);
           if (cached) {
             logger.debug("Found cached version; resolving Promise immediately (" + serverType + "@" + persistenceId + ")");
             var deferred = new Deferred();
-            this._retrievePromiseCache[retrievePromiseCacheKey] = deferred.promise;
+            self._retrievePromiseCache[retrievePromiseCacheKey] = deferred.promise;
             deferred.resolve(cached);
           }
         }
         if (!cached || (Date.now() - cached.lastReloaded.getTime() > CrudDao.durationToStale)) { // not recently reloaded
-          var url = this.urlBuilder.retrieve(serverType, persistenceId);
+          var url = self.urlBuilder.retrieve(serverType, persistenceId);
           logger.debug("GET URL is: " + url);
-          var self = this;
           var loadPromise = request(
             url,
             {
@@ -388,7 +389,7 @@ define(["dojo/_base/declare",
               headers: {"Accept" : "application/json"},
               preventCache: true,
               withCredentials: true,
-              timeout: this.timeout
+              timeout: self.timeout
             }
           );
           var revivePromise = loadPromise.then(
@@ -403,16 +404,21 @@ define(["dojo/_base/declare",
               throw self._handleException(err); // of the request
             }
           );
+          revivePromise.then(lang.hitch(self, self._optionalCacheReporting));
           // no need to handle errors of revive: they are errors
           if (!cached) {
-            this._retrievePromiseCache[retrievePromiseCacheKey] = revivePromise;
+            self._retrievePromiseCache[retrievePromiseCacheKey] = revivePromise;
           }
+          return self._retrievePromiseCache[retrievePromiseCacheKey];
         }
         else {
+          // cached version found, so not forced, and it was not old enough; there is a deferred promise in _retrievePromiseCache;
+          // this cannot stay there, because there is no ongoing load that will remove it
           logger.debug("Cached version was recently reloaded; will do no server interaction (" + retrievePromiseCacheKey + ")");
+          var resultPromise = self._retrievePromiseCache[retrievePromiseCacheKey];
+          delete self._retrievePromiseCache[retrievePromiseCacheKey];
+          return resultPromise;
         }
-        this._retrievePromiseCache[retrievePromiseCacheKey].then(lang.hitch(this, this._optionalCacheReporting));
-        return this._retrievePromiseCache[retrievePromiseCacheKey];
       },
 
       create: function(/*PersistentObject*/ po, /*Any*/ referer) {
