@@ -1,0 +1,35 @@
+{
+  "name": "be.ppwcode-vernacular-persistence",
+  "version": "0.1.0",
+  "description": "persistence by PeopleWare",
+  "keywords": [
+    "Persistence",
+    "ppwcode",
+    "PeopleWare"
+  ],
+  "maintainers": [
+    {
+      "name": "Jan Dockx",
+      "email": "Jan_Dockx@peopleware.be"
+    }
+  ],
+  "contributors": [],
+  "bugs": {
+    "mail": "Jan_Dockx@peopleware.be"
+  },
+  "licenses": [
+    {
+      "type": "Apache-2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  ],
+  "repositories": [
+    {
+      "type": "svn",
+      "url": "https://ppwcode.googlecode.com/svn/javascript/"
+    }
+  ],
+  "dependencies": [
+  ],
+  "dojoBuild": "ppwcode_vernacular_persistence.profile.js"
+}
