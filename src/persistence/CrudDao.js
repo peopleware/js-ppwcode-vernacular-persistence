@@ -160,7 +160,7 @@ define(["dojo/_base/declare",
         var headers = {"Accept":"application/json"};
         if (options && (options.start >= 0 || options.count >= 0)) {
           var rangeStart = options.start || 0;
-          var rangeEnd = (options.count && options.count != Infinity) ? (rangeStart + options.count) : "";
+          var rangeEnd = (options.count && options.count != Infinity) ? (rangeStart + options.count - 1) : "";
           headers["Range"] = "items=" + rangeStart + "-" + rangeEnd;
           headers["X-Range"] = headers["Range"]; //set X-Range for Opera since it blocks "Range" header (source: JsonRest)
         }
