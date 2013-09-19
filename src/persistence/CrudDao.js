@@ -115,7 +115,8 @@ define(["dojo/_base/declare",
       _refresh: function(/*PersistentObjectStore|Observable(PersistentObjectStore)*/ result,
                          /*String*/ url,
                          /*Object?*/ query,
-                         /*Object?*/ referer) {
+                         /*Object?*/ referer,
+                         /*Object?*/ options) {
         // summary:
         //   Get all the objects with `url` and the optional `query` from the remote server,
         //   and update `result` to reflect the returned collection when an answer arrives.
@@ -129,6 +130,13 @@ define(["dojo/_base/declare",
         //   Optional. The semantics of these parameters are left to the server.
         // referer: Object?
         //   Optional. This object will be used as referer in the _Cache for objects revived in the result.
+        // options: Object?
+        //   Optional options object. We only use the paging settings:
+        //   - options.start: Number?: The index of the first result we expect. Default is 0 (0-based counting)
+        //   - options.count: Number?: The number of objects we request, starting from `start`. The server might return less,
+        //                             if there are no more, or if it decides to return less (e.g., because the server
+        //                             return count is capped to a lower number). Default is as many as possible.
+        //   We expect a consistent sorting order on the server for paging.
         // description:
         //   The objects might be in result or the cache beforehand. Those objects are reloaded,
         //   and might send changed events.
@@ -144,17 +152,25 @@ define(["dojo/_base/declare",
         // this._c_pre(function() {return result && result.isInstanceOf && result.isInstanceOf(StoreOfStateful);});
         this._c_pre(function() {return js.typeOf(url) === "string";});
         this._c_pre(function() {return !query || js.typeOf(query) === "object";});
+        this._c_pre(function() {return !options || js.typeOf(options) === "object";});
 
         logger.debug("GET URL is: " + url);
         logger.debug("query: " + query);
         var self = this;
+        var headers = {"Accept":"application/json"};
+        if (options && (options.start >= 0 || options.count >= 0)) {
+          var rangeStart = options.start || 0;
+          var rangeEnd = (options.count && options.count != Infinity) ? (rangeStart + options.count) : "";
+          headers["Range"] = "items=" + rangeStart + "-" + rangeEnd;
+          headers["X-Range"] = headers["Range"]; //set X-Range for Opera since it blocks "Range" header (source: JsonRest)
+        }
         var loadPromise = request(
           url,
           {
-            method:"GET",
-            handleAs:"json",
-            query:query,
-            headers:{"Accept":"application/json"},
+            method: "GET",
+            handleAs: "json",
+            query: query,
+            headers: headers,
             withCredentials: true,
             timeout: this.timeout
           }
@@ -172,6 +188,13 @@ define(["dojo/_base/declare",
             throw self._handleException(err); // of the request
           }
         );
+        var totalPromise = loadPromise.response.then(
+          function(response) {
+            var range = response.getHeader("Content-Range");
+            return range && (range = range.match(/\/(.*)/)) && +range[1]; // nicked from JsonRest
+          }
+          // error handling in the other flow
+        );
         // no need to handle errors of revive: they are errors
         var storePromise = revivePromise.then(function(/*Array*/ revived) {
           if (js.typeOf(revived) !== "array") {
@@ -181,6 +204,7 @@ define(["dojo/_base/declare",
           removed.forEach(function(r) {
             self.stopTracking(r, referer);
           });
+          result.total = totalPromise; // piggyback total promise on the store, we cannot piggyback it on the Promise (frozen)
           return result; // return PersistentObjectStore|Observable(PersistentObjectStore)
         });
         storePromise.then(lang.hitch(this, this._optionalCacheReporting));
@@ -572,6 +596,7 @@ define(["dojo/_base/declare",
       },
 
       retrieveToMany: function(/*Observable(PersistentObjectStore)*/ result, /*PersistentObject*/ po, /*String*/ serverPropertyName) {
+        // MUDO obsolete; remove
         // summary:
         //   Load the objects of a to-many relationship from the remote server.
         //   These are the many objects of `po[serverPropertyName]`.
@@ -609,7 +634,8 @@ define(["dojo/_base/declare",
         return resultPromise; // return Promise
       },
 
-      retrieveToMany2: function(/*PersistentObject*/ po, /*String*/ propertyName) {
+      retrieveToMany2: function(/*PersistentObject*/ po, /*String*/ propertyName, /*Object?*/ options) {
+        // MUDO rename -"2"
         // summary:
         //   Load the objects of a to-many relationship from the remote server.
         //   These are the many objects of `po[propertyName]`.
@@ -619,6 +645,13 @@ define(["dojo/_base/declare",
         //   po should be in the cache beforehand
         // serverPropertyName: String
         //   The name of the to-many property of `po`.
+        // options: Object?
+        //   Optional options object. We only use the paging settings:
+        //   - options.start: Number?: The index of the first result we expect. Default is 0 (0-based counting)
+        //   - options.count: Number?: The number of objects we request, starting from `start`. The server might return less,
+        //                             if there are no more, or if it decides to return less (e.g., because the server
+        //                             return count is capped to a lower number).
+        //   We expect a consistent sorting order on the server for paging.
         // description:
         //   Asynchronously, we get up-to-date content from the server, and will
         //   update the content of the store when the server returns a response.
@@ -647,7 +680,7 @@ define(["dojo/_base/declare",
         var guardedPromise = store._arbiter.guard(
           store,
           function() { // return Promise
-            var retrievePromise = self._refresh(store, url, null, store); // IDEA: we can even add a query here
+            var retrievePromise = self._refresh(store, url, null, store, options); // IDEA: we can even add a query here
             var donePromise = retrievePromise.then(
               function(result) {
                 logger.debug("To-many store for " + po + "[" + propertyName+ "] refreshed.");
@@ -666,7 +699,7 @@ define(["dojo/_base/declare",
         return guardedPromise;
       },
 
-      searchInto: function(/*PersistentObjectStore*/ result, /*String?*/ serverType, /*Object?*/ query) {
+      searchInto: function(/*PersistentObjectStore*/ result, /*String?*/ serverType, /*Object?*/ query, /*Object?*/ options) {
         // summary:
         //   Get all the objects of type `serverType` given the query from the remote server,
         //   and update `result` to reflect the returned collection when an answer arrives.
@@ -678,6 +711,13 @@ define(["dojo/_base/declare",
         //   Optional.
         // query: Object?
         //   Optional. The semantics of these parameters are left to the server.
+        // options: Object?
+        //   Optional options object. We only use the paging settings:
+        //   - options.start: Number?: The index of the first result we expect. Default is 0 (0-based counting)
+        //   - options.count: Number?: The number of objects we request, starting from `start`. The server might return less,
+        //                             if there are no more, or if it decides to return less (e.g., because the server
+        //                             return count is capped to a lower number). Default is as many as possible.
+        //   We expect a consistent sorting order on the server for paging.
         // description:
         //   The objects might be in result or the cache beforehand. Those objects are reloaded,
         //   and might send changed events.
@@ -693,10 +733,11 @@ define(["dojo/_base/declare",
 //        this._c_pre(function() {return result && result.isInstanceOf && result.isInstanceOf(StoreOfStateful);});
         this._c_pre(function() {return !serverType || js.typeOf(serverType) === "string";});
         this._c_pre(function() {return !query || js.typeOf(query) === "object";});
+        this._c_pre(function() {return !options || js.typeOf(options) === "object";});
 
         logger.debug("Requested GET of matching instances: '" + serverType +"' matching '" + query + "'");
-        var url = this.urlBuilder.search(serverType, query);
-        var resultPromise = this._refresh(result, url, query, null); // no referer
+        var url = this.urlBuilder.retrieveAll(serverType, query);
+        var resultPromise = this._refresh(result, url, query, null, options); // no referer
         resultPromise.then(lang.hitch(this, this._optionalCacheReporting));
         return resultPromise; // return Promise
       },
