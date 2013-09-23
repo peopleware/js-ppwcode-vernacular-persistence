@@ -1,11 +1,12 @@
 {
   "name": "be.ppwcode-vernacular-persistence",
-  "version": "0.1.0",
-  "description": "persistence by PeopleWare",
+  "version": "I 0.0",
+  "description": "Library to support working with persistent objects by adding common behaviour to persistent classes",
   "keywords": [
-    "Persistence",
+    "PeopleWare",
     "ppwcode",
-    "PeopleWare"
+    "vernacular",
+    "Persistence"
   ],
   "maintainers": [
     {
@@ -13,7 +14,20 @@
       "email": "Jan_Dockx@peopleware.be"
     }
   ],
-  "contributors": [],
+  "contributors": [
+    {
+      "name": "Jan Dockx",
+      "email": "Jan_Dockx@peopleware.be"
+    },
+    {
+      "name": "Tom Crommen",
+      "email": "Tom_Crommen@peopleware.be"
+    },
+    {
+      "name": "Mark Cuypers",
+      "email": "Mark_Cuypers@peopleware.be"
+    }
+  ],
   "bugs": {
     "mail": "Jan_Dockx@peopleware.be"
   },
@@ -26,10 +40,13 @@
   "repositories": [
     {
       "type": "svn",
-      "url": "https://ppwcode.googlecode.com/svn/javascript/"
+      "url": "https://ppwcode.googlecode.com/svn/javascript/vernacular/persistence/"
     }
   ],
   "dependencies": [
   ],
+  "os": ["linux", "macos", "win"],
+  "cpu": ["x86", "ppc", "x86_64"],
+  "engines": ["v8", "ejs", "node", "rhino"],
   "dojoBuild": "ppwcode_vernacular_persistence.profile.js"
 }

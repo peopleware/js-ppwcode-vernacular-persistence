@@ -4,7 +4,7 @@ var profile = (function () {
   }
 
   function isCopyOnly(filename, mid) {
-    return filename.indexOf("nls/") >= 0;
+    return filename.indexOf(".html") >= 0;
   }
 
   function isAmd(filename, mid) {
