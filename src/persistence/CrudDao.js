@@ -163,6 +163,8 @@ define(["dojo/_base/declare",
           var rangeEnd = (options.count && options.count != Infinity) ? (rangeStart + options.count - 1) : "";
           headers["Range"] = "items=" + rangeStart + "-" + rangeEnd;
           headers["X-Range"] = headers["Range"]; //set X-Range for Opera since it blocks "Range" header (source: JsonRest)
+          // security prohibits from setting "Access-Control-Request-Headers" ourselves
+          // MUDO Error: 'Refused to get unsafe header "Content-Range"'; we need to add this to the CORS setting on the server?
         }
         var loadPromise = request(
           url,
@@ -190,8 +192,10 @@ define(["dojo/_base/declare",
         );
         var totalPromise = loadPromise.response.then(
           function(response) {
-            var range = response.getHeader("Content-Range");
-            return range && (range = range.match(/\/(.*)/)) && +range[1]; // nicked from JsonRest
+//            var range = response.getHeader("Content-Range");
+//            return range && (range = range.match(/\/(.*)/)) && +range[1]; // nicked from JsonRest
+            // MUDO hack
+            return 4143;
           }
           // error handling in the other flow
         );
@@ -737,7 +741,7 @@ define(["dojo/_base/declare",
 
         logger.debug("Requested GET of matching instances: '" + serverType +"' matching '" + query + "'");
         var url = this.urlBuilder.retrieveAll(serverType, query);
-        var resultPromise = this._refresh(result, url, query, null, options); // no referer
+        var resultPromise = this._refresh(result, url, query, result, options); // no referer
         resultPromise.then(lang.hitch(this, this._optionalCacheReporting));
         return resultPromise; // return Promise
       },
