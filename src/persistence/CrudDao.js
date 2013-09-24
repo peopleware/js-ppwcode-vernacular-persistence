@@ -100,16 +100,32 @@ define(["dojo/_base/declare",
       },
 
       _handleException: function(exc) {
-        if (exc && exc.response && exc.response.status === 404) {
-          var infExc = new IdNotFoundException(exc.response.data);
-          logger.info("Not found: ", infExc);
-          return infExc;
+        if (exc) {
+          if (exc.response && exc.response.status === 404) {
+            var infExc = new IdNotFoundException(exc.response.data);
+            logger.info("Not found: ", infExc);
+            return infExc;
+          }
+          if (exc.dojoType === "cancel") {
+            logger.info("Remote action cancelled.");
+            /*
+              We might want to eat this exception: it is not a problem; the Promise is cancelled.
+              However, it seems to be the only way to signal cancellation reliably. dgrid e.g.
+              uses it.
+              So we only don't log it as an error.
+            */
+            return exc;
+          }
+          logger.error(exc);
+          if (exc.response && exc.response.data) {
+            logger.error(JSON.stringify(exc.response.data));
+          }
+          return exc;
         }
-        logger.error(exc);
-        if (exc.response && exc.response.data) {
-          logger.error(JSON.stringify(exc.response.data));
+        else {
+          logger.error("Asked to handle an exception, but there is none.");
+          return undefined;
         }
-        return exc;
       },
 
       _refresh: function(/*PersistentObjectStore|Observable(PersistentObjectStore)*/ result,
