@@ -16,10 +16,10 @@
 
 define(["ppwcode-util-oddsAndEnds/typeOf", "dojo/promise/all",
         "./PersistentObject", "ppwcode-vernacular-semantics/SemanticObject", "ppwcode-vernacular-semantics/EnumerationValue",
-        "dojo/Deferred", "dojo/when", "ppwcode-util-oddsAndEnds/log/logger!"],
+        "dojo/Deferred", "dojo/when", "ppwcode-util-oddsAndEnds/promise/relent", "ppwcode-util-oddsAndEnds/log/logger!"],
   function(typeOf, all,
            PersistentObject, SemanticObject, EnumerationValue,
-           Deferred, when, logger) {
+           Deferred, when, relent, logger) {
 
     function revive(/*Object*/   graphRoot,
                     /*Object*/   referer,
@@ -148,12 +148,15 @@ define(["ppwcode-util-oddsAndEnds/typeOf", "dojo/promise/all",
       }
 
       function processArrayLike(/*Array|Arguments*/ ar, /*Object*/ referer, debugPrefix) {
-        logger.debug(debugPrefix + "processing array", ar);
+        logger.debug(debugPrefix + "processing array (length: " + ar.length + ") [", ar);
         var elementsOrPromises = [];
         // don't use map, because arguments doesn't support it
         for (var i = 0; i < ar.length; i++) {
           logger.debug(debugPrefix + "  processing array element: " + ar[i] + " (going deep)");
-          elementsOrPromises[i] =  reviveBackTrack(ar[i], referer, debugPrefix + "    ");
+          elementsOrPromises[i] =  (function() { // lock ar[i] in scope
+            var element = ar[i];
+            return relent(function() {return reviveBackTrack(element, referer, debugPrefix + "    ");});
+          })();
         }
         return all(elementsOrPromises); // all does when internally, and puts all results in an array
       }
