@@ -5,11 +5,5 @@ define({
     saveButton: "Bewaar",
     deleteButton: "Verwijder",
     busy: "Aan het verzenden"
-  },
-
-  en:false,
-  de:false,
-  es:false,
-  fr:false,
-  it:false
+  }
 });

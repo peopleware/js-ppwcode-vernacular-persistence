@@ -5,9 +5,5 @@ define({
     lastModified: "Laatst aangepast door"
   },
 
-  de:false,
-  en:true,
-  es:false,
-  fr:false,
-  it:false
+  en:true
 });
