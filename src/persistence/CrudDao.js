@@ -220,8 +220,14 @@ define(["dojo/_base/declare",
           function(response) {
 //            var range = response.getHeader("Content-Range");
 //            return range && (range = range.match(/\/(.*)/)) && +range[1]; // nicked from JsonRest
-            // MUDO hack
-            return 4143;
+            // MUDO hack Error: 'Refused to get unsafe header "Content-Range"'; we need to add this to the CORS setting on the server?
+            if (url.indexOf("RawMaterial") >= 0) {
+              return 4143;
+            }
+            if (url.indexOf("SubstanceDescription") >= 0) {
+              return 25416;
+            }
+            return undefined;
           }
           // error handling in the other flow
         );
