@@ -179,18 +179,6 @@ define(["dojo/_base/declare",
           var rangeEnd = (options.count && options.count != Infinity) ? (rangeStart + options.count - 1) : "";
           headers["Range"] = "items=" + rangeStart + "-" + rangeEnd;
           headers["X-Range"] = headers["Range"]; //set X-Range for Opera since it blocks "Range" header (source: JsonRest)
-          /*
-            On response, we will read the "Content-Range" header.
-            Security prohibits us from doing that, if the header is not mentioned in the "Access-Control-Allow-Headers" of the
-            response. For that, we have to add it to the "Access-Control-Request-Headers" in the preflight.
-            Furthermore, security prohibits from setting "Access-Control-Request-Headers" ourselves.
-            By adding the header itself in our request (while it only really makes sense on the response), the browser
-            will add it to the "Access-Control-Request-Headers" for us, and the server will (in most cases) echo that
-            contents with "Access-Control-Allow-Headers".
-           */
-          // headers["Content-Range"] = "Force Access Control"; // set something in this header, we will access later on, to force a correct CORS response
-          // doesn't work; either we need it on the response of the GET, and not only on the response of the OPTIONS, or the case is an issue
-          // MUDO Error: 'Refused to get unsafe header "Content-Range"'; we need to add this to the CORS setting on the server?
         }
         var loadPromise = request(
           url,
@@ -218,16 +206,13 @@ define(["dojo/_base/declare",
         );
         var totalPromise = loadPromise.response.then(
           function(response) {
-//            var range = response.getHeader("Content-Range");
-//            return range && (range = range.match(/\/(.*)/)) && +range[1]; // nicked from JsonRest
-            // MUDO hack Error: 'Refused to get unsafe header "Content-Range"'; we need to add this to the CORS setting on the server?
-            if (url.indexOf("RawMaterial") >= 0) {
-              return 4143;
-            }
-            if (url.indexOf("SubstanceDescription") >= 0) {
-              return 25416;
-            }
-            return undefined;
+            /*
+             On response, we will read the "Content-Range" header.
+             Security prohibits us from doing that, if the header is not mentioned in the "Access-Control-Expose-Headers" of the
+             response. For that, we have to add it to the "Access-Control-Expose-Headers" on the server.
+             */
+            var range = response.getHeader("Content-Range");
+            return range && (range = range.match(/\/(.*)/)) && +range[1]; // nicked from JsonRest
           }
           // error handling in the other flow
         );
