@@ -99,8 +99,22 @@ define(["dojo/_base/declare",
         this._retrievePromiseCache = {};
       },
 
+      handleNotAuthorized: function() {
+        // summary:
+        //   Some browsers do not present a log-in dialog when an AJAX call returns a 401.
+        //   This function says what we do then.
+        //   This cannot be implemented in general, but sublclasses can provide an override.
+
+        logger.debug("handleNotAutorized called.");
+      },
+
       _handleException: function(exc) {
         if (exc) {
+          if (exc.response && exc.response.status === 401) {
+            logger.info("Not authorized leaked through.", infExc);
+            this.handleNotAuthorized();
+            throw exc; // we may no get here
+          }
           if (exc.response && exc.response.status === 404) {
             var infExc = new IdNotFoundException(exc.response.data);
             logger.info("Not found: ", infExc);
