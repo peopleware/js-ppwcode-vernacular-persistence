@@ -111,7 +111,7 @@ define(["dojo/_base/declare",
       _handleException: function(exc) {
         if (exc) {
           if (exc.response && exc.response.status === 401) {
-            logger.info("Not authorized leaked through.", infExc);
+            logger.info("Not authorized leaked through.", exc);
             this.handleNotAuthorized();
             throw exc; // we may no get here
           }
@@ -187,7 +187,7 @@ define(["dojo/_base/declare",
         logger.debug("GET URL is: " + url);
         logger.debug("query: " + query);
         var self = this;
-        var headers = {"Accept":"application/json"};
+        var headers = {"Accept": "application/json"};
         if (options && (options.start >= 0 || options.count >= 0)) {
           var rangeStart = options.start || 0;
           var rangeEnd = (options.count && options.count != Infinity) ? (rangeStart + options.count - 1) : "";
@@ -239,11 +239,14 @@ define(["dojo/_base/declare",
           removed.forEach(function(r) {
             self.stopTracking(r, referer);
           });
-          result.total = totalPromise; // piggyback total promise on the store, we cannot piggyback it on the Promise (frozen)
+          result.total = totalPromise; // piggyback total promise on the store too
           return result; // return PersistentObjectStore|Observable(PersistentObjectStore)
         });
-        storePromise.then(lang.hitch(this, this._optionalCacheReporting));
-        return storePromise; // return Promise
+        // piggyback total promise on final Promise; since Promise is sealed, we need a delegate
+        // remember that the Promise returns the store, not the array
+        var finalPromise = lang.delegate(storePromise, {total: totalPromise});
+        finalPromise.then(lang.hitch(this, this._optionalCacheReporting));
+        return finalPromise; // return Promise
       },
 
       replacer: function(/*String*/ key, value) {
