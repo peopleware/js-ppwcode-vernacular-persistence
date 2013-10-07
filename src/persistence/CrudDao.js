@@ -110,7 +110,8 @@ define(["dojo/_base/declare",
 
       _handleException: function(exc) {
         if (exc) {
-          if (exc.response && exc.response.status === 401) {
+          if (exc.response && (exc.response.status === 401 || (has("ie") && exc.response.status === 0))) {
+            // ie has issues with a 401; this is a workaround, that will result in infinite reloads if something truly bad happens
             logger.info("Not authorized leaked through.", exc);
             this.handleNotAuthorized();
             throw exc; // we may no get here
