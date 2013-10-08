@@ -237,8 +237,23 @@ define(["dojo/_base/declare",
             throw new Error("expected array from remote call");
           }
           var removed = result.loadAll(revived);
-          removed.forEach(function(r) {
-            self.stopTracking(r, referer);
+          /* Elements might be not PeristentObjects themselves, but a hash of PersistentObjects.
+             If the element is an Object, but not a PersistentObject, we will try the properties of the object
+             for PersistentObjects, and stop tracking those. */
+          removed.forEach(function stopTrackingRecursive(r) {
+            if (r && r.isInstanceOf && r.isInstanceOf(PersistentObject)) {
+              self.stopTracking(r, referer);
+              return;
+            }
+            if (js.typeOf(r) === "array") {
+              r.forEach(function(el) {stopTrackingRecursive(el);});
+              return;
+            }
+            if (js.typeOf(r) === "object") {
+              js.getAllKeys(r).forEach(function(key) {stopTrackingRecursive(r[key]);});
+              return;
+            }
+            return;
           });
           result.total = totalPromise; // piggyback total promise on the store too
           return result; // return PersistentObjectStore|Observable(PersistentObjectStore)
