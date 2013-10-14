@@ -457,6 +457,7 @@ define(["dojo/_base/declare",
           }
         }
         if (!cached || (Date.now() - cached.lastReloaded.getTime() > CrudDao.durationToStale)) { // not recently reloaded
+          logger.debug("Not found in cache or cached version is stale. Getting '" + serverType + "' with id '" + persistenceId + "' from server.");
           var url = self.urlBuilder.retrieve(serverType, persistenceId);
           logger.debug("GET URL is: " + url);
           var loadPromise = request(
