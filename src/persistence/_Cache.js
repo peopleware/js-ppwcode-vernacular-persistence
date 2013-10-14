@@ -149,6 +149,12 @@ define(["dojo/_base/declare",
       //    The keys are getKey() for PersistentObject
       _data: null,
 
+      // _typeCrossReference: Object
+      //    Hash of type names, mentioning all the subtypes we know already.
+      //    This way, if we look for an instance of A in the cache, we can also look for subtypes of A.
+      //    Each entry is an array of direct subtypes.
+      _typeCrossReference: null,
+
       // extraOnRemove: Function?
       //   PersistentObject x Cache --> undefined
       //   Optional. If here, this function is called when an entry disappears from the trash.
@@ -159,6 +165,7 @@ define(["dojo/_base/declare",
         //   PersistentObject x Cache --> undefined
         //   Optional. If here, this function is called when an entry disappears from the trash.
         this._data = {};
+        this._typeCrossReference = {};
         if (extraOnRemove) {
           this._extraOnRemove = extraOnRemove;
         }
@@ -169,6 +176,7 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return po;});
         this._c_pre(function() {return referer;});
 
+        this._buildTypeCrossReference(po.constructor);
         var entry = this._data[key];
         if (!entry) {
           entry = new _Entry(po, this);
@@ -229,8 +237,18 @@ define(["dojo/_base/declare",
         // IDEA subtype of PersistentObject
         this._c_pre(function() {return typeOf(persistenceId) === "number";});
 
-        var key = PersistentObject.keyForId(serverType, persistenceId);
-        return this._getPayload(key); // return PersistentObject
+        // We have a crossReference. We need to test keys for serverType and all its subtypes
+        // (that we know of).
+
+        var self = this;
+        return self._typeCrossReference[serverType] &&
+               self._typeCrossReference[serverType].reduce(
+                 function(acc, poTypeDescription) {
+                   var key = PersistentObject.keyForId(poTypeDescription, persistenceId);
+                   return self._getPayload(key) || acc; // return PersistentObject, most concrete type
+                 },
+                 undefined
+               );
       },
 
       get: function(/*PersistentObject*/ po) {
@@ -309,6 +327,55 @@ define(["dojo/_base/declare",
           });
         }
         // else, there is no entry, so nobody is tracking anyway
+      },
+
+      _buildTypeCrossReference: function(/*Function*/ PoType, /*String[]?*/ subtypes) {
+        // summary:
+        //   We register PoType in the entries of all parents, and do the same for them.
+        //   We remember what we have already cross-referenced, by adding it to hash.
+
+        // If a type has an entry, all its parents already have an entry too, recursively.
+        // If a type does not have an entry, its parents might or might not have an entry.
+        // Entries known for a type are also known for all the parents of that type, recursively.
+
+        // Add subtypes to the entry for PoType and all its Parents.
+        // PoType might have an entry already, or not. In any case, subtypes are not in them yet, unless
+        // we are travelling through a diamond inheritance hierarchy, and we visited the supertype
+        // already via another branch. In that case, we might have processed the common part of different
+        // paths already, but not the difference! This means that some subtypes might already be registered,
+        // and not others.
+
+        var self = this;
+
+        if (!PoType.prototype.isInstanceOf(PersistentObject)) {
+          return;
+        }
+
+        var localSubtypes = subtypes || [];
+
+        var poTypeDescription = PoType.prototype.getTypeDescription();
+        if (!self._typeCrossReference[poTypeDescription]) {
+          // PoType is not handled yet. Create an entry for it, and add subtypes.
+          self._typeCrossReference[poTypeDescription] = [poTypeDescription].concat(localSubtypes);
+          // There might or might not be entries for all parents of PoType. In any case, PoType is not
+          // in them yet, and neither are subtypes.
+          PoType._meta.parents.forEach(function(Parent) {
+            self._buildTypeCrossReference(Parent, self._typeCrossReference[poTypeDescription]);
+          });
+        }
+        else {
+          // There was an entry for PoType already, so it was handled already, and is known
+          // to all its Parents, that exist already, too. We only have to add subtypes
+          // to the PoType entry and all its parents, that are not known here yet.
+          // Those that are known here already, are known to the super types already also.
+          var delta = localSubtypes.filter(function(sub) {
+            return self._typeCrossReference[poTypeDescription].indexOf(sub) < 0;
+          });
+          self._typeCrossReference[poTypeDescription].concat(delta);
+          PoType._meta.parents.forEach(function(Parent) {
+            self._buildTypeCrossReference(Parent, delta);
+          });
+        }
       },
 
       report: function() {
