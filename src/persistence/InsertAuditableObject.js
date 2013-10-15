@@ -114,7 +114,7 @@ define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js
         reload: function(/*Object*/ json) {
           // created.. can change from null to an actual date and username number after create,
           this._c_pre(function() {return json;});
-          this._c_pre(function() {return !!json.persistenceId === !!json.createdBy;});
+// MUDO PICTOPERFECT-482          this._c_pre(function() {return !!json.persistenceId === !!json.createdBy;});
           this._c_pre(function() {return !!json.createdBy === !!json.createdAt;});
           this._c_pre(function() {return this._c_prop_string(json, "createdBy");});
           /*
@@ -123,7 +123,7 @@ define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js
           by the superclass from null to the new value (on create) before we reach this test. It was true before reload, but not
           halfway. What follows is an equivalent local version.
           */
-          this._c_pre(function() {return !this.get("createdBy") || !json.persistenceId || (this.get("createdBy") === json.createdBy);});
+// MUDO PICTOPERFECT-482          this._c_pre(function() {return !this.get("createdBy") || !json.persistenceId || (this.get("createdBy") === json.createdBy);});
           this._c_pre(function() {return this._c_prop_string(json, "createdAt") || this._c_prop_date(json, "createdAt");});
           this._c_pre(function() {return !this.get("createdBy") || !json.persistenceId || compareDate(this.get("createdAt"), stringToDate(json.createdAt)) === 0;});
           if (!this.get("createdBy") || !json.createdBy) {
