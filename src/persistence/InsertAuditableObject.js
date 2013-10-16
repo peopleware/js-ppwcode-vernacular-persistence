@@ -79,6 +79,8 @@ define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js
       //      that was another workaround; the effect of this is that we will not see this data after update
       // MUDO but it is obviously wrong
 
+      // MUDO Attempted workaround for PICTOPERFECT-484: send the data to the server
+
       var InsertAuditableObject = declare([PersistentObject], {
         // InsertAuditableObjects have a `createdAt` and `createdBy` property, which is set by the server.
         // These properties cannot be set in the UI, and are initially null. Once set, the server should always
@@ -133,6 +135,11 @@ define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js
         },
 
         // it makes no senses whatsoever to send this data back to the back-end
+        // MUDO Attempted workaround for PICTOPERFECT-484: send the data to the server
+        _extendJsonObject:function (/*Object*/ json) {
+          json.createdBy = this.get("createdBy");
+          json.createdAt = this.get("createdAt");
+        },
 
         _stateToString: function(/*String[]*/ toStrings) {
           toStrings.push("createdAt: " + this.createdAt);
