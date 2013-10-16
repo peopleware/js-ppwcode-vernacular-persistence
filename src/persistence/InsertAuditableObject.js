@@ -135,13 +135,12 @@ define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js
         },
 
         // it makes no senses whatsoever to send this data back to the back-end
-        // MUDO Attempted workaround for PICTOPERFECT-484: send the data to the server
+        // MUDO Workaround for PICTOPERFECT-484: send the data to the server; this does eem to do the trick; is the timezone info above no longer applicable?
 
-        // MUDO this workaround works; disabled for a short time to confirm
-//        _extendJsonObject:function (/*Object*/ json) {
-//          json.createdBy = this.get("createdBy");
-//          json.createdAt = this.get("createdAt");
-//        },
+        _extendJsonObject:function (/*Object*/ json) {
+          json.createdBy = this.get("createdBy");
+          json.createdAt = this.get("createdAt");
+        },
 
         _stateToString: function(/*String[]*/ toStrings) {
           toStrings.push("createdAt: " + this.createdAt);
