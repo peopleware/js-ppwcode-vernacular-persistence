@@ -147,8 +147,6 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
         var po = this.get("target");
         var persisterName = po.get("persistenceId") ? "saver" : "creator";
         var persister = this.get(persisterName);
-        // MUDO: delay for demo - REMOVE
-        po.waitMillis = 2000;
         var persistPromise = persister(po);
         var thisObject = this;
         persistPromise.then(
@@ -156,7 +154,7 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
             thisObject.set("presentationMode", thisObject.VIEW);
           },
           function(e) {
-            // MUDO triage e
+            // TODO triage e
             console.error("ERROR ON SAVE or CREATE: TODO");
             thisObject.set("presentationMode", thisObject.ERROR);
             alert(e);
@@ -180,8 +178,6 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
         this.set("presentationMode", this.BUSY);
         var po = this.get("target");
         var deleter = this.get("remover");
-        // MUDO: delay for demo - REMOVE
-        po.waitMillis = 2000;
         var deletePromise = deleter(po);
         var thisObject = this;
         deletePromise.then(
@@ -191,7 +187,7 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
             closer();
           },
           function(e) {
-            // MUDO triage e
+            // TODO triage e
             console.error("ERROR ON SAVE or CREATE: TODO");
             thisObject.set("presentationMode", thisObject.ERROR);
             alert(e);
