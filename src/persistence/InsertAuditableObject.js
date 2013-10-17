@@ -130,7 +130,10 @@ define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js
           */
 // MUDO PICTOPERFECT-482          this._c_pre(function() {return !this.get("createdBy") || !json.persistenceId || (this.get("createdBy") === json.createdBy);});
 
-          logger.debug("Trying to convert to date: ", json.createdAt);
+          logger.trace("Trying to convert to date: ", json.createdAt);
+          if (!json.createdAt && logger.isDebugEnabled()) {
+            logger.debug("No createdAt in json: ", JSON.stringify(json));
+          }
 
           this._c_pre(function() {return this._c_prop_string(json, "createdAt") || this._c_prop_date(json, "createdAt");});
           this._c_pre(function() {return !this.get("createdBy") || !json.persistenceId || compareDate(this.get("createdAt"), stringToDate(json.createdAt)) === 0;});
