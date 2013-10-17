@@ -20,6 +20,10 @@ define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js
              logger, module) {
 
       function stringToDate(candidate) {
+        if (!candidate) {
+          // workaround; it seems that js.typeOf(null) is returned by eopdf as "domwindow"
+          return null;
+        }
         //noinspection FallthroughInSwitchStatementJS
         switch (js.typeOf(candidate)) {
           case "undefined":
