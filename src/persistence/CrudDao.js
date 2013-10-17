@@ -16,12 +16,12 @@
 
 define(["dojo/_base/declare",
         "ppwcode-util-contracts/_Mixin",
-        "./UrlBuilder", "./_Cache", "./PersistentObject", "./IdNotFoundException",
+        "./UrlBuilder", "./_Cache", "./PersistentObject", "./IdNotFoundException", "ppwcode-vernacular-exceptions/SecurityException",
         "dojo/Deferred", "dojo/request", "dojo/_base/lang", "ppwcode-util-oddsAndEnds/js",
         "dojo/has", "dojo/promise/all", "ppwcode-util-oddsAndEnds/log/logger!", "module"],
   function(declare,
            _ContractMixin,
-           UrlBuilder, _Cache, PersistentObject, IdNotFoundException,
+           UrlBuilder, _Cache, PersistentObject, IdNotFoundException, SecurityException,
            Deferred, request, lang, js,
            has, all, logger, module) {
 
@@ -109,38 +109,58 @@ define(["dojo/_base/declare",
       },
 
       _handleException: function(exc) {
-        if (exc) {
-          if (exc.response && (exc.response.status === 401 || (has("ie") && exc.response.status === 0))) {
-            // ie has issues with a 401; this is a workaround, that will result in infinite reloads if something truly bad happens
-            logger.info("Not authorized leaked through.", exc);
-            this.handleNotAuthorized();
-            throw exc; // we may no get here
-          }
-          if (exc.response && exc.response.status === 404) {
-            var infExc = new IdNotFoundException(exc.response.data);
-            logger.info("Not found: ", infExc);
-            return infExc;
-          }
-          if (exc.dojoType === "cancel") {
-            logger.info("Remote action cancelled.");
-            /*
-              We might want to eat this exception: it is not a problem; the Promise is cancelled.
-              However, it seems to be the only way to signal cancellation reliably. dgrid e.g.
-              uses it.
-              So we only don't log it as an error.
-            */
-            return exc;
-          }
-          logger.error(exc);
-          if (exc.response && exc.response.data) {
-            logger.error(JSON.stringify(exc.response.data));
-          }
-          return exc;
-        }
-        else {
+        // summary:
+        //   Triage and handle `exc`.
+        //   This method does not throw exceptions itself, but translates `exc` into another exception
+        //   that will be thrown if that is applicable, or return the original exc to be thrown. It always
+        //   returns an exception to be thrown.
+
+        if (!exc) {
           logger.error("Asked to handle an exception, but there is none.");
           return undefined;
         }
+        if (exc.dojoType === "cancel") {
+          logger.info("Remote action cancelled.");
+          /*
+           We might want to eat this exception: it is not a problem; the Promise is cancelled.
+           However, it seems to be the only way to signal cancellation reliably. dgrid e.g.
+           uses it.
+           So we only don't log it as an error.
+           */
+          return exc;
+        }
+        if (exc.response) {
+          if (exc.response.status === 401 || (has("ie") && exc.response.status === 0)) {
+            // ie has issues with a 401; this is a workaround, that will result in infinite reloads if something truly bad happens
+            logger.info("Not authorized leaked through.", exc);
+            this.handleNotAuthorized(); // this method might do a redirect, so it might not return
+            return exc; // we may not get here
+          }
+          if (exc.response.status === 404) {
+            var infExc = new IdNotFoundException({cause: exc.response.data});
+            logger.info("Not found: ", infExc);
+            return infExc;
+          }
+          if (exc.response.data["$type"] && exc.response.data["$type"].indexOf &&
+              exc.response.data["$type"].indexOf("PPWCode.Vernacular.Persistence.I.Dao.DaoSecurityException") >= 0) {
+            logger.warn("Server reported dynamic security exception.", exc.response.data);
+            return new SecurityException({cause: exc.response.data});
+          }
+          if (exc.response.status === 500) {
+            logger.error("Server reported internal error.");
+          }
+          if (exc.response.status) {
+            logger.error("Response status: ", exc.response.status);
+          }
+          if (exc.response.data) {
+            logger.error("Response data: ", JSON.stringify(exc.response.data));
+          }
+          else if (exc.response.text) {
+            logger.error("Response text: ", exc.response.text);
+          }
+        }
+        logger.error(exc);
+        return exc;
       },
 
       _refresh: function(/*PersistentObjectStore|Observable(PersistentObjectStore)*/ result,
@@ -243,17 +263,14 @@ define(["dojo/_base/declare",
           removed.forEach(function stopTrackingRecursive(r) {
             if (r && r.isInstanceOf && r.isInstanceOf(PersistentObject)) {
               self.stopTracking(r, referer);
-              return;
             }
-            if (js.typeOf(r) === "array") {
+            else if (js.typeOf(r) === "array") {
               r.forEach(function(el) {stopTrackingRecursive(el);});
-              return;
             }
-            if (js.typeOf(r) === "object") {
+            else if (js.typeOf(r) === "object") {
               js.getAllKeys(r).forEach(function(key) {stopTrackingRecursive(r[key]);});
-              return;
             }
-            return;
+            // else nop
           });
           result.total = totalPromise; // piggyback total promise on the store too
           return result; // return PersistentObjectStore|Observable(PersistentObjectStore)
