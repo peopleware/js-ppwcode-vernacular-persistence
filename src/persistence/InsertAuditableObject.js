@@ -14,8 +14,10 @@
  limitations under the License.
  */
 
-define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js", "dojo/date/stamp", "module"],
-    function(declare, PersistentObject, js, dateStamp, module) {
+define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js", "dojo/date/stamp",
+        "ppwcode-util-oddsAndEnds/log/logger!", "module"],
+    function(declare, PersistentObject, js, dateStamp,
+             logger, module) {
 
       function stringToDate(candidate) {
         //noinspection FallthroughInSwitchStatementJS
@@ -28,6 +30,7 @@ define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js
           case "string":
             return dateStamp.fromISOString(candidate);
           default:
+            logger.error("cannot convert to date: ", candidate, js.typeOf(candidate));
             throw "ERROR: cannot convert to date: " + candidate;
         }
       }
@@ -126,6 +129,9 @@ define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js
           halfway. What follows is an equivalent local version.
           */
 // MUDO PICTOPERFECT-482          this._c_pre(function() {return !this.get("createdBy") || !json.persistenceId || (this.get("createdBy") === json.createdBy);});
+
+          logger.debug("Trying to convert to date: ", json.createdAt);
+
           this._c_pre(function() {return this._c_prop_string(json, "createdAt") || this._c_prop_date(json, "createdAt");});
           this._c_pre(function() {return !this.get("createdBy") || !json.persistenceId || compareDate(this.get("createdAt"), stringToDate(json.createdAt)) === 0;});
           if (!this.get("createdBy") || !json.createdBy) {
