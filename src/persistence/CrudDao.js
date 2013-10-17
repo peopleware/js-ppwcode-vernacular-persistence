@@ -141,7 +141,7 @@ define(["dojo/_base/declare",
             logger.info("Not found: ", infExc);
             return infExc;
           }
-          if (exc.response.data["$type"] && exc.response.data["$type"].indexOf &&
+          if (exc.response.data && exc.response.data["$type"] && exc.response.data["$type"].indexOf &&
               exc.response.data["$type"].indexOf("PPWCode.Vernacular.Persistence.I.Dao.DaoSecurityException") >= 0) {
             logger.warn("Server reported dynamic security exception.", exc.response.data);
             return new SecurityException({cause: exc.response.data});
