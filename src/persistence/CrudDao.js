@@ -131,6 +131,10 @@ define(["dojo/_base/declare",
         }
         if (exc.response) {
           if (exc.response.status === 401 || (has("ie") && exc.response.status === 0)) {
+            // Normally, we should not get a 401. The browser should present a login dialog to the user.
+            // Not all browsers do that, though, for AJAX requests. In those cases, we detect it,
+            // and handle it ourselves in some way. E.g., change the window location
+            // to a server login page, that redirects here again after successful login.
             // ie has issues with a 401; this is a workaround, that will result in infinite reloads if something truly bad happens
             logger.info("Not authorized leaked through.", exc);
             this.handleNotAuthorized(); // this method might do a redirect, so it might not return
