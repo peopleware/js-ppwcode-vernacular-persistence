@@ -204,6 +204,8 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return js.typeOf(url) === "string";});
         this._c_pre(function() {return !query || js.typeOf(query) === "object";});
         this._c_pre(function() {return !options || js.typeOf(options) === "object";});
+        this._c_pre(function() {return !options || !options.start || js.typeOf(options.start) === "number";});
+        this._c_pre(function() {return !options || !options.count || js.typeOf(options.count) === "number";});
 
         logger.debug("GET URL is: " + url);
         logger.debug("query: " + query);
