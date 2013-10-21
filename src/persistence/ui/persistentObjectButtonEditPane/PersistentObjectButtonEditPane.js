@@ -2,6 +2,8 @@ define(["dojo/_base/declare", "dojo/dom-style",
         "../_PersistentObjectEditPane", "dijit/_TemplatedMixin", "dijit/_WidgetsInTemplateMixin",
         "dojo/text!./PersistentObjectButtonEditPane.html", "dojo/i18n!./nls/labels",
         "ppwcode-vernacular-persistence/PersistentObject", "ppwcode-vernacular-persistence/AuditableObject",
+        "ppwcode-util-oddsAndEnds/log/logger!",
+
         "dijit/layout/LayoutContainer", "dijit/layout/ContentPane",
         "ppwcode-vernacular-persistence/ui/auditableInfoPane/AuditableInfoPane",
         "dijit/form/Button",
@@ -9,7 +11,8 @@ define(["dojo/_base/declare", "dojo/dom-style",
     function(declare, domStyle,
              _PersistentObjectEditPane, _TemplatedMixin, _WidgetsInTemplateMixin,
              template, labels,
-             PersistentObject, AuditableObject) {
+             PersistentObject, AuditableObject,
+             logger) {
 
       function setVisible(/*Button*/ button, /*Boolean*/ condition, /*Boolean*/ busy) {
         // IDEA use FX
@@ -32,7 +35,8 @@ define(["dojo/_base/declare", "dojo/dom-style",
         //    The actual actions are done by a refresher, creator, saver, and remover
         //    function.
         //    Intended to wrap around a _SemanticObjectPane, which can be injected with
-        //    set("contentPane")
+        //    set("contentPane").
+        //    If this contentPane has a css width, it is copied to this when set.
 
         templateString: template,
         labels: labels,
@@ -123,8 +127,15 @@ define(["dojo/_base/declare", "dojo/dom-style",
           }
           this._set("persistentObjectPane", poPane);
           if (poPane) {
+            var poPaneWidth = domStyle.get(poPane.domNode, "width");
+            if (!poPaneWidth) {
+              logger.info("poPane has no width set.");
+            }
+            else {
+              poPaneWidth = poPaneWidth + "px";
+              domStyle.set(this.domNode, "width", poPaneWidth);
+            }
             this._contentDiv.addChild(poPane);
-            this.domNode.style.width = poPane.getWidgetSize() + "px";
             // new detail might already have a target
             var ourPo = this.get("target");
             var wrappedPo = poPane.get("target");
@@ -169,14 +180,6 @@ define(["dojo/_base/declare", "dojo/dom-style",
 
         _localPresentationModeChange: function(presentationMode) {
           this._setButtonsStyles(this.get("stylePresentationMode"));
-        },
-
-        getWidgetSize: function() {
-          var poPane = this.get("persistentObjectPane");
-          if (poPane) {
-            return poPane.getWidgetSize() + 20;
-          }
-          return 0;
         },
 
         resize: function() {
