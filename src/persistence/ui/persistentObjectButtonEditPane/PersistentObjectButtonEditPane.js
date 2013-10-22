@@ -1,15 +1,15 @@
 define(["dojo/_base/declare", "dojo/dom-style",
-        "../_PersistentObjectEditPane", "dijit/_TemplatedMixin", "dijit/_WidgetsInTemplateMixin",
+        "dijit/layout/LayoutContainer", "../_PersistentObjectEditPane", "dijit/_TemplatedMixin", "dijit/_WidgetsInTemplateMixin",
         "dojo/text!./PersistentObjectButtonEditPane.html", "dojo/i18n!./nls/labels",
         "ppwcode-vernacular-persistence/PersistentObject", "ppwcode-vernacular-persistence/AuditableObject",
         "ppwcode-util-oddsAndEnds/log/logger!",
 
-        "dijit/layout/LayoutContainer", "dijit/layout/ContentPane",
+         "dijit/layout/ContentPane",
         "ppwcode-vernacular-persistence/ui/auditableInfoPane/AuditableInfoPane",
         "dijit/form/Button",
         "xstyle/css!./PersistentObjectButtonEditPane.css"],
     function(declare, domStyle,
-             _PersistentObjectEditPane, _TemplatedMixin, _WidgetsInTemplateMixin,
+             LayoutContainer, _PersistentObjectEditPane, _TemplatedMixin, _WidgetsInTemplateMixin,
              template, labels,
              PersistentObject, AuditableObject,
              logger) {
@@ -23,7 +23,7 @@ define(["dojo/_base/declare", "dojo/dom-style",
         // TODO should listen to editable and deletable
       }
 
-      return declare([_PersistentObjectEditPane, _TemplatedMixin, _WidgetsInTemplateMixin], {
+      return declare([LayoutContainer, _PersistentObjectEditPane, _TemplatedMixin, _WidgetsInTemplateMixin], {
         // summary:
         //    Widget that extends _PersistentObjectEditPane with an actual presentation.
         //    There are buttons to control the edit cycle on the bottom of the pane.
@@ -41,6 +41,8 @@ define(["dojo/_base/declare", "dojo/dom-style",
         templateString: template,
         labels: labels,
 
+        design: "headline",
+
         getTargetType: function() {
           // summary:
           //    PersistentObject if there is no persistentObjectDetail. The target type of
@@ -52,7 +54,6 @@ define(["dojo/_base/declare", "dojo/dom-style",
         //    An _SemanticObjectPane that displays the target.
         persistentObjectPane: null,
 
-        _borderContainer: null,
         _contentDiv: null,
         _errorDiv: null,
         _bottomDiv: null,
@@ -180,10 +181,6 @@ define(["dojo/_base/declare", "dojo/dom-style",
 
         _localPresentationModeChange: function(presentationMode) {
           this._setButtonsStyles(this.get("stylePresentationMode"));
-        },
-
-        resize: function() {
-          this._borderContainer.resize();
         }
 
       });
