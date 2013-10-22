@@ -16,10 +16,11 @@ define(["dojo/_base/declare", "dojo/dom-style",
 
       function setVisible(/*Button*/ button, /*Boolean*/ condition, /*Boolean*/ busy) {
         // IDEA use FX
-        var displayStyle = condition ? "inline-block" : "none";
-        domStyle.set(button.domNode, "display", displayStyle);
-        button.set("disabled", !condition || busy);
-
+        if (button && button.domNode) {
+          var displayStyle = condition ? "inline-block" : "none";
+          domStyle.set(button.domNode, "display", displayStyle);
+          button.set("disabled", !condition || busy);
+        }
         // TODO should listen to editable and deletable
       }
 
