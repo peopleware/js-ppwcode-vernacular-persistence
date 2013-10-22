@@ -71,6 +71,10 @@ define(["dojo/_base/declare", "./InsertAuditableObject", "module"],
         },
 
         // it makes no senses whatsoever to send this data back to the back-end
+        _extendJsonObject:function (/*Object*/ json) {
+          json.lastModifiedAt = this.get("lastModifiedAt");
+          json.lastModifiedBy = this.get("lastModifiedBy");
+        },
 
         _stateToString: function(/*String[]*/ toStrings) {
           toStrings.push("lastModifiedAt: " + this.lastModifiedAt);
