@@ -38,6 +38,8 @@ define(["dojo/_base/declare", "dojo/dom-style",
         //    Intended to wrap around a _SemanticObjectPane, which can be injected with
         //    set("contentPane").
         //    If this contentPane has a css width, it is copied to this when set.
+        //
+        //    On any change of the target, we reevaluate the button display.
 
         templateString: template,
         labels: labels,
@@ -65,6 +67,8 @@ define(["dojo/_base/declare", "dojo/dom-style",
         _btnSave: null,
         _btnDelete: null,
 
+        _poListener: null,
+
         postCreate: function() {
           this._setButtonsStyles(this.NOTARGET);
           if (! this.get("target")) { // TODO is this really necessary? why? write a comment
@@ -91,15 +95,27 @@ define(["dojo/_base/declare", "dojo/dom-style",
         _propagateTarget: function(/*PersistentObject*/ po) {
           // summary:
           //    Set the target on the persistentObjectPane and _auditableInfo
-          if (this.get("persistentObjectPane")) {
-            this.get("persistentObjectPane").set("target", po);
-            if (this.opener) {
-              this.get("persistentObjectPane").set("opener", this.opener);
+
+          var self = this;
+          if (self.get("persistentObjectPane")) {
+            self.get("persistentObjectPane").set("target", po);
+            if (self.opener) {
+              self.get("persistentObjectPane").set("opener", self.opener);
             }
           }
           var ao = po && po.isInstanceOf(AuditableObject) ? po : null;
-          // MUDO invisible if there is no target
-          this._auditableInfo.set("target", ao);
+          // TODO invisible if there is no target
+          self._auditableInfo.set("target", ao);
+          if (self._poListener) {
+            self._poListener.remove();
+            self._poListener = null;
+          }
+          if (po) {
+            self._poListener = po.watch(function() {
+              self._setButtonsStyles(self.get("stylePresentationMode"));
+            });
+            self.own(self._poListener);
+          }
         },
 
         _setOpenerAttr: function(opener) {
