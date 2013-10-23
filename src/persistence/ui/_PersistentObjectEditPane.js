@@ -109,7 +109,7 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
               },
               function(e) {
                 // this is not really a fatal error, but an inconvenience
-                console.warn("ERROR ON REFRESH: " + e);
+                console.error("ERROR ON REFRESH: " + e);
               }
             );
           }
@@ -158,7 +158,7 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
             console.error("ERROR ON SAVE or CREATE: TODO");
             thisObject.set("presentationMode", thisObject.ERROR);
             alert(e);
-            throw e;
+            thisObject.cancel();
           }
         )
       },
@@ -191,7 +191,7 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
             console.error("ERROR ON SAVE or CREATE: TODO");
             thisObject.set("presentationMode", thisObject.ERROR);
             alert(e);
-            throw e;
+            thisObject.cancel();
           }
         )
       }
