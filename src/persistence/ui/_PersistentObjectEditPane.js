@@ -33,13 +33,6 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
         return PersistentObject;
       },
 
-      // _targetStateBeforeEdit: Object
-      //   Here we store the target.toJSON when we go to edit mode. We can restore
-      //   the original state with a reload from this data on cancel.
-      // tags:
-      //   private
-      _targetStateBeforeEdit: null,
-
       // refresher: Function
       //   Function that attempts a refresh of a PersistentObject.
       //   Returns a promise. Optional.
@@ -80,7 +73,6 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
         this._c_pre(function() {return this.get("target")});
         this._c_pre(function() {return this.get("target").get("editable") || this.get("target").get("deletable");});
 
-        this._targetStateBeforeEdit = this.get("target").toJSON();
         this.set("presentationMode", this.EDIT);
       },
 
@@ -96,31 +88,29 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
         this._c_pre(function() {return this.get("refresher");});
         this._c_pre(function() {return this.get("closer");});
 
-        var po = this.get("target");
-        if (po.get("persistenceId")) {
-          // update of existing object
-          po.reload(this._targetStateBeforeEdit);
-          var refresher = this.get("refresher");
-          if (refresher) {
-            var refreshPromise = refresher(po);
-            refreshPromise.then(
-              function(result) {
-                // NOP
-              },
-              function(e) {
-                // this is not really a fatal error, but an inconvenience
-                console.error("ERROR ON REFRESH: " + e);
-              }
-            );
-          }
-        }
-        this._targetStateBeforeEdit = null;
-        this.set("presentationMode", this.VIEW);
-        if (!po.get("persistenceId")) {
-          // create of new object
-          // cancel of creation === close of window
-          var closer = this.get("closer");
+        var self = this;
+        var po = self.get("target");
+        if (!po || !po.get("persistenceId")) {
+          var closer = self.get("closer");
           closer();
+          return;
+        }
+        self.set("presentationMode", self.BUSY);
+        var refresher = self.get("refresher");
+        if (refresher) {
+          var refreshPromise = refresher(po);
+          refreshPromise.then(
+            function(result) {
+              self.set("presentationMode", self.VIEW);
+            },
+            function(e) {
+              // this is not really a fatal error, but an inconvenience
+              console.error("ERROR ON REFRESH: " + e);
+              var closer = self.get("closer");
+              closer();
+              return;
+            }
+          );
         }
       },
 
