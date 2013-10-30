@@ -1,7 +1,13 @@
 define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPane/_SemanticObjectPane",
-        "../PersistentObject"],
+        "ppwcode-vernacular-exceptions/SemanticException", "../IdNotFoundException", "../ObjectAlreadyChangedException", "ppwcode-vernacular-exceptions/SecurityException",
+        "../PersistentObject",
+        "dojo/i18n!./nls/messages",
+        "module"],
   function(declare, _SemanticObjectPane,
-           PersistentObject) {
+           SemanticException, IdNotFoundException, ObjectAlreadyChangedException, SecurityException,
+           PersistentObject,
+           messages,
+           module) {
 
     var _PersistentObjectEditPane = declare([_SemanticObjectPane], {
       // summary:
@@ -100,15 +106,27 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
         if (refresher) {
           var refreshPromise = refresher(po);
           refreshPromise.then(
-            function(result) {
+            function() {
               self.set("presentationMode", self.VIEW);
             },
             function(e) {
               // this is not really a fatal error, but an inconvenience
-              console.error("ERROR ON REFRESH: " + e);
+              if (e.isInstanceOf && (e.isInstanceOf(IdNotFoundException) || e.isInstanceOf(SecurityException))) {
+                self.set("presentationMode", self.WILD);
+                var messageKey = e.constructor.mid;
+                if (e.key) {
+                  messageKey += "_" + e.key;
+                }
+                var message = messages[messageKey] || messageKey;
+                alert(message);
+              }
+              else {
+                console.error("ERROR ON REFRESH: " + e);
+                self.set("presentationMode", self.ERROR);
+                alert(e);
+              }
               var closer = self.get("closer");
               closer();
-              return;
             }
           );
         }
@@ -138,17 +156,34 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
         var persisterName = po.get("persistenceId") ? "saver" : "creator";
         var persister = this.get(persisterName);
         var persistPromise = persister(po);
-        var thisObject = this;
+        var self = this;
         persistPromise.then(
-          function(result) {
-            thisObject.set("presentationMode", thisObject.VIEW);
+          function() {
+            self.set("presentationMode", self.VIEW);
           },
           function(e) {
-            // TODO triage e
-            console.error("ERROR ON SAVE or CREATE: TODO");
-            thisObject.set("presentationMode", thisObject.ERROR);
+            if (e.isInstanceOf && e.isInstanceOf(SemanticException)) {
+              self.set("presentationMode", self.WILD);
+              var messageKey = e.constructor.mid;
+              if (e.key) {
+                messageKey += "_" + e.key;
+              }
+              var message = messages[messageKey] || messageKey;
+              alert(message);
+              if (e.isInstanceOf(ObjectAlreadyChangedException) || e.isInstanceOf(SecurityException)) {
+                self.cancel();
+              }
+              else if (e.isInstanceOf(IdNotFoundException)) {
+                var closer = self.get("closer");
+                closer();
+              }
+              // else other semantic exception; we are wild
+              return;
+            }
+            console.error("ERROR ON SAVE or CREATE");
+            self.set("presentationMode", self.ERROR);
             alert(e);
-            thisObject.cancel();
+            self.cancel();
           }
         )
       },
@@ -169,25 +204,43 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
         var po = this.get("target");
         var deleter = this.get("remover");
         var deletePromise = deleter(po);
-        var thisObject = this;
+        var self = this;
         deletePromise.then(
           function(result) {
-            thisObject.set("presentationMode", thisObject.VIEW);
-            var closer = thisObject.get("closer");
+            self.set("presentationMode", self.VIEW);
+            var closer = self.get("closer");
             closer();
           },
           function(e) {
-            // TODO triage e
+            if (e.isInstanceOf && e.isInstanceOf(SemanticException)) {
+              if (e.isInstanceOf(IdNotFoundException)) {
+                // already gone; no problem
+                console.info("Object was already removed.");
+                var closer = self.get("closer");
+                closer();
+                return;
+              }
+              self.set("presentationMode", self.WILD);
+              var messageKey = e.constructor.mid;
+              if (e.key) {
+                messageKey += "_" + e.key;
+              }
+              var message = messages[messageKey] || messageKey;
+              alert(message);
+              self.cancel();
+              return;
+            }
             console.error("ERROR ON SAVE or CREATE: TODO");
-            thisObject.set("presentationMode", thisObject.ERROR);
+            self.set("presentationMode", self.ERROR);
             alert(e);
-            thisObject.cancel();
+            self.cancel();
           }
         )
       }
 
     });
 
+    _PersistentObjectEditPane.mid = module.id;
     return _PersistentObjectEditPane; // return _PersistentObjectEditPane
 
   }

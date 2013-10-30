@@ -16,12 +16,12 @@
 
 define(["dojo/_base/declare",
         "ppwcode-util-contracts/_Mixin",
-        "./UrlBuilder", "./_Cache", "./PersistentObject", "./IdNotFoundException", "ppwcode-vernacular-exceptions/SecurityException",
+        "./UrlBuilder", "./_Cache", "./PersistentObject", "./IdNotFoundException", "ppwcode-vernacular-exceptions/SecurityException", "./ObjectAlreadyChangedException",
         "dojo/Deferred", "dojo/request", "dojo/_base/lang", "ppwcode-util-oddsAndEnds/js",
         "dojo/has", "dojo/promise/all", "ppwcode-util-oddsAndEnds/log/logger!", "module"],
   function(declare,
            _ContractMixin,
-           UrlBuilder, _Cache, PersistentObject, IdNotFoundException, SecurityException,
+           UrlBuilder, _Cache, PersistentObject, IdNotFoundException, SecurityException, ObjectAlreadyChangedException,
            Deferred, request, lang, js,
            has, all, logger, module) {
 
@@ -145,10 +145,15 @@ define(["dojo/_base/declare",
             logger.info("Not found: ", infExc);
             return infExc;
           }
-          if (exc.response.data && exc.response.data["$type"] && exc.response.data["$type"].indexOf &&
-              exc.response.data["$type"].indexOf("PPWCode.Vernacular.Persistence.I.Dao.DaoSecurityException") >= 0) {
-            logger.warn("Server reported dynamic security exception.", exc.response.data);
-            return new SecurityException({cause: exc.response.data});
+          if (exc.response.data && exc.response.data["$type"] && exc.response.data["$type"].indexOf) {
+            if (exc.response.data["$type"].indexOf("PPWCode.Vernacular.Persistence.I.Dao.DaoSecurityException") >= 0) {
+              logger.warn("Server reported dynamic security exception.", exc.response.data);
+              return new SecurityException({cause: exc.response.data});
+            }
+            if (exc.response.data["$type"].indexOf("PPWCode.Vernacular.Persistence.I.Dao.ObjectAlreadyChangedException") >= 0) {
+              logger.info("Server reported object already changed.", exc.response.data);
+              return new ObjectAlreadyChangedException({cause: exc.response.data, newVersion: exc.response.data && exc.response.data.Data && exc.response.data.Data.sender});
+            }
           }
           if (exc.response.status === 500) {
             logger.error("Server reported internal error.");

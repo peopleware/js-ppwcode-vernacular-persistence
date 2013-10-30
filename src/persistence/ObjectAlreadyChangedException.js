@@ -17,14 +17,21 @@
 define(["dojo/_base/declare", "ppwcode-vernacular-exceptions/SemanticException", "module"],
     function(declare, SemanticException, module) {
 
-      var IdNotFoundException = declare([SemanticException], {
+      var ObjectAlreadyChangedException = declare([SemanticException], {
+
+        // newVersion: Object
+        //   Optional raw version of the most recent state of the object for which the exception was reported.
+        newVersion: null,
 
         constructor: function(/*Object*/ props) {
+          if (props && props.newVersion) {
+            this.newVersion = props.newVersion;
+          }
         }
 
       });
 
-      IdNotFoundException.mid = module.id;
-      return IdNotFoundException;
+      ObjectAlreadyChangedException.mid = module.id;
+      return ObjectAlreadyChangedException;
     }
 );
