@@ -159,6 +159,13 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
         var self = this;
         persistPromise.then(
           function() {
+            if (persisterName === "saver") {
+              // MUDO workaround https://projects.peopleware.be/jira44/browse/PICTOPERFECT-505
+              // The server PUT result is not correct! We retrieve extra, to get the correct result for now!
+              self.cancel(); // MUDO yes, weird, but it does the trick for now
+              return;
+            }
+            // MUDO nominal code without workaround below:
             self.set("presentationMode", self.VIEW);
           },
           function(e) {
