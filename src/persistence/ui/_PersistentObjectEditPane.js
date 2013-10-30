@@ -144,9 +144,9 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
         //   to change the data, and try again (or cancel).
         //   If an error occurs, we go to ERROR mode. The application should
         //   be closed.
+        //   The target does not have to be `editable`. Otherwise, we could not do state changes that make objects editable.
 
         this._c_pre(function() {return this.get("target");});
-        this._c_pre(function() {return this.get("target").get("editable");});
         this._c_pre(function() {return this.get("target").get("persistenceId") ? this.get("saver") : true;});
         this._c_pre(function() {return !this.get("target").get("persistenceId") ? this.get("creator") : true;});
 
@@ -174,29 +174,8 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
               self.set("presentationMode", self.VIEW);
             }
           },
-          function(e) {
-            if (e.isInstanceOf && e.isInstanceOf(SemanticException)) {
-              self.set("presentationMode", self.WILD);
-              var messageKey = e.constructor.mid;
-              if (e.key) {
-                messageKey += "_" + e.key;
-              }
-              var message = messages[messageKey] || messageKey;
-              alert(message);
-              if (e.isInstanceOf(ObjectAlreadyChangedException) || e.isInstanceOf(SecurityException)) {
-                self.cancel();
-              }
-              else if (e.isInstanceOf(IdNotFoundException)) {
-                var closer = self.get("closer");
-                closer();
-              }
-              // else other semantic exception; we are wild
-              return;
-            }
-            console.error("ERROR ON SAVE or CREATE");
-            self.set("presentationMode", self.ERROR);
-            alert(e);
-            self.cancel();
+          function(exc) {
+            self._handleSaveException(exc);
           }
         )
       },
@@ -249,6 +228,31 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
             self.cancel();
           }
         )
+      },
+
+      _handleSaveException: function(exc) {
+        if (exc.isInstanceOf && exc.isInstanceOf(SemanticException)) {
+          this.set("presentationMode", this.WILD);
+          var messageKey = exc.constructor.mid;
+          if (exc.key) {
+            messageKey += "_" + exc.key;
+          }
+          var message = messages[messageKey] || messageKey;
+          alert(message);
+          if (exc.isInstanceOf(ObjectAlreadyChangedException) || exc.isInstanceOf(SecurityException)) {
+            this.cancel();
+          }
+          else if (exc.isInstanceOf(IdNotFoundException)) {
+            var closer = this.get("closer");
+            closer();
+          }
+          // else other semantic exception; we are wild
+          return;
+        }
+        console.error("ERROR ON SAVE or CREATE");
+        this.set("presentationMode", this.ERROR);
+        alert(exc);
+        this.cancel();
       }
 
     });
