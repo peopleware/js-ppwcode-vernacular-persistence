@@ -150,23 +150,29 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
         this._c_pre(function() {return this.get("target").get("persistenceId") ? this.get("saver") : true;});
         this._c_pre(function() {return !this.get("target").get("persistenceId") ? this.get("creator") : true;});
 
-        this.set("presentationMode", this.BUSY);
-        // TODO local validation
-        var po = this.get("target");
-        var persisterName = po.get("persistenceId") ? "saver" : "creator";
-        var persister = this.get(persisterName);
-        var persistPromise = persister(po);
         var self = this;
+        self.set("presentationMode", this.BUSY);
+        // TODO local validation
+        var po = self.get("target");
+        var persisterName = po.get("persistenceId") ? "saver" : "creator";
+        var persister = self.get(persisterName);
+        var persistPromise = persister(po);
         persistPromise.then(
-          function() {
+          function(result) {
             if (persisterName === "saver") {
+              if (result !== po) {
+                throw "ERROR: revive should have found the same object";
+              }
               // MUDO workaround https://projects.peopleware.be/jira44/browse/PICTOPERFECT-505
               // The server PUT result is not correct! We retrieve extra, to get the correct result for now!
               self.cancel(); // MUDO yes, weird, but it does the trick for now
               return;
             }
-            // MUDO nominal code without workaround below:
-            self.set("presentationMode", self.VIEW);
+            if (persisterName === "creator") {
+              // we need to switch the old target with the result
+              self.set("target", result);
+              self.set("presentationMode", self.VIEW);
+            }
           },
           function(e) {
             if (e.isInstanceOf && e.isInstanceOf(SemanticException)) {
