@@ -18,9 +18,11 @@ define(["dojo/_base/declare", "./PersistentObject"],
   function(declare, PersistentObject) {
 
     function internalReload(/*VersionedPersistentObject*/ self, /*Object*/ json) {
-      if (json && json.persistenceVersion /* TODO json.persistenceVersion undefined, but not null */) {
+      if (json && json.persistenceVersion) {
         if (self.persistenceVersion && json.persistenceVersion < self.persistenceVersion) {
-          throw "ERROR: cannot become an earlier version"; // TODO precondition
+          throw "ERROR: cannot become an earlier version (was:" + self.persistenceVersion + ", json: " + json.persistenceVersion +
+                " -- type: " + this.getTypeDescription() + ", persistenceId: " + this.persistenceId + ", json: " +
+                JSON.stringify(json) + ")";
         }
         // this will happen with the JSON response from a creation or update, and during construction
         //noinspection JSUnresolvedFunction
@@ -49,12 +51,6 @@ define(["dojo/_base/declare", "./PersistentObject"],
         // and to a higher number on update
         internalReload(this, json);
       },
-
-      /*
-      _persistenceVersionGetter: function() {
-        return this.persistenceVersion;
-      },
-      */
 
       _persistenceVersionSetter: function() {
         // persistenceVersion is read-only
