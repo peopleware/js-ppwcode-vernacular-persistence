@@ -21,7 +21,7 @@ define(["dojo/_base/declare", "./PersistentObject"],
       if (json && json.persistenceVersion) {
         if (self.persistenceVersion && json.persistenceVersion < self.persistenceVersion) {
           throw "ERROR: cannot become an earlier version (was:" + self.persistenceVersion + ", json: " + json.persistenceVersion +
-                " -- type: " + this.getTypeDescription() + ", persistenceId: " + this.persistenceId + ", json: " +
+                " -- type: " + self.getTypeDescription() + ", persistenceId: " + self.persistenceId + ", json: " +
                 JSON.stringify(json) + ")";
         }
         // this will happen with the JSON response from a creation or update, and during construction
