@@ -57,11 +57,9 @@ define(["dojo/_base/declare", "dojo/dom-style",
         //    An _SemanticObjectPane that displays the target.
         persistentObjectPane: null,
 
-        _contentDiv: null,
-        _errorDiv: null,
-        _bottomDiv: null,
+        _contentPane: null,
+        _errorPane: null,
         _auditableInfo: null,
-        _buttonDiv: null,
         _btnEdit: null,
         _btnCancel: null,
         _btnSave: null,
@@ -140,7 +138,7 @@ define(["dojo/_base/declare", "dojo/dom-style",
           if (oldPoPane) {
             oldPoPane.set("target", null);
             // no destroy of oldPoDetail; we didn't create it; if we do, we have to!
-            this._contentDiv.removeChild(oldPoPane);
+            this._contentPane.removeChild(oldPoPane);
             oldPoPane.destroyRecursive();
           }
           this._set("persistentObjectPane", poPane);
@@ -153,7 +151,7 @@ define(["dojo/_base/declare", "dojo/dom-style",
               poPaneWidth = (poPaneWidth + 16) + "px"; // see css: 16px padding
               domStyle.set(this.domNode, "width", poPaneWidth);
             }
-            this._contentDiv.addChild(poPane);
+            this._contentPane.addChild(poPane);
             // new detail might already have a target
             var ourPo = this.get("target");
             var wrappedPo = poPane.get("target");

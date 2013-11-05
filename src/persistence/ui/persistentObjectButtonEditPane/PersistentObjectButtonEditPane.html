@@ -1,44 +1,37 @@
 <div class="persistentObjectButtonEditPane">
   <script type="dojo/require">lang: "dojo/_base/lang"</script>
-  <div data-dojo-type="dijit/layout/ContentPane"
-       data-dojo-attach-point="_contentDiv"
-       data-dojo-props="region: 'center'"></div>
-  <div data-dojo-type="dijit/layout/ContentPane"
-       data-dojo-attach-point="_bottomDiv"
-       data-dojo-props="region: 'bottom'"
-       style="height: 40px;">
-    <div>
-      <div class="persistentObjectButtonEditPane-errors" data-dojo-attach-point="_errorDiv"></div>
-      <div>
-        <div class="persistentObjectButtonEditPane-buttons" data-dojo-attach-point="_buttonDiv">
-          <button data-dojo-type="dijit/form/Button"
-                  data-dojo-props="showLabel: true, onClick: lang.hitch(this, this.edit)"
-                  data-dojo-attach-point="_btnEdit"
-                  type="button">
-            ${labels.editButton}
-          </button>
-          <button data-dojo-type="dijit/form/Button"
-                  data-dojo-props="showLabel: true, onClick: lang.hitch(this, this.cancel)"
-                  data-dojo-attach-point="_btnCancel"
-                  type="button">
-            ${labels.cancelButton}
-          </button>
-          <button data-dojo-type="dijit/form/Button"
-                  data-dojo-props="showLabel: true, onClick: lang.hitch(this, this.remove)"
-                  data-dojo-attach-point="_btnDelete"
-                  type="button">
-            ${labels.deleteButton}
-          </button>
-          <button data-dojo-type="dijit/form/Button"
-                  data-dojo-props="showLabel: true, onClick: lang.hitch(this, this.save)"
-                  data-dojo-attach-point="_btnSave"
-                  type="button">
-            ${labels.saveButton}
-          </button>
-        </div>
-      </div>
+  <div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region: 'center'" data-dojo-attach-point="_contentPane"></div>
+  <div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region: 'bottom'">
+    <div class="persistentObjectButtonEditPane-errors" data-dojo-attach-point="_errorPane"></div>
+    <div class="persistentObjectButtonEditPane-buttons">
       <div data-dojo-type="ppwcode-vernacular-persistence/ui/auditableInfoPane/AuditableInfoPane"
            data-dojo-attach-point="_auditableInfo">
+      </div>
+      <div class="persistentObjectButtonEditPane-buttons-buttons">
+        <button data-dojo-type="dijit/form/Button"
+                data-dojo-props="showLabel: true, onClick: lang.hitch(this, this.edit)"
+                data-dojo-attach-point="_btnEdit"
+                type="button">
+          ${labels.editButton}
+        </button>
+        <button data-dojo-type="dijit/form/Button"
+                data-dojo-props="showLabel: true, onClick: lang.hitch(this, this.cancel)"
+                data-dojo-attach-point="_btnCancel"
+                type="button">
+          ${labels.cancelButton}
+        </button>
+        <button data-dojo-type="dijit/form/Button"
+                data-dojo-props="showLabel: true, onClick: lang.hitch(this, this.remove)"
+                data-dojo-attach-point="_btnDelete"
+                type="button">
+          ${labels.deleteButton}
+        </button>
+        <button data-dojo-type="dijit/form/Button"
+                data-dojo-props="showLabel: true, onClick: lang.hitch(this, this.save)"
+                data-dojo-attach-point="_btnSave"
+                type="button">
+          ${labels.saveButton}
+        </button>
       </div>
     </div>
   </div>
