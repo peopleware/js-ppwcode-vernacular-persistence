@@ -262,6 +262,12 @@ define(["dojo/_base/declare",
           }
           // error handling in the other flow
         );
+        // IDEA this approach freezes the UI in dgrid
+        // Better would be to revive the elements of the array separately,
+        // get a promise for each, and add to the store one at a time.
+        // But that is not the same as loadAll, which also removes stuff _not_ in the server result.
+        // Furthermore, then we don't use the feature that common secondary objects are only reloaded once.
+
         // no need to handle errors of revive: they are errors
         var storePromise = revivePromise.then(function(/*Array*/ revived) {
           if (js.typeOf(revived) !== "array") {
