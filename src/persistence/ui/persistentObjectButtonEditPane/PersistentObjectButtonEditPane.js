@@ -190,8 +190,8 @@ define(["dojo/_base/declare", "dojo/dom-style",
           var busy = (stylePresentationMode === this.BUSY);
           setVisible(this._btnEdit, stylePresentationMode === this.VIEW && (po.get("editable") || po.get("deletable")), false);
           setVisible(this._btnCancel, this.isInEditMode(), busy);
-          setVisible(this._btnDelete, this.isInEditMode() && po.get("deletable"), busy);
-          setVisible(this._btnSave, this.isInEditMode() && po.get("editable"), busy);
+          setVisible(this._btnDelete, this.isInEditMode() && po.get("deletable") && po.get("persistenceId"), busy);
+          setVisible(this._btnSave, this.isInEditMode() && (po.get("editable") || !po.get("persistenceId")), busy);
         },
 
         _localPresentationModeChange: function(presentationMode) {
