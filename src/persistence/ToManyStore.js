@@ -12,7 +12,7 @@
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
  limitations under the License.
- */
+*/
 
 define(["dojo/_base/declare", "./PersistentObjectStore", "dojo/Stateful", "ppwcode-util-oddsAndEnds/typeOf", "ppwcode-util-oddsAndEnds/promise/Arbiter"],
   function(declare, PersistentObjectStore, Stateful, typeOf, Arbiter) {

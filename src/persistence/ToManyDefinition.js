@@ -12,7 +12,7 @@
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
  limitations under the License.
- */
+*/
 
 define(["dojo/_base/declare", "ppwcode-util-contracts/_Mixin", "ppwcode-util-oddsAndEnds/typeOf"],
   function(declare, _ContractsMixin, typeOf) {
