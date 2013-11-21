@@ -46,7 +46,7 @@ define(["ppwcode-util-contracts/doh", "../AuditableObject"],
           doh.is(null, subject.get("lastModifiedBy"));
         },
 
-        // MUDO test events
+        // TODO test events
 
         function testReload1() {
           var subject = new AuditableObject();

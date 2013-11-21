@@ -183,7 +183,8 @@ define(["dojo/_base/declare", "dojo/dom-style",
         },
 
         validate: function() {
-          // MUDO: standard Widget function?
+          // TODO this is not functional in this version
+          // TODO: standard Widget function?
           if (this.get("presentationMode") === this.EDIT) {
             var poPane = this.get("persistentObjectPane");
             if (poPane && poPane.validate) {

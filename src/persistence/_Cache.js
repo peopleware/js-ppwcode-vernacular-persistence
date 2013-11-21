@@ -220,8 +220,6 @@ define(["dojo/_base/declare",
             logger.info("Entry removed from cache: " + entry.payload.toString());
             // now, if payload was itself a referer, we need to remove if everywhere as referer
             this.stopTrackingAsReferer(entry.payload);
-            // also do this for all its payload's LazyToManies
-            // MUDO unfinished
             if (self._extraOnRemove) {
               self._extraOnRemove(entry.payload, self);
             }

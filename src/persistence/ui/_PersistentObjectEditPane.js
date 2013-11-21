@@ -181,7 +181,7 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
               }
               // MUDO workaround https://projects.peopleware.be/jira44/browse/PICTOPERFECT-505
               // The server PUT result is not correct! We retrieve extra, to get the correct result for now!
-              self.cancel(); // MUDO yes, weird, but it does the trick for now
+              self.cancel(); // yes, weird, but it does the trick for now for the workaround
               return;
             }
             if (persisterName === "creator") {

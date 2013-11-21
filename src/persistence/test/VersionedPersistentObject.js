@@ -44,7 +44,7 @@ define(["ppwcode-util-contracts/doh", "../VersionedPersistentObject"],
           doh.is(null, subject.get("persistenceVersion"));
         },
 
-        // MUDO test events
+        // TODO test events
 
         function testReload1() {
           //noinspection MagicNumberJS
