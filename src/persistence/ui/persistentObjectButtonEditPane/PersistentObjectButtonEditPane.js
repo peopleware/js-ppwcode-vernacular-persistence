@@ -164,8 +164,7 @@ define(["dojo/_base/declare", "dojo/dom-style",
               logger.info("poPane has no width set.");
             }
             else {
-              poPaneWidth = (poPaneWidth + 16) + "px"; // see css: 16px padding
-              domStyle.set(this.domNode, "width", poPaneWidth);
+              domStyle.set(this.domNode, "width", (poPaneWidth + 16) + "px"); // see css: 16px padding
             }
             this._contentPane.addChild(poPane);
             // new detail might already have a target
