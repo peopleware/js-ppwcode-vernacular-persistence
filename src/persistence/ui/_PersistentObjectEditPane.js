@@ -115,15 +115,16 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
         if (!po || !po.get("persistenceId")) {
           var closer = self.get("closer");
           closer();
-          return;
+          return po;
         }
         self.set("presentationMode", self.BUSY);
         var refresher = self.get("refresher");
         if (refresher) {
           var refreshPromise = refresher(po);
           refreshPromise.then(
-            function() {
+            function(result) {
               self.set("presentationMode", self.VIEW);
+              return result;
             },
             function(e) {
               // this is not really a fatal error, but an inconvenience
@@ -143,8 +144,13 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
               }
               var closer = self.get("closer");
               closer();
+              throw e;
             }
           );
+          return refreshPromise;
+        }
+        else {
+          return po;
         }
       },
 
@@ -181,19 +187,20 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
               }
               // MUDO workaround https://projects.peopleware.be/jira44/browse/PICTOPERFECT-505
               // The server PUT result is not correct! We retrieve extra, to get the correct result for now!
-              self.cancel(); // yes, weird, but it does the trick for now for the workaround
-              return;
+              return self.cancel(); // yes, weird, but it does the trick for now for the workaround
             }
             if (persisterName === "creator") {
               // we need to switch the old target with the result
               self.set("target", result);
               self.set("presentationMode", self.VIEW);
             }
+            return result;
           },
           function(exc) {
             self._handleSaveException(exc);
           }
-        )
+        );
+        return persistPromise;
       },
 
       remove: function() {
@@ -218,6 +225,7 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
             self.set("presentationMode", self.VIEW);
             var closer = self.get("closer");
             closer();
+            return result;
           },
           function(e) {
             if (e.isInstanceOf && e.isInstanceOf(SemanticException)) {
@@ -242,8 +250,10 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
             self.set("presentationMode", self.ERROR);
             alert(e);
             self.cancel();
+            throw e;
           }
-        )
+        );
+        return deletePromise;
       },
 
       _handleSaveException: function(exc) {
