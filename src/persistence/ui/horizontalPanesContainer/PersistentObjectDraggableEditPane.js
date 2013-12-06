@@ -173,7 +173,7 @@ define(["dojo/_base/declare",
         },
 
         _closeOnAlt: function(/*Event*/ event, /*Promise*/ promise) {
-          if (!event.altKey) {
+          if (!event || !event.altKey) {
             return promise;
           }
           // also close
