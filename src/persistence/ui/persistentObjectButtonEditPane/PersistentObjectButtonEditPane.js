@@ -188,6 +188,15 @@ define(["dojo/_base/declare", "dojo/dom-style",
         }
       },
 
+      save: function() {
+        // summary:
+        //   Override: before we save, put the focus on the button, to make sure
+        //   that the last edited field has lost focus. This might be necessary
+        //   (onChange) to propagate changes from the field to the viewmodel object.
+        this._btnSave.focus();
+        this.inherited(arguments);
+      },
+
       _setButtonsStyles: function(stylePresentationMode) {
         // Set the button style.
         this._c_pre(function() { return stylePresentationMode && this.stylePresentationModes.indexOf(stylePresentationMode) >= 0; });
