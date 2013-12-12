@@ -96,16 +96,19 @@ define(["dojo/_base/declare",
               event.stopPropagation();
               self.cancel(event);
             }
-            else if ((event.keyCode === keys.LEFT_ARROW || event.keyCode === keys.RIGHT_ARROW) &&
-                     (presentationMode === self.VIEW ||
-                      presentationMode === self.BUSY ||
-                      event.metaKey)){
+            else if (
+                      ((event.keyCode === keys.LEFT_ARROW || event.keyCode === keys.RIGHT_ARROW) &&
+                        (presentationMode === self.VIEW || presentationMode === self.BUSY)) ||
+                      ((event.keyCode === keys.PAGE_UP || event.keyCode === keys.PAGE_DOWN) &&
+                        (presentationMode === self.EDIT || presentationMode === self.WILD || presentationMode === self.VIEW || presentationMode === self.BUSY) &&
+                        event.metaKey)
+                    ) {
               event.preventDefault();
               event.stopPropagation();
-              if (event.keyCode === keys.LEFT_ARROW && self.previous !== self.getFirst()) {
+              if ((event.keyCode === keys.LEFT_ARROW || event.keyCode === keys.PAGE_UP) && self.previous !== self.getFirst()) {
                 self.previous.focus();
               }
-              else if (event.keyCode === keys.RIGHT_ARROW && self.next !== self.getLast()) {
+              else if ((event.keyCode === keys.RIGHT_ARROW  || event.keyCode === keys.PAGE_UP) && self.next !== self.getLast()) {
                 self.next.focus();
               }
               // IDEA: with shift: move left, right
