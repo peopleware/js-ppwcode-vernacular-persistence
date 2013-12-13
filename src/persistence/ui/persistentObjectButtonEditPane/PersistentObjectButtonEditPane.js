@@ -18,6 +18,7 @@ define(["dojo/_base/declare", "dojo/dom-style",
         "dijit/layout/LayoutContainer", "../_PersistentObjectEditPane", "dijit/_TemplatedMixin", "dijit/_WidgetsInTemplateMixin",
         "dojo/text!./PersistentObjectButtonEditPane.html", "dojo/i18n!./nls/labels",
         "ppwcode-vernacular-persistence/PersistentObject", "ppwcode-vernacular-persistence/AuditableObject",
+        "ppwcode-util-oddsAndEnds/bindingChains",
         "ppwcode-util-oddsAndEnds/log/logger!",
 
          "dijit/layout/ContentPane",
@@ -28,6 +29,7 @@ define(["dojo/_base/declare", "dojo/dom-style",
            LayoutContainer, _PersistentObjectEditPane, _TemplatedMixin, _WidgetsInTemplateMixin,
            template, labels,
            PersistentObject, AuditableObject,
+           bindingChains,
            logger) {
 
     return declare([LayoutContainer, _PersistentObjectEditPane, _TemplatedMixin, _WidgetsInTemplateMixin], {
@@ -74,10 +76,14 @@ define(["dojo/_base/declare", "dojo/dom-style",
       _poListener: null,
 
       postCreate: function() {
-        this._setButtonsStyles(this.NOTARGET);
-        if (! this.get("target")) { // TODO is this really necessary? why? write a comment
-          this.set("target", null);
+        var self = this;
+        self._setButtonsStyles(this.NOTARGET);
+        if (!self.get("target")) { // TODO is this really necessary? why? write a comment
+          self.set("target", null);
         }
+        self.own(bindingChains(self, ["target.editable", "target!.deletable", "target!.wildExceptions"], function() {
+          self._setButtonsStyles(self.get("stylePresentationMode"));
+        }));
       },
 
       destroy: function() {
@@ -108,7 +114,6 @@ define(["dojo/_base/declare", "dojo/dom-style",
           }
         }
         var ao = po && po.isInstanceOf(AuditableObject) ? po : null;
-        // TODO invisible if there is no target
         self._auditableInfo.set("target", ao);
         if (self._poListener) {
           self._poListener.remove();
@@ -171,28 +176,12 @@ define(["dojo/_base/declare", "dojo/dom-style",
         this.resize();
       },
 
-      validate: function() {
-        // TODO this is not functional in this version
-        // TODO: standard Widget function?
-        if (this.get("presentationMode") === this.EDIT) {
-          var poPane = this.get("persistentObjectPane");
-          if (poPane && poPane.validate) {
-            return poPane.validate();
-          }
-          else {
-            return true;
-          }
-        }
-        else {
-          return true;
-        }
-      },
-
       save: function() {
         // summary:
         //   Override: before we save, put the focus on the button, to make sure
         //   that the last edited field has lost focus. This might be necessary
         //   (onChange) to propagate changes from the field to the viewmodel object.
+
         this._btnSave.focus();
         this.inherited(arguments);
       },
@@ -206,7 +195,7 @@ define(["dojo/_base/declare", "dojo/dom-style",
         this._setVisible(this._btnEdit, stylePresentationMode === this.VIEW && (po.get("editable") || po.get("deletable")), false);
         this._setVisible(this._btnCancel, this.isInEditMode(), busy);
         this._setVisible(this._btnDelete, this.isInEditMode() && po.get("deletable") && po.get("persistenceId"), busy);
-        this._setVisible(this._btnSave, this.isInEditMode() && (po.get("editable") || !po.get("persistenceId")), busy);
+        this._setVisible(this._btnSave, this.isInEditMode() && (po.get("editable") || !po.get("persistenceId")), busy || (po && !po.get("wildExceptions").isEmpty()));
       },
 
       _localPresentationModeChange: function(presentationMode) {
@@ -220,7 +209,6 @@ define(["dojo/_base/declare", "dojo/dom-style",
           domStyle.set(button.domNode, "display", displayStyle);
           button.set("disabled", !condition || busy);
         }
-        // TODO should listen to editable and deletable
       }
 
   });
