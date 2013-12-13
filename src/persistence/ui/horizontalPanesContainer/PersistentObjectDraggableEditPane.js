@@ -19,7 +19,7 @@ define(["dojo/_base/declare",
         "ppwcode-vernacular-persistence/ui/persistentObjectButtonEditPane/PersistentObjectButtonEditPane",
         "dojo/dom-style", "dojo/keys",
 
-        "dojo/text!./persistentObjectDraggableEditPane.html",
+        "dojo/text!./persistentObjectDraggableEditPane.html", "dojo/i18n!./nls/labels",
 
         "module",
 
@@ -31,7 +31,7 @@ define(["dojo/_base/declare",
     function(declare,
              DraggablePane, PersistentObjectButtonEditPane,
              domStyle, keys,
-             template,
+             template, labels,
              module) {
 
       var PersistentObjectDraggableEditPane = declare([PersistentObjectButtonEditPane, DraggablePane], {
@@ -39,6 +39,7 @@ define(["dojo/_base/declare",
         //   A PersistentObjectDraggableEditPane is a PersistentObjectButtonEditPane with a different template.
 
         templateString: template,
+        labels: labels,
 
         // crudDao: CrudDao
         //   Needed for operation.
