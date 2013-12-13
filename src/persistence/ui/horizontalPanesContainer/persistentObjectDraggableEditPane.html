@@ -1,0 +1,73 @@
+<div class="persistentObjectDraggableEditPane persistentObjectButtonEditPane">
+  <!--
+  Copyright 2012 - $Date $ by PeopleWare n.v.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+
+  <script type="dojo/require">lang: "dojo/_base/lang"</script>
+  <div class="persistentObjectDraggableEditPane-heading"
+       data-dojo-type="dijit/layout/ContentPane"
+       data-dojo-props="region: 'top'"
+       data-dojo-attach-point="_dragBarNode">
+    <div class="persistentObjectButtonEditPane-buttons">
+      <button type="button"
+              data-dojo-type="dijit/form/Button"
+              data-dojo-props="iconClass: 'dijitIconEdit',
+                               showLabel: false,
+                               title: '${labels.editButton}',
+                               onClick: lang.hitch(this, this.edit)"
+              data-dojo-attach-point="_btnEdit">
+      </button>
+      <button type="button"
+              data-dojo-type="dijit/form/Button"
+              data-dojo-props="showLabel: true,
+                               title: '${labels.cancelButtonTitle}',
+                               onClick: lang.hitch(this, this.cancel)"
+              data-dojo-attach-point="_btnCancel">${labels.cancelButton}</button>
+      <button type="button"
+              data-dojo-type="dijit/form/Button"
+              data-dojo-props="iconClass: 'dijitIconClear',
+                               showLabel: false,
+                               title: '${labels.deleteButton}',
+                               onClick: lang.hitch(this, this.remove)"
+              data-dojo-attach-point="_btnDelete">
+      </button>
+      <button type="button"
+              data-dojo-type="dijit/form/Button"
+              data-dojo-props="iconClass: 'dijitIconSave',
+                               showLabel: false,
+                               title: '${labels.saveButton}',
+                               onClick: lang.hitch(this, this.save)"
+              data-dojo-attach-point="_btnSave">
+      </button>
+      <button type="button"
+              data-dojo-type="dijit/form/Button"
+              data-dojo-props="iconClass:'dijitIconDelete',
+                               showLabel: false,
+                               title: '${labels.closeButton}',
+                               onClick: lang.hitch(this, this.close)"
+              data-dojo-attach-point="_btnClose">
+       </button>
+    </div>
+  </div>
+  <div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region: 'center'" data-dojo-attach-point="_contentPane"></div>
+  <div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region: 'bottom'">
+    <div class="persistentObjectButtonEditPane-errors" data-dojo-attach-point="_errorPane"></div>
+    <div class="persistentObjectButtonEditPane-buttons">
+      <div data-dojo-type="ppwcode-vernacular-persistence/ui/auditableInfoPane/AuditableInfoPane"
+           data-dojo-attach-point="_auditableInfo">
+      </div>
+    </div>
+  </div>
+</div>
