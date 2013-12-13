@@ -173,34 +173,39 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
         this._c_pre(function() {return !this.get("target").get("persistenceId") ? this.get("creator") : true;});
 
         var self = this;
-        self.set("presentationMode", this.BUSY);
-        // TODO local validation
         var po = self.get("target");
-        var persisterName = po.get("persistenceId") ? "saver" : "creator";
-        var persister = self.get(persisterName);
-        var persistPromise = persister(po);
-        persistPromise.then(
-          function(result) {
-            if (persisterName === "saver") {
-              if (result !== po) {
-                throw "ERROR: revive should have found the same object";
+        var wildExceptions = po && po.get("wildExceptions");
+        if (wildExceptions && wildExceptions.isEmpty()) {
+          self.set("presentationMode", this.BUSY);
+          var persisterName = po.get("persistenceId") ? "saver" : "creator";
+          var persister = self.get(persisterName);
+          var persistPromise = persister(po);
+          persistPromise.then(
+            function(result) {
+              if (persisterName === "saver") {
+                if (result !== po) {
+                  throw "ERROR: revive should have found the same object";
+                }
+                // MUDO workaround https://projects.peopleware.be/jira44/browse/PICTOPERFECT-505
+                // The server PUT result is not correct! We retrieve extra, to get the correct result for now!
+                return self.cancel(); // yes, weird, but it does the trick for now for the workaround
               }
-              // MUDO workaround https://projects.peopleware.be/jira44/browse/PICTOPERFECT-505
-              // The server PUT result is not correct! We retrieve extra, to get the correct result for now!
-              return self.cancel(); // yes, weird, but it does the trick for now for the workaround
+              if (persisterName === "creator") {
+                // we need to switch the old target with the result
+                self.set("target", result);
+                self.set("presentationMode", self.VIEW);
+              }
+              return result;
+            },
+            function(exc) {
+              self._handleSaveException(exc);
             }
-            if (persisterName === "creator") {
-              // we need to switch the old target with the result
-              self.set("target", result);
-              self.set("presentationMode", self.VIEW);
-            }
-            return result;
-          },
-          function(exc) {
-            self._handleSaveException(exc);
-          }
-        );
-        return persistPromise;
+          );
+          return persistPromise;
+        }
+        else {
+          return null;
+        }
       },
 
       remove: function() {
