@@ -68,9 +68,10 @@ define(["dojo/_base/declare",
         postCreate: function() {
           this.inherited(arguments);
           var self = this;
-          self.own(this.on("keypress", function(event) {
+          self.own(self.on("keypress", function(event) {
             var presentationMode = self.get("presentationMode");
-            if (presentationMode === self.VIEW && event.keyChar === "e") {
+            var target = self.get("target");
+            if (presentationMode === self.VIEW && event.keyChar === "e" && target && target.get("editable")) {
               event.preventDefault();
               event.stopPropagation();
               self.edit();
@@ -88,7 +89,7 @@ define(["dojo/_base/declare",
               self.save(event);
             }
           }));
-          self.own(this.on("keydown", function(event) {
+          self.own(self.on("keydown", function(event) {
             var presentationMode = self.get("presentationMode");
             if ((presentationMode === self.EDIT || presentationMode === self.WILD) &&
                 event.keyCode === keys.ESCAPE) {
@@ -99,7 +100,7 @@ define(["dojo/_base/declare",
             else if (
                       ((event.keyCode === keys.LEFT_ARROW || event.keyCode === keys.RIGHT_ARROW) &&
                         (presentationMode === self.VIEW || presentationMode === self.BUSY)) ||
-                      ((event.keyCode === keys.PAGE_UP || event.keyCode === keys.PAGE_DOWN) &&
+                      ((event.keyCode === keys.PAGE_UP || event.keyCode === keys.PAGE_DOWN || event.keyCode === keys.HOME || event.keyCode === keys.END) &&
                         (presentationMode === self.EDIT || presentationMode === self.WILD || presentationMode === self.VIEW || presentationMode === self.BUSY) &&
                         event.metaKey)
                     ) {
@@ -108,8 +109,14 @@ define(["dojo/_base/declare",
               if ((event.keyCode === keys.LEFT_ARROW || event.keyCode === keys.PAGE_UP) && self.previous !== self.getFirst()) {
                 self.previous.focus();
               }
-              else if ((event.keyCode === keys.RIGHT_ARROW  || event.keyCode === keys.PAGE_UP) && self.next !== self.getLast()) {
+              else if ((event.keyCode === keys.RIGHT_ARROW  || event.keyCode === keys.PAGE_DOWN) && self.next !== self.getLast()) {
                 self.next.focus();
+              }
+              else if (event.keyCode === keys.HOME && self.getFirst().next !== self.getLast()) {
+                self.getFirst().next.focus();
+              }
+              else if (event.keyCode === keys.END && self.getLast().previous !== self.getFirst()) {
+                self.getLast().previous.focus();
               }
               // IDEA: with shift: move left, right
             }
