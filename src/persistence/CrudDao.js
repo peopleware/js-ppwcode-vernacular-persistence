@@ -141,6 +141,14 @@ define(["dojo/_base/declare",
             return exc; // we may not get here
           }
           if (exc.response.status === 404) {
+            var kwargs = {cause: exc.response.data};
+            if (exc.response.data && exc.response.data["$type"] && exc.response.data["$type"].indexOf) {
+              if (exc.response.data["$type"].indexOf("PPWCode.Vernacular.Persistence.I.Dao.IdNotFoundException") >= 0) {
+                kwargs.serverType = exc.response.data.Data.persistenObjectType; // NOTE: sic! Yes, there is a typo in the server code (missing "t")
+                // getting the typeDescription in general needs a require, and thus is async. We do not want to do that here.
+                kwargs.persistenceId = exc.response.data.Data.persistenceId;
+              }
+            }
             var infExc = new IdNotFoundException({cause: exc.response.data});
             logger.info("Not found: ", infExc);
             return infExc;
