@@ -1,6 +1,6 @@
 {
   "name": "ppwcode-vernacular-persistence-I",
-  "version": "2.1",
+  "version": "2.2",
   "description": "Library to support working with persistent objects by adding common behaviour to persistent classes",
   "keywords": [
     "PeopleWare",

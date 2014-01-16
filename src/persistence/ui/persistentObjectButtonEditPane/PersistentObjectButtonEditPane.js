@@ -73,17 +73,20 @@ define(["dojo/_base/declare", "dojo/dom-style",
       _btnSave: null,
       _btnDelete: null,
 
-      _poListener: null,
-
       postCreate: function() {
         var self = this;
         self._setButtonsStyles(this.NOTARGET);
         if (!self.get("target")) { // TODO is this really necessary? why? write a comment
           self.set("target", null);
         }
-        self.own(bindingChains(self, ["target.editable", "target!.deletable", "target!.wildExceptions"], function() {
-          self._setButtonsStyles(self.get("stylePresentationMode"));
-        }));
+        self.own(bindingChains(
+          self,
+          ["target!.editable", "target!.deletable", "target!.wildExceptions"],
+          // when there is a new target, we go to NOTARGET, by code in the superclass; we don't have to do it twice
+          function() {
+            self._setButtonsStyles(self.get("stylePresentationMode"));
+          })
+        );
       },
 
       destroy: function() {
@@ -115,16 +118,6 @@ define(["dojo/_base/declare", "dojo/dom-style",
         }
         var ao = po && po.isInstanceOf(AuditableObject) ? po : null;
         self._auditableInfo.set("target", ao);
-        if (self._poListener) {
-          self._poListener.remove();
-          self._poListener = null;
-        }
-        if (po) {
-          self._poListener = po.watch(function() {
-            self._setButtonsStyles(self.get("stylePresentationMode"));
-          });
-          self.own(self._poListener);
-        }
       },
 
       _setOpenerAttr: function(opener) {
