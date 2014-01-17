@@ -124,6 +124,11 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
         self.set("presentationMode", self.BUSY);
         var refresher = self.get("refresher");
         if (refresher) {
+          if (this.get("focused")) {
+            // We are in the active stack. Take the focus away from any internal field:
+            // this avoids the focus being ripped away from this completely.
+            this.focus();
+          }
           var refreshPromise = refresher(po);
           refreshPromise.then(
             function(result) {
@@ -183,6 +188,11 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
           self.set("presentationMode", this.BUSY);
           var persisterName = po.get("persistenceId") ? "saver" : "creator";
           var persister = self.get(persisterName);
+          if (this.get("focused")) {
+            // We are in the active stack. Take the focus away from any internal field:
+            // this avoids the focus being ripped away from this completely.
+            this.focus();
+          }
           var persistPromise = persister(po);
           persistPromise.then(
             function(result) {
