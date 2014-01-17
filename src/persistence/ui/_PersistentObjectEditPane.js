@@ -14,18 +14,18 @@
  limitations under the License.
 */
 
-define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPane/_SemanticObjectPane",
+define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPane/_SemanticObjectPane", "ppwcode-util-oddsAndEnds/_PropagationMixin",
         "ppwcode-vernacular-exceptions/SemanticException", "../IdNotFoundException", "../ObjectAlreadyChangedException", "ppwcode-vernacular-exceptions/SecurityException",
-        "../PersistentObject",
+        "../PersistentObject", "dijit/registry", "dijit/form/TextBox",
         "dojo/i18n!./nls/messages",
         "module"],
-  function(declare, _SemanticObjectPane,
+  function(declare, _SemanticObjectPane, _PropagationMixin,
            SemanticException, IdNotFoundException, ObjectAlreadyChangedException, SecurityException,
-           PersistentObject,
+           PersistentObject, registry, TextBox,
            messages,
            module) {
 
-    var _PersistentObjectEditPane = declare([_SemanticObjectPane], {
+    var _PersistentObjectEditPane = declare([_SemanticObjectPane, _PropagationMixin], {
       // summary:
       //   Widget that represents a PersistentObject in detail, and that gives the opportunity
       //   to the user the view the details, edit the details, and create a new object.
@@ -50,6 +50,10 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
       _c_invar: [
         // no extra invariants
       ],
+
+      "-propagate-": {
+        presentationMode: [{path: "_focusOnFirstActiveTextBox", exec: true}]
+      },
 
       getTargetType: function() {
         return PersistentObject;
@@ -259,6 +263,29 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
           }
         );
         return deletePromise;
+      },
+
+      _focusOnFirstActiveTextBox: function(presentationMode) {
+        var self = this;
+        if (presentationMode === self.EDIT) {
+          // now focus on the first active focusable widget inside
+          function recursiveChildWidgets(domNode) {
+            // TODO C/P from ppwcode/vernacular/semantics/ui/_SemanticObjectPane; generalize somewhere
+            return registry.findWidgets(domNode).reduce(
+              function(acc, w) {
+                acc.push(w);
+                return acc.concat(recursiveChildWidgets(w.domNode));
+              },
+              []
+            );
+          }
+
+          var childWidgets = recursiveChildWidgets(self.domNode);
+          var activeInputs = childWidgets.filter(function(w) {return w.isInstanceOf(TextBox) && w.isFocusable && w.isFocusable() && !w.get("readOnly");});
+          if (activeInputs.length >= 0) {
+            activeInputs[0].focus();
+          }
+        }
       },
 
       _handleSaveException: function(exc) {

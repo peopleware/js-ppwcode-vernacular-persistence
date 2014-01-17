@@ -198,6 +198,16 @@ define(["dojo/_base/declare",
               throw err;
             }
           );
+        },
+
+        focus: function() {
+          var presentationMode = this.get("presentationMode");
+          if (presentationMode !== this.EDIT) {
+            this.inherited(arguments);
+          }
+          else {
+            this._focusOnFirstActiveTextBox(presentationMode);
+          }
         }
 
       });
