@@ -292,7 +292,7 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
 
           var childWidgets = recursiveChildWidgets(self.domNode);
           var activeInputs = childWidgets.filter(function(w) {return w.isInstanceOf(TextBox) && w.isFocusable && w.isFocusable() && !w.get("readOnly");});
-          if (activeInputs.length >= 0) {
+          if (activeInputs.length > 0) {
             activeInputs[0].focus();
           }
         }
