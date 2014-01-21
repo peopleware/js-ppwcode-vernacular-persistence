@@ -43,7 +43,7 @@ define(["dojo/_base/declare", "ppwcode-util-oddsAndEnds/ui/horizontalPanesContai
 
           var pane = this.inherited(arguments);
           if (po.get("persistenceId")) {
-            pane.refresher(po);
+            pane.refresher(po, false);
           }
           return pane;
         },

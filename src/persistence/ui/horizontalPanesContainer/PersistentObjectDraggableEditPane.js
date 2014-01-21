@@ -132,8 +132,8 @@ define(["dojo/_base/declare",
           var self = this;
           self._set("crudDao", crudDao);
           if (crudDao) {
-            self.set("refresher", function(po) {
-              return crudDao.retrieve(po.getTypeDescription(), po.get("persistenceId"), self, true);
+            self.set("refresher", function(po, force) {
+              return crudDao.retrieve(po.getTypeDescription(), po.get("persistenceId"), self, force);
             });
             self.set("saver", function(po) {
               return crudDao.update(po);

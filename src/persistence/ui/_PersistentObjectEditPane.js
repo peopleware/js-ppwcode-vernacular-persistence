@@ -62,6 +62,8 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
       // refresher: Function
       //   Function that attempts a refresh of a PersistentObject.
       //   Returns a promise. Optional.
+      //   The second parameter is a boolean, that, when true, forces the refresh.
+      //   With false, only stale cache entries are actually refreshed.
       refresher: null,
 
       // saver: Function
@@ -129,7 +131,7 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
             // this avoids the focus being ripped away from this completely.
             this.focus();
           }
-          var refreshPromise = refresher(po);
+          var refreshPromise = refresher(po, true);
           refreshPromise.then(
             function(result) {
               self.set("presentationMode", self.VIEW);
