@@ -493,6 +493,9 @@ define(["dojo/_base/declare",
           cached = self.getCachedByTypeAndId(serverType, persistenceId);
           if (cached) {
             logger.debug("Found cached version; resolving Promise immediately (" + serverType + "@" + persistenceId + ")");
+            self.track(cached, referer); // track now, early; if we wat until reload, it might be removed from the cache already
+            // TODO this needs to be guarded; referer might stop tracking before the reload Promise resolves; that results in a memory leak;
+            // TODO also: what happens with a cancel?
             var deferred = new Deferred();
             self._retrievePromiseCache[retrievePromiseCacheKey] = deferred.promise;
             deferred.resolve(cached);
