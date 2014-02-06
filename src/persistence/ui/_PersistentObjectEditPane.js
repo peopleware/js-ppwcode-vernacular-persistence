@@ -144,10 +144,10 @@ define(["dojo/_base/declare", "dojo/_base/lang", "ppwcode-vernacular-semantics/u
             }
           }
         }));
-//        self.set("opener", function(po) {
-//          return self.container.openPaneFor(po, /*after*/ self);
-//        });
-//        self.set("closer", this.removeFromContainer);
+        self.set("opener", function(po) {
+          return self.container.openPaneFor(po, /*after*/ self);
+        });
+        //self.set("closer", this.removeFromContainer);
       },
 
       edit: function() {
