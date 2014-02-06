@@ -14,15 +14,17 @@
  limitations under the License.
 */
 
-define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPane/_SemanticObjectPane", "ppwcode-util-oddsAndEnds/_PropagationMixin",
+define(["dojo/_base/declare", "dojo/_base/lang", "ppwcode-vernacular-semantics/ui/_semanticObjectPane/_SemanticObjectPane", "ppwcode-util-oddsAndEnds/_PropagationMixin",
         "ppwcode-vernacular-exceptions/SemanticException", "../IdNotFoundException", "../ObjectAlreadyChangedException", "ppwcode-vernacular-exceptions/SecurityException",
-        "../PersistentObject", "dijit/registry", "dijit/form/TextBox",
+        "../PersistentObject", "dijit/registry", "dijit/form/TextBox", "dojo/Deferred",
         "dojo/i18n!./nls/messages",
+        "ppwcode-util-oddsAndEnds/log/logger!",
         "module"],
-  function(declare, _SemanticObjectPane, _PropagationMixin,
+  function(declare, lang, _SemanticObjectPane, _PropagationMixin,
            SemanticException, IdNotFoundException, ObjectAlreadyChangedException, SecurityException,
-           PersistentObject, registry, TextBox,
+           PersistentObject, registry, TextBox, Deferred,
            messages,
+           logger,
            module) {
 
     var _PersistentObjectEditPane = declare([_SemanticObjectPane, _PropagationMixin], {
@@ -64,31 +66,60 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
       //   Returns a promise. Optional.
       //   The second parameter is a boolean, that, when true, forces the refresh.
       //   With false, only stale cache entries are actually refreshed.
-      refresher: null,
+      refresher: function(po, force) {
+        this._c_pre(function() {return this.get("crudDao");});
+
+        return this.crudDao.retrieve(po.getTypeDescription(), po.get("persistenceId"), this, force);
+      },
 
       // saver: Function
       //   Function that attempts a persistent save of a PersistentObject.
       //   Returns a promise. Optional.
       //   Called by `save` if target has a `persistenceId`.
-      saver: null,
+      saver: function(po) {
+        this._c_pre(function() {return this.get("crudDao");});
+
+        return this.crudDao.update(po);
+      },
 
       // creator: Function
       //   Function that attempts a persistent create of a PersistentObject.
       //   Returns a promise. Optional.
       //   Called by `save` if target has no `persistenceId`.
-      creator: null,
+      creator: function(po) {
+        this._c_pre(function() {return this.get("crudDao");});
+
+        return this.crudDao.create(po, this);
+      },
 
       // remover: Function
       //   Function that attempts a persistent delete of a PersistentObject.
       //   Returns a promise. Optional.
       //   Called by remove.
-      remover: null,
+      remover: function(po) {
+        this._c_pre(function() {return this.get("crudDao");});
+
+        return this.crudDao.remove(po);
+      },
 
       // closer: Function
       //   Function that closes this "window" or "pane". Void.
       //   Must destroy this (i.e., call `destroyRecursive`). Mandatory.
       //   Could be bound to a close button.
-      closer: null,
+      closer: function() {
+        this._c_pre(function() {return this.get("crudDao");});
+
+        var self = this;
+        var target = self.get("target");
+        if (target) {
+          this.crudDao.stopTracking(target, self);
+        }
+        return this.doAfterClose();
+      },
+
+      doAfterClose: function() {
+        return new Deferred().resolve().promise;
+      },
 
       // crudDao: CrudDao
       //   Needed for operation.
@@ -113,43 +144,10 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
             }
           }
         }));
-        self.set("opener", function(po) {
-          return self.container.openPaneFor(po, /*after*/ self);
-        });
-        self.set("closer", this.removeFromContainer);
-      },
-
-      _setCrudDaoAttr: function(crudDao) {
-        var self = this;
-        self._set("crudDao", crudDao);
-        if (crudDao) {
-          self.set("refresher", function(po, force) {
-            return crudDao.retrieve(po.getTypeDescription(), po.get("persistenceId"), self, force);
-          });
-          self.set("saver", function(po) {
-            return crudDao.update(po);
-          });
-          self.set("creator", function(po) {
-            return crudDao.create(po, self);
-          });
-          self.set("remover", function(po) {
-            return crudDao.remove(po);
-          });
-          self.set("closer", function() {
-            var target = self.get("target");
-            if (target) {
-              crudDao.stopTracking(target, self);
-            }
-            self.removeFromContainer();
-          });
-        }
-        else {
-          self.set("refresher",null);
-          self.set("saver", null);
-          self.set("creator", null);
-          self.set("remover", null);
-          self.set("closer", this.removeFromContainer);
-        }
+//        self.set("opener", function(po) {
+//          return self.container.openPaneFor(po, /*after*/ self);
+//        });
+//        self.set("closer", this.removeFromContainer);
       },
 
       edit: function() {
@@ -180,7 +178,8 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
         var po = self.get("target");
         if (!po || !po.get("persistenceId")) {
           var closer = self.get("closer");
-          closer();
+          var closerFunction = lang.hitch(self, closer);
+          closerFunction();
           return po;
         }
         self.set("presentationMode", self.BUSY);
@@ -191,7 +190,8 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
             // this avoids the focus being ripped away from this completely.
             this.focus();
           }
-          var refreshPromise = refresher(po, true);
+          var refresherFunction = lang.hitch(self, refresher, po, true);
+          var refreshPromise = refresherFunction();
           refreshPromise.then(
             function(result) {
               self.set("presentationMode", self.VIEW);
@@ -214,7 +214,8 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
                 alert(e);
               }
               var closer = self.get("closer");
-              closer();
+              var closerFunction = lang.hitch(self, closer);
+              closerFunction();
               throw e;
             }
           );
@@ -255,7 +256,8 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
             // this avoids the focus being ripped away from this completely.
             this.focus();
           }
-          var persistPromise = persister(po);
+          var persisterFunction = lang.hitch(self, persister, po);
+          var persistPromise = persisterFunction();
           persistPromise.then(
             function(result) {
               if (persisterName === "saver") {
@@ -296,16 +298,18 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
         this._c_pre(function() {return this.get("remover");});
         this._c_pre(function() {return this.get("closer");});
 
+        var self = this;
         this.set("presentationMode", this.BUSY);
         var po = this.get("target");
         var deleter = this.get("remover");
-        var deletePromise = deleter(po);
-        var self = this;
+        var deleteFunction = lang.hitch(self, deleter, po);
+        var deletePromise = deleteFunction();
         deletePromise.then(
           function(result) {
             self.set("presentationMode", self.VIEW);
             var closer = self.get("closer");
-            closer();
+            var closeFunction = lang.hitch(self, closer);
+            closeFunction();
             return result;
           },
           function(e) {
@@ -314,7 +318,8 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
                 // already gone; no problem
                 console.info("Object was already removed.");
                 var closer = self.get("closer");
-                closer();
+                var closerFunction = lang.hitch(self, closer);
+                closerFunction();
                 return;
               }
               self.set("presentationMode", self.WILD);
@@ -373,8 +378,9 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
             this.cancel();
           }
           else if (exc.isInstanceOf(IdNotFoundException)) {
-            var closer = this.get("closer");
-            closer();
+            var closer = self.get("closer");
+            var closerFunction = lang.hitch(this, closer);
+            closerFunction();
           }
           // else other semantic exception; we are wild
           return;

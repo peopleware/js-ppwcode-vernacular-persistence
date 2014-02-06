@@ -17,7 +17,8 @@
 define(["dojo/_base/declare",
         "ppwcode-util-oddsAndEnds/ui/horizontalPanesContainer/DraggablePane",
         "ppwcode-vernacular-persistence/ui/persistentObjectButtonEditPane/PersistentObjectButtonEditPane",
-        "dojo/dom-style", "dojo/keys",
+        "dojo/dom-style", "dojo/keys", "dojo/Deferred",
+        "ppwcode-util-oddsAndEnds/log/logger!",
 
         "dojo/text!./persistentObjectDraggableEditPane.html", "dojo/i18n!./nls/labels",
 
@@ -30,7 +31,8 @@ define(["dojo/_base/declare",
         "xstyle/css!./persistentObjectDraggableEditPane.css"],
     function(declare,
              DraggablePane, PersistentObjectButtonEditPane,
-             domStyle, keys,
+             domStyle, keys, Deferred,
+             logger,
              template, labels,
              module) {
 
@@ -40,6 +42,28 @@ define(["dojo/_base/declare",
 
         templateString: template,
         labels: labels,
+
+        doAfterClose: function() {
+          var self = this;
+          var deferred = new Deferred();
+          var removed = self.removeFromContainer();
+          if (removed) {
+            return removed.then(
+              function() {
+                self.set("target", null);
+                deferred.resolve();
+              },
+              function(err) {
+                logger.error("Error: " + err);
+                deferred.reject(err);
+              }
+            );
+          }
+          else {
+            deferred.resolve();
+          }
+          return deferred.promise;
+        },
 
         postCreate: function() {
           this.inherited(arguments);
