@@ -90,7 +90,67 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
       //   Could be bound to a close button.
       closer: null,
 
+      // crudDao: CrudDao
+      //   Needed for operation.
+      crudDao: null,
+
       // TODO validate should be setup here, or in _SemanticObjectPane
+
+      constructor: function(kwargs) {
+        var self = this;
+        if (kwargs && kwargs.crudDao) {
+          self.crudDao = kwargs.crudDao;
+        }
+        self.own(self.watch("target", function(propertyName, oldTarget, newTarget) {
+          if (self.crudDao) {
+            if (oldTarget !== newTarget) {
+              if (oldTarget && oldTarget.get("persistenceId")) {
+                self.crudDao.stopTracking(oldTarget, self);
+              }
+              if (newTarget && newTarget.get("persistenceId")) {
+                self.crudDao.track(newTarget, self);
+              }
+            }
+          }
+        }));
+        self.set("opener", function(po) {
+          return self.container.openPaneFor(po, /*after*/ self);
+        });
+        self.set("closer", this.removeFromContainer);
+      },
+
+      _setCrudDaoAttr: function(crudDao) {
+        var self = this;
+        self._set("crudDao", crudDao);
+        if (crudDao) {
+          self.set("refresher", function(po, force) {
+            return crudDao.retrieve(po.getTypeDescription(), po.get("persistenceId"), self, force);
+          });
+          self.set("saver", function(po) {
+            return crudDao.update(po);
+          });
+          self.set("creator", function(po) {
+            return crudDao.create(po, self);
+          });
+          self.set("remover", function(po) {
+            return crudDao.remove(po);
+          });
+          self.set("closer", function() {
+            var target = self.get("target");
+            if (target) {
+              crudDao.stopTracking(target, self);
+            }
+            self.removeFromContainer();
+          });
+        }
+        else {
+          self.set("refresher",null);
+          self.set("saver", null);
+          self.set("creator", null);
+          self.set("remover", null);
+          self.set("closer", this.removeFromContainer);
+        }
+      },
 
       edit: function() {
         // summary:
@@ -323,6 +383,16 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
         this.set("presentationMode", this.ERROR);
         alert(exc);
         this.cancel();
+      },
+
+      focus: function() {
+        var presentationMode = this.get("presentationMode");
+        if (presentationMode !== this.EDIT) {
+          this.inherited(arguments);
+        }
+        else {
+          this._focusOnFirstActiveTextBox(presentationMode);
+        }
       }
 
     });

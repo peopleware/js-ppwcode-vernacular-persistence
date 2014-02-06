@@ -41,31 +41,6 @@ define(["dojo/_base/declare",
         templateString: template,
         labels: labels,
 
-        // crudDao: CrudDao
-        //   Needed for operation.
-        crudDao: null,
-
-        constructor: function(kwargs) {
-          var self = this;
-          if (kwargs && kwargs.crudDao) {
-            self.crudDao = kwargs.crudDao;
-          }
-          self.own(self.watch("target", function(propertyName, oldTarget, newTarget) {
-            if (oldTarget !== newTarget) {
-              if (oldTarget && oldTarget.get("persistenceId")) {
-                self.crudDao.stopTracking(oldTarget, self);
-              }
-              if (newTarget && newTarget.get("persistenceId")) {
-                self.crudDao.track(newTarget, self);
-              }
-            }
-          }));
-          self.set("opener", function(po) {
-            return self.container.openPaneFor(po, /*after*/ self);
-          });
-          self.set("closer", this.removeFromContainer);
-        },
-
         postCreate: function() {
           this.inherited(arguments);
           var self = this;
@@ -128,39 +103,6 @@ define(["dojo/_base/declare",
           return this.get("target") === object;
         },
 
-        _setCrudDaoAttr: function(crudDao) {
-          var self = this;
-          self._set("crudDao", crudDao);
-          if (crudDao) {
-            self.set("refresher", function(po, force) {
-              return crudDao.retrieve(po.getTypeDescription(), po.get("persistenceId"), self, force);
-            });
-            self.set("saver", function(po) {
-              return crudDao.update(po);
-            });
-            self.set("creator", function(po) {
-              return crudDao.create(po, self);
-            });
-            self.set("remover", function(po) {
-              return crudDao.remove(po);
-            });
-            self.set("closer", function() {
-              var target = self.get("target");
-              if (target) {
-                crudDao.stopTracking(target, self);
-              }
-              self.removeFromContainer();
-            });
-          }
-          else {
-            self.set("refresher",null);
-            self.set("saver", null);
-            self.set("creator", null);
-            self.set("remover", null);
-            self.set("closer", this.removeFromContainer);
-          }
-        },
-
         _setButtonsStyles: function(stylePresentationMode) {
           this.inherited(arguments);
 
@@ -198,16 +140,6 @@ define(["dojo/_base/declare",
               throw err;
             }
           );
-        },
-
-        focus: function() {
-          var presentationMode = this.get("presentationMode");
-          if (presentationMode !== this.EDIT) {
-            this.inherited(arguments);
-          }
-          else {
-            this._focusOnFirstActiveTextBox(presentationMode);
-          }
         }
 
       });
