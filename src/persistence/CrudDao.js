@@ -788,8 +788,7 @@ define(["dojo/_base/declare",
                 return result;
               },
               function(err) {
-                console.error("Failed to refresh store for " + po + "[" + propertyName+ "]", err);
-                throw err;
+                throw self._handleException(err);
               }
             );
             return donePromise; // return Promise
