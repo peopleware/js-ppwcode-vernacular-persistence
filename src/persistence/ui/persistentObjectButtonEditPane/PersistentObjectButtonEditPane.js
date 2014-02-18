@@ -100,7 +100,9 @@ define(["dojo/_base/declare", "dojo/dom-style",
         if (this.persistentObjectPane) {
           result.push(this.persistentObjectPane);
         }
-        result.push(this._auditableInfo);
+        if (this._auditableInfo) {
+          result.push(this._auditableInfo);
+        }
         return result;
       },
 
@@ -115,8 +117,10 @@ define(["dojo/_base/declare", "dojo/dom-style",
             self.get("persistentObjectPane").set("opener", self.opener);
           }
         }
-        var ao = po && po.isInstanceOf(AuditableObject) ? po : null;
-        self._auditableInfo.set("target", ao);
+        if (self._auditableInfo) {
+          var ao = po && po.isInstanceOf(AuditableObject) ? po : null;
+          self._auditableInfo.set("target", ao);
+        }
       },
 
       _setOpenerAttr: function(opener) {
