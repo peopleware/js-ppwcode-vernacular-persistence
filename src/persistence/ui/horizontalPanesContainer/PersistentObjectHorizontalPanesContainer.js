@@ -40,10 +40,11 @@ define(["dojo/_base/declare", "ppwcode-util-oddsAndEnds/ui/horizontalPanesContai
           //   Open a Draggable pane for `object`, to the right of `after`, or at the right end
           //   of this visualization. In any case, object is refreshed if it has a persistenceId.
           this._c_pre(function() {return po;});
+          this._c_pre(function() {return pane.get("crudDao");});
 
           var pane = this.inherited(arguments);
           if (po.get("persistenceId")) {
-            pane.refresher(po, false);
+            pane.refresh(po, false);
           }
           return pane;
         },

@@ -43,26 +43,11 @@ define(["dojo/_base/declare",
         templateString: template,
         labels: labels,
 
-        doAfterClose: function() {
+        constructor: function(kwargs) {
           var self = this;
-          var deferred = new Deferred();
-          var removed = self.removeFromContainer();
-          if (removed) {
-            return removed.then(
-              function() {
-                self.set("target", null);
-                deferred.resolve();
-              },
-              function(err) {
-                logger.error("Error: " + err);
-                deferred.reject(err);
-              }
-            );
-          }
-          else {
-            deferred.resolve();
-          }
-          return deferred.promise;
+          self.set("opener", function(po) {
+            return self.container.openPaneFor(po, /*after*/ self);
+          });
         },
 
         postCreate: function() {
@@ -133,10 +118,6 @@ define(["dojo/_base/declare",
           this._setVisible(this._btnClose, stylePresentationMode === this.VIEW, stylePresentationMode === this.BUSY);
         },
 
-        close: function() {
-          this.closer();
-        },
-
         cancel: function(event) {
           return this._closeOnAlt(event, this.inherited(arguments));
         },
@@ -164,6 +145,22 @@ define(["dojo/_base/declare",
               throw err;
             }
           );
+        },
+
+        doAfterClose: function() {
+          var self = this;
+          var removed = self.removeFromContainer();
+          if (removed) {
+            return removed.then(function(removedResult) {
+              self.set("target", null);
+              return removedResult;
+            });
+          }
+          else {
+            var deferred = new Deferred();
+            deferred.resolve();
+            return deferred.promise;
+          }
         }
 
       });

@@ -41,8 +41,7 @@ define(["dojo/_base/declare", "dojo/dom-style",
       //    This is a ./_PersistentObjectEditPane.
       //    The widget shows buttons to go the edit mode, cancel or save an edit,
       //    and delete the persistent object.
-      //    The actual actions are done by a refresher, creator, saver, and remover
-      //    function.
+      //    The actual actions are done by refresh, save, and remove.
       //    Intended to wrap around a _SemanticObjectPane, which can be injected with
       //    set("contentPane").
       //    If this contentPane has a css width, it is copied to this when set.
