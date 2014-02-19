@@ -765,7 +765,9 @@ define(["dojo/_base/declare",
         //   TODO find a way to signal this as a state of the StoreOfStateful
 
         this._c_pre(function() {return this.isOperational();});
-        this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
+        this._c_pre(function() {return po;});
+        this._c_pre(function() {return po.isInstanceOf && po.isInstanceOf(PersistentObject);});
+        this._c_pre(function() {return po.get("persistenceId");});
         // po should be in the cache, but we don't enforce it; your problem
         this._c_pre(function() {return js.typeOf(propertyName) === "string";});
         this._c_pre(function() {return po[propertyName] && po[propertyName].query});
@@ -776,14 +778,15 @@ define(["dojo/_base/declare",
         logger.debug("Requested GET of to many: '" + po + "[" + propertyName+ "]'");
         var store = po[propertyName];
         var url = self.urlBuilder.toMany(po.getTypeDescription(), po.get("persistenceId"), store.serverPropertyName);
-        logger.debug("Refreshing to many store for " + po + "[" + propertyName+ "]");
+        var guardKey = po.getKey() + "." + propertyName;
+        logger.debug("Refreshing to many store for " + guardKey);
         var guardedPromise = store._arbiter.guard(
-          store,
+          guardKey,
           function() { // return Promise
             var retrievePromise = self._refresh(store, url, null, store, options); // IDEA: we can even add a query here
             var donePromise = retrievePromise.then(
               function(result) {
-                logger.debug("To-many store for " + po + "[" + propertyName+ "] refreshed.");
+                logger.debug("To-many store for" + guardKey + " refreshed.");
                 result.set("lastReloaded", new Date());
                 return result;
               },
