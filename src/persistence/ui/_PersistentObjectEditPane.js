@@ -86,16 +86,18 @@ define(["dojo/_base/declare", "dojo/_base/lang", "ppwcode-vernacular-semantics/u
 
       // TODO validate should be setup here, or in _SemanticObjectPane
 
-      doAfterClose: function() {
-        return new Deferred().resolve().promise;
-      },
-
       close: function() {
         // summary:
-        //   Close this "window" or "pane".
-        //   Destroys this (i.e., call `destroyRecursive`).
+        //   Close this pane.
+        //   This may or may not destroy the pane. In some uses,
+        //   it is merely hidden to be reused. Subclasses should
+        //   decide.
         //   Could be bound to a close button.
-        //   Returns a Promise.
+        //   Closing might take time. Returns a Promise that resolves
+        //   to the `target`.
+        // description:
+        //   This implementation stops tracking the target,
+        //   if there is one.
         this._c_pre(function() {return this.get("crudDao");});
 
         var self = this;
@@ -103,12 +105,7 @@ define(["dojo/_base/declare", "dojo/_base/lang", "ppwcode-vernacular-semantics/u
         if (po) {
           self.crudDao.stopTracking(po, self);
         }
-        return this.doAfterClose().then(
-          function() {
-            self.destroyRecursive();
-            return po;
-          }
-        );
+        return new Deferred().resolve(po); // returns the promise
       },
 
       edit: function() {

@@ -138,29 +138,30 @@ define(["dojo/_base/declare",
           var self = this;
           return promise.then(
             function(result) {
-              self.removeFromContainer();
-              return result;
-            },
-            function(err) {
-              throw err;
+              return self.close().then(function() {return result;});
             }
           );
         },
 
-        doAfterClose: function() {
+        close: function() {
+          // summary:
+          //   Close and destroy.
+
           var self = this;
-          var removed = self.removeFromContainer();
-          if (removed) {
-            return removed.then(function(removedResult) {
-              self.set("target", null);
-              return removedResult;
-            });
-          }
-          else {
-            var deferred = new Deferred();
-            deferred.resolve();
-            return deferred.promise;
-          }
+          var inheritedResult = self.inherited(arguments);
+          return inheritedResult.then(
+            function(po) {
+              var removed = self.removeFromContainer(); // this is destroyed.
+              if (removed) {
+                return removed.then(function() {
+                  return po;
+                });
+              }
+              else {
+                return new Deferred().resolve(po); // returns the promise
+              }
+            }
+          );
         }
 
       });
