@@ -143,6 +143,10 @@ define(["dojo/_base/declare", "dojo/_base/lang", "ppwcode-vernacular-semantics/u
         this._c_pre(function() {return this.get("crudDao");});
 
         var self = this;
+        if (self.get("presentationMode") !== self.EDIT) {
+          // DropDownMenu gives double click events; in any case, this makes sense to test
+          return null;
+        }
         var po = self.get("target");
         if (!po || !po.get("persistenceId")) {
           return self.close();
@@ -222,6 +226,10 @@ define(["dojo/_base/declare", "dojo/_base/lang", "ppwcode-vernacular-semantics/u
         this._c_pre(function() {return this.get("crudDao");});
 
         var self = this;
+        if (self.get("presentationMode") !== self.EDIT) {
+          // DropDownMenu gives double click events; in any case, this makes sense to test
+          return null;
+        }
         var po = self.get("target");
         var wildExceptions = po && po.get("wildExceptions");
         if (wildExceptions && wildExceptions.isEmpty()) {
@@ -272,6 +280,10 @@ define(["dojo/_base/declare", "dojo/_base/lang", "ppwcode-vernacular-semantics/u
         this._c_pre(function() {return this.get("crudDao");});
 
         var self = this;
+        if (self.get("presentationMode") !== self.EDIT) {
+          // DropDownMenu gives double click events; in any case, this makes sense to test
+          return null;
+        }
         this.set("presentationMode", this.BUSY);
         var po = this.get("target");
         var deletePromise = self.crudDao.remove(po);
