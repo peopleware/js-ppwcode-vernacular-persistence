@@ -19,6 +19,7 @@ define(["dojo/_base/declare",
         "ppwcode-vernacular-persistence/ui/persistentObjectButtonEditPane/PersistentObjectButtonEditPane",
         "dojo/dom-style", "dojo/keys", "dojo/Deferred",
         "ppwcode-util-oddsAndEnds/log/logger!",
+        "dojo/aspect",
 
         "dojo/text!./persistentObjectDraggableEditPane.html", "dojo/i18n!./nls/labels",
 
@@ -33,6 +34,7 @@ define(["dojo/_base/declare",
              DraggablePane, PersistentObjectButtonEditPane,
              domStyle, keys, Deferred,
              logger,
+             aspect,
              template, labels,
              module) {
 
@@ -106,6 +108,15 @@ define(["dojo/_base/declare",
               // IDEA: with shift: move left, right
             }
           }));
+          self.own(aspect.after(
+            self._btnDelete,
+            "_onDropDownMouseDown",
+            function(/*Event*/ e) {
+            // we need to stopPropagation, or else the enclosing movable will think we are starting a drag, and it will eat the mouse up
+              e.stopPropagation();
+            },
+            true
+          ));
         },
 
         isVisualizationOf: function(object) {
