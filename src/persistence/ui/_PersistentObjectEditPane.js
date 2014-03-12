@@ -14,18 +14,20 @@
  limitations under the License.
 */
 
-define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPane/_SemanticObjectPane",
+define(["dojo/_base/declare", "dojo/_base/lang", "ppwcode-vernacular-semantics/ui/_semanticObjectPane/_SemanticObjectPane", "ppwcode-util-oddsAndEnds/_PropagationMixin",
         "ppwcode-vernacular-exceptions/SemanticException", "../IdNotFoundException", "../ObjectAlreadyChangedException", "ppwcode-vernacular-exceptions/SecurityException",
-        "../PersistentObject",
+        "../PersistentObject", "dijit/registry", "dijit/form/TextBox", "dojo/Deferred",
         "dojo/i18n!./nls/messages",
+        "ppwcode-util-oddsAndEnds/log/logger!",
         "module"],
-  function(declare, _SemanticObjectPane,
+  function(declare, lang, _SemanticObjectPane, _PropagationMixin,
            SemanticException, IdNotFoundException, ObjectAlreadyChangedException, SecurityException,
-           PersistentObject,
+           PersistentObject, registry, TextBox, Deferred,
            messages,
+           logger,
            module) {
 
-    var _PersistentObjectEditPane = declare([_SemanticObjectPane], {
+    var _PersistentObjectEditPane = declare([_SemanticObjectPane, _PropagationMixin], {
       // summary:
       //   Widget that represents a PersistentObject in detail, and that gives the opportunity
       //   to the user the view the details, edit the details, and create a new object.
@@ -51,40 +53,60 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
         // no extra invariants
       ],
 
+      "-propagate-": {
+        presentationMode: [{path: "_focusOnFirstActiveTextBox", exec: true}]
+      },
+
       getTargetType: function() {
         return PersistentObject;
       },
 
-      // refresher: Function
-      //   Function that attempts a refresh of a PersistentObject.
-      //   Returns a promise. Optional.
-      refresher: null,
+      // crudDao: CrudDao
+      //   Needed for operation.
+      crudDao: null,
 
-      // saver: Function
-      //   Function that attempts a persistent save of a PersistentObject.
-      //   Returns a promise. Optional.
-      //   Called by `save` if target has a `persistenceId`.
-      saver: null,
-
-      // creator: Function
-      //   Function that attempts a persistent create of a PersistentObject.
-      //   Returns a promise. Optional.
-      //   Called by `save` if target has no `persistenceId`.
-      creator: null,
-
-      // remover: Function
-      //   Function that attempts a persistent delete of a PersistentObject.
-      //   Returns a promise. Optional.
-      //   Called by remove.
-      remover: null,
-
-      // closer: Function
-      //   Function that closes this "window" or "pane". Void.
-      //   Must destroy this (i.e., call `destroyRecursive`). Mandatory.
-      //   Could be bound to a close button.
-      closer: null,
+      constructor: function(kwargs) {
+        var self = this;
+        if (kwargs && kwargs.crudDao) {
+          self.crudDao = kwargs.crudDao;
+        }
+        self.own(self.watch("target", function(propertyName, oldTarget, newTarget) {
+          if (self.crudDao) {
+            if (oldTarget !== newTarget) {
+              if (oldTarget && oldTarget.get("persistenceId")) {
+                self.crudDao.stopTracking(oldTarget, self);
+              }
+              if (newTarget && newTarget.get("persistenceId")) {
+                self.crudDao.track(newTarget, self);
+              }
+            }
+          }
+        }));
+      },
 
       // TODO validate should be setup here, or in _SemanticObjectPane
+
+      close: function() {
+        // summary:
+        //   Close this pane.
+        //   This may or may not destroy the pane. In some uses,
+        //   it is merely hidden to be reused. Subclasses should
+        //   decide.
+        //   Could be bound to a close button.
+        //   Closing might take time. Returns a Promise that resolves
+        //   to the `target`.
+        // description:
+        //   This implementation stops tracking the target,
+        //   if there is one.
+        this._c_pre(function() {return this.get("crudDao");});
+
+        var self = this;
+        var po = self.get("target");
+        if (po) {
+          self.crudDao.stopTracking(po, self);
+        }
+        return new Deferred().resolve(po); // returns the promise
+      },
 
       edit: function() {
         // summary:
@@ -98,135 +120,172 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
         this.set("presentationMode", this.EDIT);
       },
 
+      refresh: function(po, force) {
+        // summary:
+        //   Function that attempts a refresh of a PersistentObject.
+        //   Returns a promise.
+        //   The second parameter is a boolean, that, when true, forces the refresh.
+        //   With false, only stale cache entries are actually refreshed.
+        this._c_pre(function() {return this.get("crudDao");});
+
+        return this.crudDao.retrieve(po.getTypeDescription(), po.get("persistenceId"), this, force);
+      },
+
       cancel: function() {
         // summary:
         //   Cancel the current presentation mode.
         //   - When cancelling an edit for an update (`target.persistenceId != null`), revert the target
-        //     to its old state, and refresh with refresher. Edit mode reverts to VIEW.
+        //     to its old state, and refresh. Edit mode reverts to VIEW.
         //   - When cancelling an edit for a create (`target.persistenceId == null`),
-        //     call the closer.
+        //     close.
 
         this._c_pre(function() {return this.get("target");});
-        this._c_pre(function() {return this.get("refresher");});
-        this._c_pre(function() {return this.get("closer");});
+        this._c_pre(function() {return this.get("crudDao");});
 
         var self = this;
         var po = self.get("target");
         if (!po || !po.get("persistenceId")) {
-          var closer = self.get("closer");
-          closer();
-          return;
+          return self.close();
         }
         self.set("presentationMode", self.BUSY);
-        var refresher = self.get("refresher");
-        if (refresher) {
-          var refreshPromise = refresher(po);
-          refreshPromise.then(
-            function() {
-              self.set("presentationMode", self.VIEW);
-            },
-            function(e) {
-              // this is not really a fatal error, but an inconvenience
-              if (e.isInstanceOf && (e.isInstanceOf(IdNotFoundException) || e.isInstanceOf(SecurityException))) {
-                self.set("presentationMode", self.WILD);
-                var messageKey = e.constructor.mid;
-                if (e.key) {
-                  messageKey += "_" + e.key;
-                }
-                var message = messages[messageKey] || messageKey;
-                alert(message);
-              }
-              else {
-                console.error("ERROR ON REFRESH: " + e);
-                self.set("presentationMode", self.ERROR);
-                alert(e);
-              }
-              var closer = self.get("closer");
-              closer();
-            }
-          );
+        if (this.get("focused")) {
+          // We are in the active stack. Take the focus away from any internal field:
+          // this avoids the focus being ripped away from this completely.
+          this.focus();
         }
+        var refreshPromise = self.refresh(po, true);
+        return refreshPromise.then(
+          function(result) {
+            self.set("presentationMode", self.VIEW);
+            return result;
+          },
+          function(e) {
+            // this is not really a fatal error, but an inconvenience
+            if (e.isInstanceOf && (e.isInstanceOf(IdNotFoundException) || e.isInstanceOf(SecurityException))) {
+              self.set("presentationMode", self.WILD);
+              var messageKey = e.constructor.mid;
+              if (e.key) {
+                messageKey += "_" + e.key;
+              }
+              var message = messages[messageKey] || messageKey;
+              alert(message);
+              return self.close();
+            }
+            logger.error("ERROR ON REFRESH: " + e);
+            self.set("presentationMode", self.ERROR);
+            alert(e);
+            throw e;
+          }
+        );
+      },
+
+      _saver: function(po) {
+        // summary:
+        //   Function that attempts a persistent save of a PersistentObject.
+        //   Returns a promise. Optional.
+        //   Called by `save` if target has a `persistenceId`.
+        this._c_pre(function() {return po;});
+        this._c_pre(function() {return po.get("persistenceId");});
+        this._c_pre(function() {return this.get("crudDao");});
+
+        return this.crudDao.update(po);
+      },
+
+      _creator: function(po) {
+        // summary:
+        //   Function that attempts a persistent create of a PersistentObject.
+        //   Returns a promise. Optional.
+        //   Called by `save` if target has no `persistenceId`.
+        this._c_pre(function() {return po;});
+        this._c_pre(function() {return !po.get("persistenceId");});
+        this._c_pre(function() {return this.get("crudDao");});
+
+        return this.crudDao.create(po, this);
       },
 
       save: function() {
         // summary:
-        //   Save or create the target with saver or creator. On success, we revert to edit mode VIEW.
+        //   Save or create the target. On success, we revert to edit mode VIEW.
         //   Save is asynchronous, and can take a while. In the mean time, the
         //   widget accepts no user input (BUSY).
         // description:
-        //   If the target has no persistenceId, we use creator. If it has, we use saver.
-        //   If a semantic exception is returned by saver or creator, we go to
+        //   If the target has no persistenceId, we create. If it has, we save.
+        //   If a semantic exception is returned by save or create, we go to
         //   WILD mode, show the exceptions, and give the user the opportunity
         //   to change the data, and try again (or cancel).
         //   If an error occurs, we go to ERROR mode. The application should
         //   be closed.
-        //   The target does not have to be `editable`. Otherwise, we could not do state changes that make objects editable.
+        //   The target does not have to be `editable`. Otherwise, we could not
+        //   do state changes that make objects editable.
 
         this._c_pre(function() {return this.get("target");});
-        this._c_pre(function() {return this.get("target").get("persistenceId") ? this.get("saver") : true;});
-        this._c_pre(function() {return !this.get("target").get("persistenceId") ? this.get("creator") : true;});
+        this._c_pre(function() {return this.get("crudDao");});
 
         var self = this;
-        self.set("presentationMode", this.BUSY);
-        // TODO local validation
         var po = self.get("target");
-        var persisterName = po.get("persistenceId") ? "saver" : "creator";
-        var persister = self.get(persisterName);
-        var persistPromise = persister(po);
-        persistPromise.then(
-          function(result) {
-            if (persisterName === "saver") {
-              if (result !== po) {
-                throw "ERROR: revive should have found the same object";
-              }
-              // MUDO workaround https://projects.peopleware.be/jira44/browse/PICTOPERFECT-505
-              // The server PUT result is not correct! We retrieve extra, to get the correct result for now!
-              self.cancel(); // yes, weird, but it does the trick for now for the workaround
-              return;
-            }
-            if (persisterName === "creator") {
-              // we need to switch the old target with the result
-              self.set("target", result);
-              self.set("presentationMode", self.VIEW);
-            }
-          },
-          function(exc) {
-            self._handleSaveException(exc);
+        var wildExceptions = po && po.get("wildExceptions");
+        if (wildExceptions && wildExceptions.isEmpty()) {
+          self.set("presentationMode", this.BUSY);
+          var persisterName = po.get("persistenceId") ? "_saver" : "_creator";
+          var persister = self.get(persisterName);
+          if (this.get("focused")) {
+            // We are in the active stack. Take the focus away from any internal field:
+            // this avoids the focus being ripped away from this completely.
+            this.focus();
           }
-        )
+          var persistPromise = persister.call(self, po);
+          return persistPromise.then(
+            function(result) {
+              if (persisterName === "_saver") {
+                if (result !== po) {
+                  throw "ERROR: revive should have found the same object";
+                }
+                // MUDO workaround https://projects.peopleware.be/jira44/browse/PICTOPERFECT-505
+                // The server PUT result is not correct! We retrieve extra, to get the correct result for now!
+                return self.cancel(); // yes, weird, but it does the trick for now for the workaround
+              }
+              if (persisterName === "_creator") {
+                // we need to switch the old target with the result
+                self.set("target", result);
+                self.set("presentationMode", self.VIEW);
+              }
+              return result;
+            },
+            function(exc) {
+              return self._handleSaveException(exc);
+            }
+          );
+        }
+        else {
+          return null;
+        }
       },
 
       remove: function() {
         // summary:
-        //    Delete the target with remover. On success, we call closer, which should
+        //    Delete the target. On success, we call close, which should
         //    close and destroy us.
         //    Remove is asynchronous, and can take a while. In the mean time, the
         //    widget accepts no user input.
-
         this._c_pre(function() {return this.get("target");});
         this._c_pre(function() {return this.get("target").get("deletable");});
-        this._c_pre(function() {return this.get("remover");});
-        this._c_pre(function() {return this.get("closer");});
+        this._c_pre(function() {return this.get("crudDao");});
 
+        var self = this;
         this.set("presentationMode", this.BUSY);
         var po = this.get("target");
-        var deleter = this.get("remover");
-        var deletePromise = deleter(po);
-        var self = this;
-        deletePromise.then(
-          function(result) {
+        var deletePromise = self.crudDao.remove(po);
+        return deletePromise.then(
+          function() {
             self.set("presentationMode", self.VIEW);
-            var closer = self.get("closer");
-            closer();
+            return self.close();
           },
           function(e) {
             if (e.isInstanceOf && e.isInstanceOf(SemanticException)) {
               if (e.isInstanceOf(IdNotFoundException)) {
                 // already gone; no problem
-                console.info("Object was already removed.");
-                var closer = self.get("closer");
-                closer();
-                return;
+                logger.info("Object was already removed.");
+                return self.close();
               }
               self.set("presentationMode", self.WILD);
               var messageKey = e.constructor.mid;
@@ -235,15 +294,37 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
               }
               var message = messages[messageKey] || messageKey;
               alert(message);
-              self.cancel();
-              return;
+              return self.cancel();
             }
-            console.error("ERROR ON SAVE or CREATE: TODO");
+            logger.error("ERROR ON SAVE or CREATE: TODO");
             self.set("presentationMode", self.ERROR);
             alert(e);
-            self.cancel();
+            return self.cancel();
           }
-        )
+        );
+      },
+
+      _focusOnFirstActiveTextBox: function(presentationMode) {
+        var self = this;
+        if (presentationMode === self.EDIT) {
+          // now focus on the first active focusable widget inside
+          function recursiveChildWidgets(domNode) {
+            // TODO C/P from ppwcode/vernacular/semantics/ui/_SemanticObjectPane; generalize somewhere
+            return registry.findWidgets(domNode).reduce(
+              function(acc, w) {
+                acc.push(w);
+                return acc.concat(recursiveChildWidgets(w.domNode));
+              },
+              []
+            );
+          }
+
+          var childWidgets = recursiveChildWidgets(self.domNode);
+          var activeInputs = childWidgets.filter(function(w) {return w.isInstanceOf(TextBox) && w.isFocusable && w.isFocusable() && !w.get("readOnly");});
+          if (activeInputs.length > 0) {
+            activeInputs[0].focus();
+          }
+        }
       },
 
       _handleSaveException: function(exc) {
@@ -256,19 +337,32 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/ui/_semanticObjectPa
           var message = messages[messageKey] || messageKey;
           alert(message);
           if (exc.isInstanceOf(ObjectAlreadyChangedException) || exc.isInstanceOf(SecurityException)) {
-            this.cancel();
+            return this.cancel();
           }
-          else if (exc.isInstanceOf(IdNotFoundException)) {
-            var closer = this.get("closer");
-            closer();
+          if (exc.isInstanceOf(IdNotFoundException)) {
+            return this.close();
           }
           // else other semantic exception; we are wild
-          return;
+          return this.get("target");
         }
-        console.error("ERROR ON SAVE or CREATE");
+        logger.error("ERROR ON SAVE or CREATE");
         this.set("presentationMode", this.ERROR);
         alert(exc);
-        this.cancel();
+        return this.cancel();
+      },
+
+      focus: function() {
+        // summary:
+        //   Focus on the first active text box when in Edit mode.
+        //   Otherwise, just focus on this.
+
+        var presentationMode = this.get("presentationMode");
+        if (presentationMode !== this.EDIT) {
+          this.inherited(arguments);
+        }
+        else {
+          this._focusOnFirstActiveTextBox(presentationMode);
+        }
       }
 
     });

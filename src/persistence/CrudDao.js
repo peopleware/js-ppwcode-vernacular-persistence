@@ -130,17 +130,25 @@ define(["dojo/_base/declare",
           return exc;
         }
         if (exc.response) {
-          if (exc.response.status === 401 || (has("ie") && exc.response.status === 0)) {
+          if (exc.response.status === 401 || (has("trident") && exc.response.status === 0)) {
             // Normally, we should not get a 401. The browser should present a login dialog to the user.
             // Not all browsers do that, though, for AJAX requests. In those cases, we detect it,
             // and handle it ourselves in some way. E.g., change the window location
             // to a server login page, that redirects here again after successful login.
-            // ie has issues with a 401; this is a workaround, that will result in infinite reloads if something truly bad happens
+            // ie ("trident") has issues with a 401; this is a workaround, that will result in infinite reloads if something truly bad happens
             logger.info("Not authorized leaked through.", exc);
             this.handleNotAuthorized(); // this method might do a redirect, so it might not return
             return exc; // we may not get here
           }
           if (exc.response.status === 404) {
+            var kwargs = {cause: exc.response.data};
+            if (exc.response.data && exc.response.data["$type"] && exc.response.data["$type"].indexOf) {
+              if (exc.response.data["$type"].indexOf("PPWCode.Vernacular.Persistence.I.Dao.IdNotFoundException") >= 0) {
+                kwargs.serverType = exc.response.data.Data.persistenObjectType; // NOTE: sic! Yes, there is a typo in the server code (missing "t")
+                // getting the typeDescription in general needs a require, and thus is async. We do not want to do that here.
+                kwargs.persistenceId = exc.response.data.Data.persistenceId;
+              }
+            }
             var infExc = new IdNotFoundException({cause: exc.response.data});
             logger.info("Not found: ", infExc);
             return infExc;
@@ -485,6 +493,9 @@ define(["dojo/_base/declare",
           cached = self.getCachedByTypeAndId(serverType, persistenceId);
           if (cached) {
             logger.debug("Found cached version; resolving Promise immediately (" + serverType + "@" + persistenceId + ")");
+            self.track(cached, referer); // track now, early; if we wat until reload, it might be removed from the cache already
+            // TODO this needs to be guarded; referer might stop tracking before the reload Promise resolves; that results in a memory leak;
+            // TODO also: what happens with a cancel?
             var deferred = new Deferred();
             self._retrievePromiseCache[retrievePromiseCacheKey] = deferred.promise;
             deferred.resolve(cached);
@@ -754,7 +765,9 @@ define(["dojo/_base/declare",
         //   TODO find a way to signal this as a state of the StoreOfStateful
 
         this._c_pre(function() {return this.isOperational();});
-        this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
+        this._c_pre(function() {return po;});
+        this._c_pre(function() {return po.isInstanceOf && po.isInstanceOf(PersistentObject);});
+        this._c_pre(function() {return po.get("persistenceId");});
         // po should be in the cache, but we don't enforce it; your problem
         this._c_pre(function() {return js.typeOf(propertyName) === "string";});
         this._c_pre(function() {return po[propertyName] && po[propertyName].query});
@@ -765,20 +778,20 @@ define(["dojo/_base/declare",
         logger.debug("Requested GET of to many: '" + po + "[" + propertyName+ "]'");
         var store = po[propertyName];
         var url = self.urlBuilder.toMany(po.getTypeDescription(), po.get("persistenceId"), store.serverPropertyName);
-        logger.debug("Refreshing to many store for " + po + "[" + propertyName+ "]");
+        var guardKey = po.getKey() + "." + propertyName;
+        logger.debug("Refreshing to many store for " + guardKey);
         var guardedPromise = store._arbiter.guard(
-          store,
+          guardKey,
           function() { // return Promise
             var retrievePromise = self._refresh(store, url, null, store, options); // IDEA: we can even add a query here
             var donePromise = retrievePromise.then(
               function(result) {
-                logger.debug("To-many store for " + po + "[" + propertyName+ "] refreshed.");
+                logger.debug("To-many store for" + guardKey + " refreshed.");
                 result.set("lastReloaded", new Date());
                 return result;
               },
               function(err) {
-                console.error("Failed to refresh store for " + po + "[" + propertyName+ "]", err);
-                throw err;
+                throw self._handleException(err);
               }
             );
             return donePromise; // return Promise
