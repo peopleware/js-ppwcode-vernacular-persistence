@@ -50,6 +50,18 @@ define(["dojo/_base/declare",
       timeout: 10000, // needed for older hardware
       // IDEA detect we are on older hardware, and set it to 10 then; e.g., count to 1 000 000, and depending on the speed ...
 
+      // maxConcurrentRequests: Number
+      //   The maximum number of concurrent connections. Later requests will be queued, and handled when earlier requests finish.
+      maxConcurrentRequests: 4,
+
+      // _numberOfExecutingRequests: Number
+      //   The number of requests currenly executing.
+      _numberOfExecutingRequests: 0,
+
+      // _queuedRequests: Function[]
+      //    Requests waiting for execution, because there are too many concurrent requests already.
+      _queuedRequests: null,
+
       // urlBuilder: UrlBuilder
       urlBuilder: null,
 
@@ -97,6 +109,7 @@ define(["dojo/_base/declare",
         this._cache = new _Cache();
         this.setCacheReportingPeriod(has(module.id + "-cacheReporting"));
         this._retrievePromiseCache = {};
+        this._queuedRequests = [];
       },
 
       handleNotAuthorized: function() {
@@ -780,25 +793,78 @@ define(["dojo/_base/declare",
         var url = self.urlBuilder.toMany(po.getTypeDescription(), po.get("persistenceId"), store.serverPropertyName);
         var guardKey = po.getKey() + "." + propertyName;
         logger.debug("Refreshing to many store for " + guardKey);
+
+
+        function actualCall() {
+
+          function requestDone() {
+            self._numberOfExecutingRequests--;
+            var nextRequest = self._queuedRequests.shift(); // fifo
+            if (nextRequest) {
+              nextRequest.call(this);
+            }
+          }
+
+          self._numberOfExecutingRequests++;
+          var done = self._retrieveToMany(store, url, options, guardKey);
+          return done.then(
+            function(result) {
+              requestDone();
+              return result;
+            },
+            function(err) {
+              requestDone();
+              throw err;
+            }
+          );
+        }
+
+
         var guardedPromise = store._arbiter.guard(
           guardKey,
-          function() { // return Promise
-            var retrievePromise = self._refresh(store, url, null, store, options); // IDEA: we can even add a query here
-            var donePromise = retrievePromise.then(
-              function(result) {
-                logger.debug("To-many store for" + guardKey + " refreshed.");
-                result.set("lastReloaded", new Date());
-                return result;
-              },
-              function(err) {
-                throw self._handleException(err);
-              }
-            );
-            return donePromise; // return Promise
+          function() {
+            if (self._numberOfExecutingRequests >= self.maxConcurrentRequests) {
+              logger.info("Reached maximum number of concurrent requests - queueing this request");
+              // queue the request for later; return a Promise for the Promise
+              var deferred = new Deferred();
+              self._queuedRequests.push(function() {
+                logger.info("Starting queued request");
+                var done = actualCall();
+                done.then(
+                  function(result) {
+                    logger.info("Queued request ended nominally.");
+                    deferred.resolve(result);
+                  },
+                  function(err) {
+                    logger.info("Queued request ended with an error.");
+                    deferred.reject(err);
+                  }
+                );
+              }); // fifo
+              return deferred.promise;
+            }
+            return actualCall();
           },
           true
         );
         return guardedPromise;
+      },
+
+      _retrieveToMany: function(store, url, options, guardKey) { // return Promise
+        var self = this;
+        logger.debug("Starting actual GET of to many for" + guardKey + ".");
+        var retrievePromise = self._refresh(store, url, null, store, options); // IDEA: we can even add a query here
+        var donePromise = retrievePromise.then(
+          function(result) {
+            logger.debug("To-many store for" + guardKey + " refreshed.");
+            result.set("lastReloaded", new Date());
+            return result;
+          },
+          function(err) {
+            throw self._handleException(err);
+          }
+        );
+        return donePromise;
       },
 
       searchInto: function(/*PersistentObjectStore*/ result, /*String?*/ serverType, /*Object?*/ query, /*Object?*/ options) {
