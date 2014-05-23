@@ -45,7 +45,8 @@ define(["dojo/_base/declare",
 
       // maxConcurrentRequests: Number
       //   The maximum number of concurrent connections. Later requests will be queued, and handled when earlier requests finish.
-      maxConcurrentRequests: 4,
+      maxConcurrentRequests: 16,
+      // any lower limit makes Chrome slower! this is introduced for eopdf
 
       // _numberOfExecutingRequests: Number
       //   The number of requests currently executing.
@@ -190,6 +191,63 @@ define(["dojo/_base/declare",
         }
         logger.error("Unhandled exception (" + contextDescription + "): ", exc);
         return exc;
+      },
+
+      _queued: function(/*Function*/ promiseFunction) {
+
+        function actualCall() {
+
+          function requestDone() {
+            self._numberOfExecutingRequests--;
+            var nextRequest = self._queuedRequests.shift(); // fifo
+            if (nextRequest) {
+              nextRequest.call(this);
+            }
+          }
+
+          self._numberOfExecutingRequests++;
+          var done = promiseFunction.call();
+          return done.then(
+            function(result) {
+              requestDone();
+              return result;
+            },
+            function(err) {
+              requestDone();
+              throw err;
+            }
+          );
+        }
+
+
+        var self = this;
+
+        if (self._numberOfExecutingRequests < self.maxConcurrentRequests) {
+          logger.debug("Concurrent requests: " + self._numberOfExecutingRequests + " (max " +
+                       self.maxConcurrentRequests + ") - not queueing this request");
+          return actualCall();
+        }
+        logger.info("Reached maximum number of concurrent requests (max " + self.maxConcurrentRequests +
+                    ") - queueing this request (" + self._queuedRequests.length + " pending already)");
+        // queue the request for later; return a Promise for the Promise
+        var deferred = new Deferred();
+        self._queuedRequests.push(
+          function() {
+            logger.info("Starting queued request. (" + self._queuedRequests.length + " left in queue)");
+            var done = actualCall();
+            done.then(
+              function(result) {
+                logger.debug("Queued request ended nominally.");
+                deferred.resolve(result);
+              },
+              function(err) {
+                logger.error("Queued request ended with an error.");
+                deferred.reject(err);
+              }
+            );
+          }
+        ); // fifo
+        return deferred.promise;
       },
 
       _refresh: function(/*PersistentObjectStore|Observable(PersistentObjectStore)*/ result,
@@ -519,33 +577,36 @@ define(["dojo/_base/declare",
           logger.debug("Not found in cache or cached version is stale. Getting '" + serverType + "' with id '" + persistenceId + "' from server.");
           var url = self.urlBuilder.retrieve(serverType, persistenceId);
           logger.debug("GET URL is: " + url);
-          var loadPromise = request(
-            url,
-            {
-              method: "GET",
-              handleAs: "json",
-              headers: {"Accept" : "application/json"},
-              preventCache: true,
-              withCredentials: true,
-              timeout: self.timeout
-            }
-          );
-          var revivePromise = loadPromise.then(
-            function(data) {
-              logger.debug("Retrieved successfully from server: " + data);
-              var revivePromise = self.revive(data, referer, self);
-              delete self._retrievePromiseCache[retrievePromiseCacheKey];
-              return revivePromise;
-            },
-            function(err) {
-              delete self._retrievePromiseCache[retrievePromiseCacheKey];
-              throw self._handleException(err, "retrieve - GET " + url); // of the request
-            }
-          );
-          revivePromise.then(lang.hitch(self, self._optionalCacheReporting));
-          // no need to handle errors of revive: they are errors
+          var executed = self._queued(function() {
+            var loadPromise = request(
+              url,
+              {
+                method: "GET",
+                handleAs: "json",
+                headers: {"Accept": "application/json"},
+                preventCache: true,
+                withCredentials: true,
+                timeout: self.timeout
+              }
+            );
+            var revivePromise = loadPromise.then(
+              function(data) {
+                logger.debug("Retrieved successfully from server: " + data);
+                var revived = self.revive(data, referer, self);
+                delete self._retrievePromiseCache[retrievePromiseCacheKey];
+                return revived;
+              },
+              function(err) {
+                delete self._retrievePromiseCache[retrievePromiseCacheKey];
+                throw self._handleException(err, "retrieve - GET " + url); // of the request
+              }
+            );
+            revivePromise.then(lang.hitch(self, self._optionalCacheReporting));
+            // no need to handle errors of revive: they are errors
+            return revivePromise;
+          });
           if (!cached) {
-            self._retrievePromiseCache[retrievePromiseCacheKey] = revivePromise;
+            self._retrievePromiseCache[retrievePromiseCacheKey] = executed;
           }
           return self._retrievePromiseCache[retrievePromiseCacheKey];
         }
@@ -754,63 +815,9 @@ define(["dojo/_base/declare",
         var url = self.urlBuilder.toMany(po.getTypeDescription(), po.get("persistenceId"), store.serverPropertyName);
         var guardKey = po.getKey() + "." + propertyName;
         logger.debug("Refreshing to many store for " + guardKey);
-
-
-        function actualCall() {
-
-          function requestDone() {
-            self._numberOfExecutingRequests--;
-            var nextRequest = self._queuedRequests.shift(); // fifo
-            if (nextRequest) {
-              nextRequest.call(this);
-            }
-          }
-
-          self._numberOfExecutingRequests++;
-          var done = self._retrieveToMany(store, url, options, guardKey);
-          return done.then(
-            function(result) {
-              requestDone();
-              return result;
-            },
-            function(err) {
-              requestDone();
-              throw err;
-            }
-          );
-        }
-
-
         var guardedPromise = store._arbiter.guard(
           guardKey,
-          function() {
-            if (self._numberOfExecutingRequests < self.maxConcurrentRequests) {
-              logger.debug("Concurrent requests: " + self._numberOfExecutingRequests + " (max " + self.maxConcurrentRequests + ") - not queueing this request");
-              return actualCall();
-            }
-            else {
-              logger.info("Reached maximum number of concurrent requests (max " + self.maxConcurrentRequests + ") - queueing this request (" + self._queuedRequests.length + " pending already)");
-              // queue the request for later; return a Promise for the Promise
-              var deferred = new Deferred();
-              self._queuedRequests.push(
-                function() {
-                  logger.info("Starting queued request. (" + self._queuedRequests.length + " left in queue)");
-                  var done = actualCall();
-                  done.then(
-                    function(result) {
-                      logger.debug("Queued request ended nominally.");
-                      deferred.resolve(result);
-                    },
-                    function(err) {
-                      logger.error("Queued request ended with an error.");
-                      deferred.reject(err);
-                    }
-                  );
-                }
-              ); // fifo
-              return deferred.promise;
-            }
-          },
+          lang.hitch(self, self._queued, lang.hitch(self, self._retrieveToMany, store, url, options, guardKey)),
           true
         );
         return guardedPromise;
