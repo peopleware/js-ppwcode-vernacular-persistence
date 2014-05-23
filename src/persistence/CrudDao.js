@@ -25,14 +25,7 @@ define(["dojo/_base/declare",
            Deferred, request, lang, js,
            has, all, logger, module) {
 
-    function isIdNotFoundException(/*String*/ exc) {
-      return exc && exc.isInstanceOf && exc.isInstanceOf(IdNotFoundException);
-    }
-
-//    function isSemanticException(/*String*/ error) {
-//      return exc && exc.isInstanceOf && exc.isInstanceOf(SemanticException);
-//    }
-
+    //noinspection MagicNumberJS
     var CrudDao = declare([_ContractMixin], {
       // summary:
       //
@@ -55,7 +48,7 @@ define(["dojo/_base/declare",
       maxConcurrentRequests: 4,
 
       // _numberOfExecutingRequests: Number
-      //   The number of requests currenly executing.
+      //   The number of requests currently executing.
       _numberOfExecutingRequests: 0,
 
       // _queuedRequests: Function[]
@@ -116,9 +109,9 @@ define(["dojo/_base/declare",
         // summary:
         //   Some browsers do not present a log-in dialog when an AJAX call returns a 401.
         //   This function says what we do then.
-        //   This cannot be implemented in general, but sublclasses can provide an override.
+        //   This cannot be implemented in general, but subclasses can provide an override.
 
-        logger.debug("handleNotAutorized called.");
+        logger.debug("handleNotAuthorized called.");
       },
 
       _handleException: function(exc) {
@@ -143,6 +136,7 @@ define(["dojo/_base/declare",
           return exc;
         }
         if (exc.response) {
+          //noinspection MagicNumberJS
           if (exc.response.status === 401 || (has("trident") && exc.response.status === 0)) {
             // Normally, we should not get a 401. The browser should present a login dialog to the user.
             // Not all browsers do that, though, for AJAX requests. In those cases, we detect it,
@@ -153,6 +147,7 @@ define(["dojo/_base/declare",
             this.handleNotAuthorized(); // this method might do a redirect, so it might not return
             return exc; // we may not get here
           }
+          //noinspection MagicNumberJS
           if (exc.response.status === 404) {
             var kwargs = {cause: exc.response.data};
             if (exc.response.data && exc.response.data["$type"] && exc.response.data["$type"].indexOf) {
@@ -176,6 +171,7 @@ define(["dojo/_base/declare",
               return new ObjectAlreadyChangedException({cause: exc.response.data, newVersion: exc.response.data && exc.response.data.Data && exc.response.data.Data.sender});
             }
           }
+          //noinspection MagicNumberJS
           if (exc.response.status === 500) {
             logger.error("Server reported internal error.");
           }
@@ -279,6 +275,7 @@ define(["dojo/_base/declare",
              response. For that, we have to add it to the "Access-Control-Expose-Headers" on the server.
              */
             var range = response.getHeader("Content-Range");
+            //noinspection AssignmentResultUsedJS
             return range && (range = range.match(/\/(.*)/)) && +range[1]; // nicked from JsonRest
           }
           // error handling in the other flow
@@ -295,7 +292,7 @@ define(["dojo/_base/declare",
             throw new Error("expected array from remote call");
           }
           var removed = result.loadAll(revived);
-          /* Elements might be not PeristentObjects themselves, but a hash of PersistentObjects.
+          /* Elements might be not PersistentObjects themselves, but a hash of PersistentObjects.
              If the element is an Object, but not a PersistentObject, we will try the properties of the object
              for PersistentObjects, and stop tracking those. */
           removed.forEach(function stopTrackingRecursive(r) {
@@ -310,6 +307,7 @@ define(["dojo/_base/declare",
             }
             // else nop
           });
+          //noinspection JSUndefinedPropertyAssignment
           result.total = totalPromise; // piggyback total promise on the store too
           return result; // return PersistentObjectStore|Observable(PersistentObjectStore)
         });
@@ -467,7 +465,7 @@ define(["dojo/_base/declare",
         //   to support polymorphism.
         //
         //   The resulting object is finally in the cache, and will be tracked by referer.
-        //   PersistentObjects and StoreOfStatefuls the main object refers to,
+        //   PersistentObjects and StoreOfStateful instances the main object refers to,
         //   will be cached with the objects that hold them as referer.
         //
         //   The object might be in the cache beforehand. If it is, the returned Promise
@@ -697,7 +695,7 @@ define(["dojo/_base/declare",
            */
         );
         var deleteDonePromise = cleanupPromise.then(
-          function(allResult) {
+          function() {
             logger.debug("All dependent objects refreshed. Delete done.");
             return po;
           },
@@ -783,7 +781,7 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return po.get("persistenceId");});
         // po should be in the cache, but we don't enforce it; your problem
         this._c_pre(function() {return js.typeOf(propertyName) === "string";});
-        this._c_pre(function() {return po[propertyName] && po[propertyName].query});
+        this._c_pre(function() {return po[propertyName] && po[propertyName].query;});
 //        this._c_pre(function() {return po[propertyName] && po[propertyName].isInstanceOf && po[propertyName].isInstanceOf(ToManyStore)});
         // Cannot really formulate what we want, because of stupid Observable Store wrapper
 
@@ -823,27 +821,32 @@ define(["dojo/_base/declare",
         var guardedPromise = store._arbiter.guard(
           guardKey,
           function() {
-            if (self._numberOfExecutingRequests >= self.maxConcurrentRequests) {
+            if (self._numberOfExecutingRequests < self.maxConcurrentRequests) {
+              logger.info("Concurrent requests: " + self._numberOfExecutingRequests + " (max " + self.maxConcurrentRequests + ") - not queueing this request");
+              return actualCall();
+            }
+            else {
               logger.info("Reached maximum number of concurrent requests - queueing this request");
               // queue the request for later; return a Promise for the Promise
               var deferred = new Deferred();
-              self._queuedRequests.push(function() {
-                logger.info("Starting queued request");
-                var done = actualCall();
-                done.then(
-                  function(result) {
-                    logger.info("Queued request ended nominally.");
-                    deferred.resolve(result);
-                  },
-                  function(err) {
-                    logger.info("Queued request ended with an error.");
-                    deferred.reject(err);
-                  }
-                );
-              }); // fifo
+              self._queuedRequests.push(
+                function() {
+                  logger.info("Starting queued request");
+                  var done = actualCall();
+                  done.then(
+                    function(result) {
+                      logger.info("Queued request ended nominally.");
+                      deferred.resolve(result);
+                    },
+                    function(err) {
+                      logger.info("Queued request ended with an error.");
+                      deferred.reject(err);
+                    }
+                  );
+                }
+              ); // fifo
               return deferred.promise;
             }
-            return actualCall();
           },
           true
         );
@@ -935,6 +938,7 @@ define(["dojo/_base/declare",
 
     });
 
+    //noinspection MagicNumberJS
     CrudDao.durationToStale = 60000; // 1 minute
 
     return CrudDao; // return Function
