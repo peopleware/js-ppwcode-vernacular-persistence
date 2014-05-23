@@ -25,7 +25,7 @@ define(["dojo/_base/declare",
            Deferred, request, lang, js,
            has, all, logger, module) {
 
-    //noinspection MagicNumberJS
+    //noinspection MagicNumberJS,FunctionTooLongJS,OverlyComplexFunctionJS,OverlyNestedFunctionJS
     var CrudDao = declare([_ContractMixin], {
       // summary:
       //
@@ -826,7 +826,7 @@ define(["dojo/_base/declare",
               return actualCall();
             }
             else {
-              logger.info("Reached maximum number of concurrent requests - queueing this request");
+              logger.info("Reached maximum number of concurrent requests (max " + self.maxConcurrentRequests + ") - queueing this request (" + self._queuedRequests.length + " pending already)");
               // queue the request for later; return a Promise for the Promise
               var deferred = new Deferred();
               self._queuedRequests.push(
