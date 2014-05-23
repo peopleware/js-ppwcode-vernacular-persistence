@@ -709,47 +709,7 @@ define(["dojo/_base/declare",
         return deleteDonePromise;
       },
 
-      retrieveToMany: function(/*Observable(PersistentObjectStore)*/ result, /*PersistentObject*/ po, /*String*/ serverPropertyName) {
-        // MUDO obsolete; remove
-        // summary:
-        //   Load the objects of a to-many relationship from the remote server.
-        //   These are the many objects of `po[serverPropertyName]`.
-        //   This returns the Promise of a filled-out `result`.
-        //   The resulting objects are tracked, with the `result` as referer.
-        // result: Observable(PersistentObjectStore)
-        //   Resulting objects are loaded in this store. If they already there, they are reloaded.
-        //   Objects that are not in the response from the server are removed. Objects that appear
-        //   in the server response, that are not already in the store, are added. The store sends
-        //   events for all changes.
-        //   Finally, the returned Promise resolves to this object.
-        // po: PersistentObject
-        //   po should be in the cache beforehand
-        // serverPropertyName: String
-        //   The name of the to-many property in server lingo.
-        // description:
-        //   Asynchronously, we get up-to-date content from the server, and will
-        //   update the content of the store when the server returns a response.
-        //   The store will send events (if reload is implemented correctly).
-        //
-        //   The remote retrieve might fail, with an error, or an `IdNotFoundException`, or a
-        //   `SecurityException`.
-        //   TODO find a way to signal this as a state of the StoreOfStateful
-        this._c_pre(function() {return this.isOperational();});
-        this._c_pre(function() {return result && result.isInstanceOf;});
-// Cannot really formulate what we want, because of stupid Observable Store wrapper
-//        this._c_pre(function() {return result && result.isInstanceOf && result.isInstanceOf(PersistentObjectStore);});
-        this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
-        // po should be in the cache, but we don't enforce it; your problem
-        this._c_pre(function() {return js.typeOf(serverPropertyName) === "string";});
-
-        logger.debug("Requested GET of to many: '" + po + "[" + serverPropertyName+ "]'");
-        var url = this.urlBuilder.toMany(po.getTypeDescription(), po.get("persistenceId"), serverPropertyName);
-        var resultPromise = this._refresh(result, url, null, result); // IDEA: we can even add a query here
-        return resultPromise; // return Promise
-      },
-
-      retrieveToMany2: function(/*PersistentObject*/ po, /*String*/ propertyName, /*Object?*/ options) {
-        // MUDO rename -"2"
+      retrieveToMany: function(/*PersistentObject*/ po, /*String*/ propertyName, /*Object?*/ options) {
         // summary:
         //   Load the objects of a to-many relationship from the remote server.
         //   These are the many objects of `po[propertyName]`.
