@@ -25,14 +25,7 @@ define(["dojo/_base/declare",
            Deferred, request, lang, js,
            has, all, logger, module) {
 
-    function isIdNotFoundException(/*String*/ exc) {
-      return exc && exc.isInstanceOf && exc.isInstanceOf(IdNotFoundException);
-    }
-
-//    function isSemanticException(/*String*/ error) {
-//      return exc && exc.isInstanceOf && exc.isInstanceOf(SemanticException);
-//    }
-
+    //noinspection MagicNumberJS,FunctionTooLongJS,OverlyComplexFunctionJS,OverlyNestedFunctionJS
     var CrudDao = declare([_ContractMixin], {
       // summary:
       //
@@ -49,6 +42,19 @@ define(["dojo/_base/declare",
       //   The default timeout in ms
       timeout: 10000, // needed for older hardware
       // IDEA detect we are on older hardware, and set it to 10 then; e.g., count to 1 000 000, and depending on the speed ...
+
+      // maxConcurrentRequests: Number
+      //   The maximum number of concurrent connections. Later requests will be queued, and handled when earlier requests finish.
+      maxConcurrentRequests: 16,
+      // any lower limit makes Chrome slower! this is introduced for eopdf
+
+      // _numberOfExecutingRequests: Number
+      //   The number of requests currently executing.
+      _numberOfExecutingRequests: 0,
+
+      // _queuedRequests: Function[]
+      //    Requests waiting for execution, because there are too many concurrent requests already.
+      _queuedRequests: null,
 
       // urlBuilder: UrlBuilder
       urlBuilder: null,
@@ -97,18 +103,19 @@ define(["dojo/_base/declare",
         this._cache = new _Cache();
         this.setCacheReportingPeriod(has(module.id + "-cacheReporting"));
         this._retrievePromiseCache = {};
+        this._queuedRequests = [];
       },
 
       handleNotAuthorized: function() {
         // summary:
         //   Some browsers do not present a log-in dialog when an AJAX call returns a 401.
         //   This function says what we do then.
-        //   This cannot be implemented in general, but sublclasses can provide an override.
+        //   This cannot be implemented in general, but subclasses can provide an override.
 
-        logger.debug("handleNotAutorized called.");
+        logger.debug("handleNotAuthorized called.");
       },
 
-      _handleException: function(exc) {
+      _handleException: function(exc, contextDescription) {
         // summary:
         //   Triage and handle `exc`.
         //   This method does not throw exceptions itself, but translates `exc` into another exception
@@ -116,11 +123,11 @@ define(["dojo/_base/declare",
         //   returns an exception to be thrown.
 
         if (!exc) {
-          logger.error("Asked to handle an exception, but there is none.");
+          logger.error("Asked to handle an exception, but there is none (" + contextDescription + ").");
           return undefined;
         }
         if (exc.dojoType === "cancel") {
-          logger.info("Remote action cancelled.");
+          logger.info("Remote action cancelled (" + contextDescription + ").");
           /*
            We might want to eat this exception: it is not a problem; the Promise is cancelled.
            However, it seems to be the only way to signal cancellation reliably. dgrid e.g.
@@ -130,33 +137,47 @@ define(["dojo/_base/declare",
           return exc;
         }
         if (exc.response) {
-          if (exc.response.status === 401 || (has("ie") && exc.response.status === 0)) {
+          //noinspection MagicNumberJS
+          if (exc.response.status === 401 || (has("trident") && exc.response.status === 0)) {
             // Normally, we should not get a 401. The browser should present a login dialog to the user.
             // Not all browsers do that, though, for AJAX requests. In those cases, we detect it,
             // and handle it ourselves in some way. E.g., change the window location
             // to a server login page, that redirects here again after successful login.
-            // ie has issues with a 401; this is a workaround, that will result in infinite reloads if something truly bad happens
-            logger.info("Not authorized leaked through.", exc);
+            // ie ("trident") has issues with a 401; this is a workaround, that will result in infinite reloads if something truly bad happens
+            logger.info("Not authorized leaked through (" + contextDescription + ").", exc);
             this.handleNotAuthorized(); // this method might do a redirect, so it might not return
             return exc; // we may not get here
           }
+          //noinspection MagicNumberJS
           if (exc.response.status === 404) {
+            var kwargs = {cause: exc.response.data};
+            if (exc.response.data && exc.response.data["$type"] && exc.response.data["$type"].indexOf) {
+              if (exc.response.data["$type"].indexOf("PPWCode.Vernacular.Persistence.I.Dao.IdNotFoundException") >= 0) {
+                kwargs.serverType = exc.response.data.Data.persistenObjectType; // NOTE: sic! Yes, there is a typo in the server code (missing "t")
+                // getting the typeDescription in general needs a require, and thus is async. We do not want to do that here.
+                kwargs.persistenceId = exc.response.data.Data.persistenceId;
+              }
+            }
             var infExc = new IdNotFoundException({cause: exc.response.data});
-            logger.info("Not found: ", infExc);
+            logger.info("Not found (" + contextDescription + "): ", infExc);
             return infExc;
           }
           if (exc.response.data && exc.response.data["$type"] && exc.response.data["$type"].indexOf) {
             if (exc.response.data["$type"].indexOf("PPWCode.Vernacular.Persistence.I.Dao.DaoSecurityException") >= 0) {
-              logger.warn("Server reported dynamic security exception.", exc.response.data);
+              logger.warn("Server reported dynamic security exception (" + contextDescription + ").", exc.response.data);
               return new SecurityException({cause: exc.response.data});
             }
             if (exc.response.data["$type"].indexOf("PPWCode.Vernacular.Persistence.I.Dao.ObjectAlreadyChangedException") >= 0) {
-              logger.info("Server reported object already changed.", exc.response.data);
+              logger.info("Server reported object already changed (" + contextDescription + ").", exc.response.data);
               return new ObjectAlreadyChangedException({cause: exc.response.data, newVersion: exc.response.data && exc.response.data.Data && exc.response.data.Data.sender});
             }
           }
+          //noinspection MagicNumberJS
           if (exc.response.status === 500) {
-            logger.error("Server reported internal error.");
+            logger.error("Server reported internal error (" + contextDescription + ").");
+          }
+          else {
+            logger.error("Server reported untriaged error (" + contextDescription + ").");
           }
           if (exc.response.status) {
             logger.error("Response status: ", exc.response.status);
@@ -168,8 +189,65 @@ define(["dojo/_base/declare",
             logger.error("Response text: ", exc.response.text);
           }
         }
-        logger.error(exc);
+        logger.error("Unhandled exception (" + contextDescription + "): ", exc);
         return exc;
+      },
+
+      _queued: function(/*Function*/ promiseFunction) {
+
+        function actualCall() {
+
+          function requestDone() {
+            self._numberOfExecutingRequests--;
+            var nextRequest = self._queuedRequests.shift(); // fifo
+            if (nextRequest) {
+              nextRequest.call(this);
+            }
+          }
+
+          self._numberOfExecutingRequests++;
+          var done = promiseFunction.call();
+          return done.then(
+            function(result) {
+              requestDone();
+              return result;
+            },
+            function(err) {
+              requestDone();
+              throw err;
+            }
+          );
+        }
+
+
+        var self = this;
+
+        if (self._numberOfExecutingRequests < self.maxConcurrentRequests) {
+          logger.debug("Concurrent requests: " + self._numberOfExecutingRequests + " (max " +
+                       self.maxConcurrentRequests + ") - not queueing this request");
+          return actualCall();
+        }
+        logger.info("Reached maximum number of concurrent requests (max " + self.maxConcurrentRequests +
+                    ") - queueing this request (" + self._queuedRequests.length + " pending already)");
+        // queue the request for later; return a Promise for the Promise
+        var deferred = new Deferred();
+        self._queuedRequests.push(
+          function() {
+            logger.info("Starting queued request. (" + self._queuedRequests.length + " left in queue)");
+            var done = actualCall();
+            done.then(
+              function(result) {
+                logger.debug("Queued request ended nominally.");
+                deferred.resolve(result);
+              },
+              function(err) {
+                logger.error("Queued request ended with an error.");
+                deferred.reject(err);
+              }
+            );
+          }
+        ); // fifo
+        return deferred.promise;
       },
 
       _refresh: function(/*PersistentObjectStore|Observable(PersistentObjectStore)*/ result,
@@ -247,7 +325,7 @@ define(["dojo/_base/declare",
             return self.revive(data, referer, self); // return Promise
           },
           function(err) {
-            throw self._handleException(err); // of the request
+            throw self._handleException(err, "_refresh - GET " + url); // of the request
           }
         );
         var totalPromise = loadPromise.response.then(
@@ -258,6 +336,7 @@ define(["dojo/_base/declare",
              response. For that, we have to add it to the "Access-Control-Expose-Headers" on the server.
              */
             var range = response.getHeader("Content-Range");
+            //noinspection AssignmentResultUsedJS
             return range && (range = range.match(/\/(.*)/)) && +range[1]; // nicked from JsonRest
           }
           // error handling in the other flow
@@ -274,7 +353,7 @@ define(["dojo/_base/declare",
             throw new Error("expected array from remote call");
           }
           var removed = result.loadAll(revived);
-          /* Elements might be not PeristentObjects themselves, but a hash of PersistentObjects.
+          /* Elements might be not PersistentObjects themselves, but a hash of PersistentObjects.
              If the element is an Object, but not a PersistentObject, we will try the properties of the object
              for PersistentObjects, and stop tracking those. */
           removed.forEach(function stopTrackingRecursive(r) {
@@ -289,6 +368,7 @@ define(["dojo/_base/declare",
             }
             // else nop
           });
+          //noinspection JSUndefinedPropertyAssignment
           result.total = totalPromise; // piggyback total promise on the store too
           return result; // return PersistentObjectStore|Observable(PersistentObjectStore)
         });
@@ -365,7 +445,7 @@ define(["dojo/_base/declare",
             return self.revive(data, referer, self);
           },
           function(err) {
-            throw self._handleException(err); // of the request
+            throw self._handleException(err, "_poAction - " + method + " " + url); // of the request
           }
         );
         // no need to handle errors of revive: they are errors
@@ -446,7 +526,7 @@ define(["dojo/_base/declare",
         //   to support polymorphism.
         //
         //   The resulting object is finally in the cache, and will be tracked by referer.
-        //   PersistentObjects and StoreOfStatefuls the main object refers to,
+        //   PersistentObjects and StoreOfStateful instances the main object refers to,
         //   will be cached with the objects that hold them as referer.
         //
         //   The object might be in the cache beforehand. If it is, the returned Promise
@@ -485,6 +565,9 @@ define(["dojo/_base/declare",
           cached = self.getCachedByTypeAndId(serverType, persistenceId);
           if (cached) {
             logger.debug("Found cached version; resolving Promise immediately (" + serverType + "@" + persistenceId + ")");
+            self.track(cached, referer); // track now, early; if we wat until reload, it might be removed from the cache already
+            // TODO this needs to be guarded; referer might stop tracking before the reload Promise resolves; that results in a memory leak;
+            // TODO also: what happens with a cancel?
             var deferred = new Deferred();
             self._retrievePromiseCache[retrievePromiseCacheKey] = deferred.promise;
             deferred.resolve(cached);
@@ -494,33 +577,36 @@ define(["dojo/_base/declare",
           logger.debug("Not found in cache or cached version is stale. Getting '" + serverType + "' with id '" + persistenceId + "' from server.");
           var url = self.urlBuilder.retrieve(serverType, persistenceId);
           logger.debug("GET URL is: " + url);
-          var loadPromise = request(
-            url,
-            {
-              method: "GET",
-              handleAs: "json",
-              headers: {"Accept" : "application/json"},
-              preventCache: true,
-              withCredentials: true,
-              timeout: self.timeout
-            }
-          );
-          var revivePromise = loadPromise.then(
-            function(data) {
-              logger.debug("Retrieved successfully from server: " + data);
-              var revivePromise = self.revive(data, referer, self);
-              delete self._retrievePromiseCache[retrievePromiseCacheKey];
-              return revivePromise;
-            },
-            function(err) {
-              delete self._retrievePromiseCache[retrievePromiseCacheKey];
-              throw self._handleException(err); // of the request
-            }
-          );
-          revivePromise.then(lang.hitch(self, self._optionalCacheReporting));
-          // no need to handle errors of revive: they are errors
+          var executed = self._queued(function() {
+            var loadPromise = request(
+              url,
+              {
+                method: "GET",
+                handleAs: "json",
+                headers: {"Accept": "application/json"},
+                preventCache: true,
+                withCredentials: true,
+                timeout: self.timeout
+              }
+            );
+            var revivePromise = loadPromise.then(
+              function(data) {
+                logger.debug("Retrieved successfully from server: " + data);
+                var revived = self.revive(data, referer, self);
+                delete self._retrievePromiseCache[retrievePromiseCacheKey];
+                return revived;
+              },
+              function(err) {
+                delete self._retrievePromiseCache[retrievePromiseCacheKey];
+                throw self._handleException(err, "retrieve - GET " + url); // of the request
+              }
+            );
+            revivePromise.then(lang.hitch(self, self._optionalCacheReporting));
+            // no need to handle errors of revive: they are errors
+            return revivePromise;
+          });
           if (!cached) {
-            self._retrievePromiseCache[retrievePromiseCacheKey] = revivePromise;
+            self._retrievePromiseCache[retrievePromiseCacheKey] = executed;
           }
           return self._retrievePromiseCache[retrievePromiseCacheKey];
         }
@@ -673,58 +759,18 @@ define(["dojo/_base/declare",
            */
         );
         var deleteDonePromise = cleanupPromise.then(
-          function(allResult) {
+          function() {
             logger.debug("All dependent objects refreshed. Delete done.");
             return po;
           },
           function(err) {
-            throw self._handleException(err); // of the request
+            throw self._handleException(err, "remove - DELETE " + url); // of the request
           }
         );
         return deleteDonePromise;
       },
 
-      retrieveToMany: function(/*Observable(PersistentObjectStore)*/ result, /*PersistentObject*/ po, /*String*/ serverPropertyName) {
-        // MUDO obsolete; remove
-        // summary:
-        //   Load the objects of a to-many relationship from the remote server.
-        //   These are the many objects of `po[serverPropertyName]`.
-        //   This returns the Promise of a filled-out `result`.
-        //   The resulting objects are tracked, with the `result` as referer.
-        // result: Observable(PersistentObjectStore)
-        //   Resulting objects are loaded in this store. If they already there, they are reloaded.
-        //   Objects that are not in the response from the server are removed. Objects that appear
-        //   in the server response, that are not already in the store, are added. The store sends
-        //   events for all changes.
-        //   Finally, the returned Promise resolves to this object.
-        // po: PersistentObject
-        //   po should be in the cache beforehand
-        // serverPropertyName: String
-        //   The name of the to-many property in server lingo.
-        // description:
-        //   Asynchronously, we get up-to-date content from the server, and will
-        //   update the content of the store when the server returns a response.
-        //   The store will send events (if reload is implemented correctly).
-        //
-        //   The remote retrieve might fail, with an error, or an `IdNotFoundException`, or a
-        //   `SecurityException`.
-        //   TODO find a way to signal this as a state of the StoreOfStateful
-        this._c_pre(function() {return this.isOperational();});
-        this._c_pre(function() {return result && result.isInstanceOf;});
-// Cannot really formulate what we want, because of stupid Observable Store wrapper
-//        this._c_pre(function() {return result && result.isInstanceOf && result.isInstanceOf(PersistentObjectStore);});
-        this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
-        // po should be in the cache, but we don't enforce it; your problem
-        this._c_pre(function() {return js.typeOf(serverPropertyName) === "string";});
-
-        logger.debug("Requested GET of to many: '" + po + "[" + serverPropertyName+ "]'");
-        var url = this.urlBuilder.toMany(po.getTypeDescription(), po.get("persistenceId"), serverPropertyName);
-        var resultPromise = this._refresh(result, url, null, result); // IDEA: we can even add a query here
-        return resultPromise; // return Promise
-      },
-
-      retrieveToMany2: function(/*PersistentObject*/ po, /*String*/ propertyName, /*Object?*/ options) {
-        // MUDO rename -"2"
+      retrieveToMany: function(/*PersistentObject*/ po, /*String*/ propertyName, /*Object?*/ options) {
         // summary:
         //   Load the objects of a to-many relationship from the remote server.
         //   These are the many objects of `po[propertyName]`.
@@ -754,10 +800,12 @@ define(["dojo/_base/declare",
         //   TODO find a way to signal this as a state of the StoreOfStateful
 
         this._c_pre(function() {return this.isOperational();});
-        this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
+        this._c_pre(function() {return po;});
+        this._c_pre(function() {return po.isInstanceOf && po.isInstanceOf(PersistentObject);});
+        this._c_pre(function() {return po.get("persistenceId");});
         // po should be in the cache, but we don't enforce it; your problem
         this._c_pre(function() {return js.typeOf(propertyName) === "string";});
-        this._c_pre(function() {return po[propertyName] && po[propertyName].query});
+        this._c_pre(function() {return po[propertyName] && po[propertyName].query;});
 //        this._c_pre(function() {return po[propertyName] && po[propertyName].isInstanceOf && po[propertyName].isInstanceOf(ToManyStore)});
         // Cannot really formulate what we want, because of stupid Observable Store wrapper
 
@@ -765,27 +813,31 @@ define(["dojo/_base/declare",
         logger.debug("Requested GET of to many: '" + po + "[" + propertyName+ "]'");
         var store = po[propertyName];
         var url = self.urlBuilder.toMany(po.getTypeDescription(), po.get("persistenceId"), store.serverPropertyName);
-        logger.debug("Refreshing to many store for " + po + "[" + propertyName+ "]");
+        var guardKey = po.getKey() + "." + propertyName;
+        logger.debug("Refreshing to many store for " + guardKey);
         var guardedPromise = store._arbiter.guard(
-          store,
-          function() { // return Promise
-            var retrievePromise = self._refresh(store, url, null, store, options); // IDEA: we can even add a query here
-            var donePromise = retrievePromise.then(
-              function(result) {
-                logger.debug("To-many store for " + po + "[" + propertyName+ "] refreshed.");
-                result.set("lastReloaded", new Date());
-                return result;
-              },
-              function(err) {
-                console.error("Failed to refresh store for " + po + "[" + propertyName+ "]", err);
-                throw err;
-              }
-            );
-            return donePromise; // return Promise
-          },
+          guardKey,
+          lang.hitch(self, self._queued, lang.hitch(self, self._retrieveToMany, store, url, options, guardKey)),
           true
         );
         return guardedPromise;
+      },
+
+      _retrieveToMany: function(store, url, options, guardKey) { // return Promise
+        var self = this;
+        logger.debug("Starting actual GET of to many for" + guardKey + ".");
+        var retrievePromise = self._refresh(store, url, null, store, options); // IDEA: we can even add a query here
+        var donePromise = retrievePromise.then(
+          function(result) {
+            logger.debug("To-many store for" + guardKey + " refreshed.");
+            result.set("lastReloaded", new Date());
+            return result;
+          },
+          function(err) {
+            throw self._handleException(err, "_retrieveToMany - GET " + url);
+          }
+        );
+        return donePromise;
       },
 
       searchInto: function(/*PersistentObjectStore*/ result, /*String?*/ serverType, /*Object?*/ query, /*Object?*/ options) {
@@ -856,6 +908,7 @@ define(["dojo/_base/declare",
 
     });
 
+    //noinspection MagicNumberJS
     CrudDao.durationToStale = 60000; // 1 minute
 
     return CrudDao; // return Function

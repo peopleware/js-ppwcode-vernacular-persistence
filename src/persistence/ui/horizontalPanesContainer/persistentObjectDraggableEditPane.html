@@ -36,12 +36,17 @@
                                onClick: lang.hitch(this, this.cancel)"
               data-dojo-attach-point="_btnCancel">${labels.cancelButton}</button>
       <button type="button"
-              data-dojo-type="dijit/form/Button"
+              data-dojo-type="dijit/form/DropDownButton"
               data-dojo-props="iconClass: 'dijitIconClear',
                                showLabel: false,
-                               title: '${labels.deleteButton}',
-                               onClick: lang.hitch(this, this.remove)"
+                               title: '${labels.deleteButton}'"
               data-dojo-attach-point="_btnDelete">
+        <menu data-dojo-type="dijit/DropDownMenu">
+          <div class="dangerousOperation"
+               data-dojo-type="dijit/MenuItem"
+               data-dojo-props="iconClass: 'warningIcon',
+                                onClick: lang.hitch(this, this.remove)">${labels.deleteButton}</div>
+        </menu>
       </button>
       <button type="button"
               data-dojo-type="dijit/form/Button"

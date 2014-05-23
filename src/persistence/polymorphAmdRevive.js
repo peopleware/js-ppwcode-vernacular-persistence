@@ -270,6 +270,7 @@ define(["ppwcode-util-oddsAndEnds/typeOf", "dojo/promise/all",
         var /*PersistentObject*/ reloadTarget = crudDao.getCachedByTypeAndId(type, id);
         if (reloadTarget) {
           logger.debug(debugPrefix + "found in cache: " + key);
+          // TODO only reload if dirty or !== persistenceVersion (if there is one); jsonPo needs to be processed deep, though
         }
         else {
           logger.info(debugPrefix + "not found in cache; creating new object for: " + key);

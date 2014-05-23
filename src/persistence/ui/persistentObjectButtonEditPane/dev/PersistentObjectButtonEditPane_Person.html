@@ -71,7 +71,7 @@ limitations under the License.
         var parsePromise = parser.parse();
         parsePromise.then(function() {
           window.subject = registry.byId("subject");
-          subject.set("refresher", function(po) {
+          subject.set("refresher", function(po, force) {
             console.log("refresh requested of " + po);
             var temp = po.toJSON();
             temp.nrOfRawMaterials = Math.floor((Math.random()*10000)+1);

@@ -41,8 +41,7 @@ define(["dojo/_base/declare", "dojo/dom-style",
       //    This is a ./_PersistentObjectEditPane.
       //    The widget shows buttons to go the edit mode, cancel or save an edit,
       //    and delete the persistent object.
-      //    The actual actions are done by a refresher, creator, saver, and remover
-      //    function.
+      //    The actual actions are done by refresh, save, and remove.
       //    Intended to wrap around a _SemanticObjectPane, which can be injected with
       //    set("contentPane").
       //    If this contentPane has a css width, it is copied to this when set.
@@ -73,17 +72,20 @@ define(["dojo/_base/declare", "dojo/dom-style",
       _btnSave: null,
       _btnDelete: null,
 
-      _poListener: null,
-
       postCreate: function() {
         var self = this;
         self._setButtonsStyles(this.NOTARGET);
         if (!self.get("target")) { // TODO is this really necessary? why? write a comment
           self.set("target", null);
         }
-        self.own(bindingChains(self, ["target.editable", "target!.deletable", "target!.wildExceptions"], function() {
-          self._setButtonsStyles(self.get("stylePresentationMode"));
-        }));
+        self.own(bindingChains(
+          self,
+          ["target!.editable", "target!.deletable", "target!.wildExceptions"],
+          // when there is a new target, we go to NOTARGET, by code in the superclass; we don't have to do it twice
+          function() {
+            self._setButtonsStyles(self.get("stylePresentationMode"));
+          })
+        );
       },
 
       destroy: function() {
@@ -115,16 +117,6 @@ define(["dojo/_base/declare", "dojo/dom-style",
         }
         var ao = po && po.isInstanceOf(AuditableObject) ? po : null;
         self._auditableInfo.set("target", ao);
-        if (self._poListener) {
-          self._poListener.remove();
-          self._poListener = null;
-        }
-        if (po) {
-          self._poListener = po.watch(function() {
-            self._setButtonsStyles(self.get("stylePresentationMode"));
-          });
-          self.own(self._poListener);
-        }
       },
 
       _setOpenerAttr: function(opener) {

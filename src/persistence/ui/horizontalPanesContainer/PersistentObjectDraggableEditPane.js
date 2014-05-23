@@ -17,7 +17,9 @@
 define(["dojo/_base/declare",
         "ppwcode-util-oddsAndEnds/ui/horizontalPanesContainer/DraggablePane",
         "ppwcode-vernacular-persistence/ui/persistentObjectButtonEditPane/PersistentObjectButtonEditPane",
-        "dojo/dom-style", "dojo/keys",
+        "dojo/dom-style", "dojo/keys", "dojo/Deferred",
+        "ppwcode-util-oddsAndEnds/log/logger!",
+        "dojo/aspect",
 
         "dojo/text!./persistentObjectDraggableEditPane.html", "dojo/i18n!./nls/labels",
 
@@ -30,7 +32,9 @@ define(["dojo/_base/declare",
         "xstyle/css!./persistentObjectDraggableEditPane.css"],
     function(declare,
              DraggablePane, PersistentObjectButtonEditPane,
-             domStyle, keys,
+             domStyle, keys, Deferred,
+             logger,
+             aspect,
              template, labels,
              module) {
 
@@ -41,29 +45,11 @@ define(["dojo/_base/declare",
         templateString: template,
         labels: labels,
 
-        // crudDao: CrudDao
-        //   Needed for operation.
-        crudDao: null,
-
         constructor: function(kwargs) {
           var self = this;
-          if (kwargs && kwargs.crudDao) {
-            self.crudDao = kwargs.crudDao;
-          }
-          self.own(self.watch("target", function(propertyName, oldTarget, newTarget) {
-            if (oldTarget !== newTarget) {
-              if (oldTarget && oldTarget.get("persistenceId")) {
-                self.crudDao.stopTracking(oldTarget, self);
-              }
-              if (newTarget && newTarget.get("persistenceId")) {
-                self.crudDao.track(newTarget, self);
-              }
-            }
-          }));
           self.set("opener", function(po) {
             return self.container.openPaneFor(po, /*after*/ self);
           });
-          self.set("closer", this.removeFromContainer);
         },
 
         postCreate: function() {
@@ -122,53 +108,25 @@ define(["dojo/_base/declare",
               // IDEA: with shift: move left, right
             }
           }));
+          self.own(aspect.after(
+            self._btnDelete,
+            "_onDropDownMouseDown",
+            function(/*Event*/ e) {
+            // we need to stopPropagation, or else the enclosing movable will think we are starting a drag, and it will eat the mouse up
+              e.stopPropagation();
+            },
+            true
+          ));
         },
 
         isVisualizationOf: function(object) {
           return this.get("target") === object;
         },
 
-        _setCrudDaoAttr: function(crudDao) {
-          var self = this;
-          self._set("crudDao", crudDao);
-          if (crudDao) {
-            self.set("refresher", function(po) {
-              return crudDao.retrieve(po.getTypeDescription(), po.get("persistenceId"), self, true);
-            });
-            self.set("saver", function(po) {
-              return crudDao.update(po);
-            });
-            self.set("creator", function(po) {
-              return crudDao.create(po, self);
-            });
-            self.set("remover", function(po) {
-              return crudDao.remove(po);
-            });
-            self.set("closer", function() {
-              var target = self.get("target");
-              if (target) {
-                crudDao.stopTracking(target, self);
-              }
-              self.removeFromContainer();
-            });
-          }
-          else {
-            self.set("refresher",null);
-            self.set("saver", null);
-            self.set("creator", null);
-            self.set("remover", null);
-            self.set("closer", this.removeFromContainer);
-          }
-        },
-
         _setButtonsStyles: function(stylePresentationMode) {
           this.inherited(arguments);
 
           this._setVisible(this._btnClose, stylePresentationMode === this.VIEW, stylePresentationMode === this.BUSY);
-        },
-
-        close: function() {
-          this.closer();
         },
 
         cancel: function(event) {
@@ -191,11 +149,28 @@ define(["dojo/_base/declare",
           var self = this;
           return promise.then(
             function(result) {
-              self.removeFromContainer();
-              return result;
-            },
-            function(err) {
-              throw err;
+              return self.close().then(function() {return result;});
+            }
+          );
+        },
+
+        close: function() {
+          // summary:
+          //   Close and destroy.
+
+          var self = this;
+          var inheritedResult = self.inherited(arguments);
+          return inheritedResult.then(
+            function(po) {
+              var removed = self.removeFromContainer(); // this is destroyed.
+              if (removed) {
+                return removed.then(function() {
+                  return po;
+                });
+              }
+              else {
+                return new Deferred().resolve(po); // returns the promise
+              }
             }
           );
         }

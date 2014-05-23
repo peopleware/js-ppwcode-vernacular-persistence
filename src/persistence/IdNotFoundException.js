@@ -19,7 +19,32 @@ define(["dojo/_base/declare", "ppwcode-vernacular-exceptions/SemanticException",
 
       var IdNotFoundException = declare([SemanticException], {
 
+        // typeDescription: String?
+        //   Description of the type of object we did not find, if possible.
+        //   This description is in the lingo of this dojo application.
+        typeDescription: null,
+
+        // serverType: String?
+        //   Description of the type of object we did not find, if possible.
+        //   This description is in the lingo of the server.
+        serverType: null,
+
+        // persistenceId: Object?
+        //   The persistenceId of the object we did not find, if possible.
+        persistenceId: null,
+
         constructor: function(/*Object*/ props) {
+          if (props) {
+            if (props.typeDescription) {
+              this.typeDescription = props.typeDescription;
+            }
+            if (props.serverType) {
+              this.serverType = props.serverType;
+            }
+            if (props.persistenceId) {
+              this.persistenceId = props.persistenceId;
+            }
+          }
         }
 
       });

@@ -181,7 +181,10 @@ define(["dojo/_base/declare",
         if (!entry) {
           entry = new _Entry(po, this);
           this._data[key] = entry;
-          logger.info("Entry added to cache: " + po.toString());
+          if (logger.isInfoEnabled()) {
+            var numberOfEntries = Object.keys(this._data).length;
+            logger.info("Entry added to cache (" + numberOfEntries + "): " + po.toString());
+          }
         }
         entry.addReferer(referer);
       },
@@ -190,9 +193,9 @@ define(["dojo/_base/declare",
         return this._data[key] && this._data[key].payload; // return PersistentObject
       },
 
-      stopTrackingAsReferer: function (referer) {
+      stopTrackingAsReferer: function(referer) {
         var self = this;
-        Object.keys(this._data).forEach(function (propertyName) {
+        Object.keys(this._data).forEach(function(propertyName) {
           /* Concurrent modification: by the time we get here, the entry might no longer
              exist (removed by an earlier branch of this backtrack). That is no problem
              though, because we have if (entry) above. */
@@ -212,19 +215,46 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return typeOf(key) === "string";});
         this._c_pre(function() {return referer;});
 
-        var entry = this._data[key];
+        var self = this;
+        var entry = self._data[key];
         if (entry) {
           entry.removeReferer(referer);
           if (entry.getNrOfReferers() <= 0) {
-            delete this._data[key];
-            logger.info("Entry removed from cache: " + entry.payload.toString());
+            delete self._data[key];
+            if (logger.isInfoEnabled()) {
+              var numberOfEntries = Object.keys(self._data).length;
+              logger.info("Entry removed from cache (" + numberOfEntries + "): " + entry.payload.toString());
+            }
             // now, if payload was itself a referer, we need to remove if everywhere as referer
-            this.stopTrackingAsReferer(entry.payload);
+            self.stopTrackingAsReferer(entry.payload);
             if (self._extraOnRemove) {
               self._extraOnRemove(entry.payload, self);
             }
           }
         }
+// IDEA: code below looks like a very good idea indeed, but it doesn't work; we "loose" entries this way
+// (Demonstration in current project: dnd a component of an LSD to change the order; each time, we loose some dereferenced raw materials)
+//        if (entry) {
+//          entry.removeReferer(referer);
+//          setTimeout(
+//            function() { // wait a moment; we might need the data againg in a second; we can take our time to clean the cache
+//              var entry = self._data[key]; // again; entry might have been removed already
+//              if (entry && entry.getNrOfReferers() <= 0) {
+//                delete self._data[key];
+//                if (logger.isInfoEnabled()) {
+//                  var numberOfEntries = Object.keys(self._data).length;
+//                  logger.info("Entry removed from cache (" + numberOfEntries + "): " + entry.payload.toString());
+//                }
+//                // now, if payload was itself a referer, we need to remove if everywhere as referer
+//                self.stopTrackingAsReferer(entry.payload);
+//                if (self._extraOnRemove) {
+//                  self._extraOnRemove(entry.payload, self);
+//                }
+//              }
+//            },
+//            2500
+//          );
+//        }
       },
 
       getByTypeAndId: function(/*String*/ serverType, /*Number*/ persistenceId) {
