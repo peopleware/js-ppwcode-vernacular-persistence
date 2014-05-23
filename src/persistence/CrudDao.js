@@ -45,7 +45,7 @@ define(["dojo/_base/declare",
 
       // maxConcurrentRequests: Number
       //   The maximum number of concurrent connections. Later requests will be queued, and handled when earlier requests finish.
-      maxConcurrentRequests: 2,
+      maxConcurrentRequests: 4,
 
       // _numberOfExecutingRequests: Number
       //   The number of requests currently executing.
