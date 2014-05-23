@@ -822,7 +822,7 @@ define(["dojo/_base/declare",
           guardKey,
           function() {
             if (self._numberOfExecutingRequests < self.maxConcurrentRequests) {
-              logger.info("Concurrent requests: " + self._numberOfExecutingRequests + " (max " + self.maxConcurrentRequests + ") - not queueing this request");
+              logger.debug("Concurrent requests: " + self._numberOfExecutingRequests + " (max " + self.maxConcurrentRequests + ") - not queueing this request");
               return actualCall();
             }
             else {
@@ -831,15 +831,15 @@ define(["dojo/_base/declare",
               var deferred = new Deferred();
               self._queuedRequests.push(
                 function() {
-                  logger.info("Starting queued request");
+                  logger.info("Starting queued request. (" + self._queuedRequests.length + " left in queue)");
                   var done = actualCall();
                   done.then(
                     function(result) {
-                      logger.info("Queued request ended nominally.");
+                      logger.debug("Queued request ended nominally.");
                       deferred.resolve(result);
                     },
                     function(err) {
-                      logger.info("Queued request ended with an error.");
+                      logger.error("Queued request ended with an error.");
                       deferred.reject(err);
                     }
                   );
