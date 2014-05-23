@@ -45,7 +45,7 @@ define(["dojo/_base/declare",
 
       // maxConcurrentRequests: Number
       //   The maximum number of concurrent connections. Later requests will be queued, and handled when earlier requests finish.
-      maxConcurrentRequests: 4,
+      maxConcurrentRequests: 2,
 
       // _numberOfExecutingRequests: Number
       //   The number of requests currently executing.
@@ -114,7 +114,7 @@ define(["dojo/_base/declare",
         logger.debug("handleNotAuthorized called.");
       },
 
-      _handleException: function(exc) {
+      _handleException: function(exc, contextDescription) {
         // summary:
         //   Triage and handle `exc`.
         //   This method does not throw exceptions itself, but translates `exc` into another exception
@@ -122,11 +122,11 @@ define(["dojo/_base/declare",
         //   returns an exception to be thrown.
 
         if (!exc) {
-          logger.error("Asked to handle an exception, but there is none.");
+          logger.error("Asked to handle an exception, but there is none (" + contextDescription + ").");
           return undefined;
         }
         if (exc.dojoType === "cancel") {
-          logger.info("Remote action cancelled.");
+          logger.info("Remote action cancelled (" + contextDescription + ").");
           /*
            We might want to eat this exception: it is not a problem; the Promise is cancelled.
            However, it seems to be the only way to signal cancellation reliably. dgrid e.g.
@@ -143,7 +143,7 @@ define(["dojo/_base/declare",
             // and handle it ourselves in some way. E.g., change the window location
             // to a server login page, that redirects here again after successful login.
             // ie ("trident") has issues with a 401; this is a workaround, that will result in infinite reloads if something truly bad happens
-            logger.info("Not authorized leaked through.", exc);
+            logger.info("Not authorized leaked through (" + contextDescription + ").", exc);
             this.handleNotAuthorized(); // this method might do a redirect, so it might not return
             return exc; // we may not get here
           }
@@ -158,22 +158,25 @@ define(["dojo/_base/declare",
               }
             }
             var infExc = new IdNotFoundException({cause: exc.response.data});
-            logger.info("Not found: ", infExc);
+            logger.info("Not found (" + contextDescription + "): ", infExc);
             return infExc;
           }
           if (exc.response.data && exc.response.data["$type"] && exc.response.data["$type"].indexOf) {
             if (exc.response.data["$type"].indexOf("PPWCode.Vernacular.Persistence.I.Dao.DaoSecurityException") >= 0) {
-              logger.warn("Server reported dynamic security exception.", exc.response.data);
+              logger.warn("Server reported dynamic security exception (" + contextDescription + ").", exc.response.data);
               return new SecurityException({cause: exc.response.data});
             }
             if (exc.response.data["$type"].indexOf("PPWCode.Vernacular.Persistence.I.Dao.ObjectAlreadyChangedException") >= 0) {
-              logger.info("Server reported object already changed.", exc.response.data);
+              logger.info("Server reported object already changed (" + contextDescription + ").", exc.response.data);
               return new ObjectAlreadyChangedException({cause: exc.response.data, newVersion: exc.response.data && exc.response.data.Data && exc.response.data.Data.sender});
             }
           }
           //noinspection MagicNumberJS
           if (exc.response.status === 500) {
-            logger.error("Server reported internal error.");
+            logger.error("Server reported internal error (" + contextDescription + ").");
+          }
+          else {
+            logger.error("Server reported untriaged error (" + contextDescription + ").");
           }
           if (exc.response.status) {
             logger.error("Response status: ", exc.response.status);
@@ -185,7 +188,7 @@ define(["dojo/_base/declare",
             logger.error("Response text: ", exc.response.text);
           }
         }
-        logger.error(exc);
+        logger.error("Unhandled exception (" + contextDescription + "): ", exc);
         return exc;
       },
 
@@ -264,7 +267,7 @@ define(["dojo/_base/declare",
             return self.revive(data, referer, self); // return Promise
           },
           function(err) {
-            throw self._handleException(err); // of the request
+            throw self._handleException(err, "_refresh - GET " + url); // of the request
           }
         );
         var totalPromise = loadPromise.response.then(
@@ -384,7 +387,7 @@ define(["dojo/_base/declare",
             return self.revive(data, referer, self);
           },
           function(err) {
-            throw self._handleException(err); // of the request
+            throw self._handleException(err, "_poAction - " + method + " " + url); // of the request
           }
         );
         // no need to handle errors of revive: they are errors
@@ -536,7 +539,7 @@ define(["dojo/_base/declare",
             },
             function(err) {
               delete self._retrievePromiseCache[retrievePromiseCacheKey];
-              throw self._handleException(err); // of the request
+              throw self._handleException(err, "retrieve - GET " + url); // of the request
             }
           );
           revivePromise.then(lang.hitch(self, self._optionalCacheReporting));
@@ -700,7 +703,7 @@ define(["dojo/_base/declare",
             return po;
           },
           function(err) {
-            throw self._handleException(err); // of the request
+            throw self._handleException(err, "remove - DELETE " + url); // of the request
           }
         );
         return deleteDonePromise;
@@ -864,7 +867,7 @@ define(["dojo/_base/declare",
             return result;
           },
           function(err) {
-            throw self._handleException(err);
+            throw self._handleException(err, "_retrieveToMany - GET " + url);
           }
         );
         return donePromise;
