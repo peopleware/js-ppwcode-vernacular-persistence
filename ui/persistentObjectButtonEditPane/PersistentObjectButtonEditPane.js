@@ -175,6 +175,10 @@ define(["dojo/_base/declare", "dojo/dom-style",
         //   (onChange) to propagate changes from the field to the viewmodel object.
 
         this._btnSave.focus();
+        var pane = this.get("persistentObjectPane");
+        if (pane && pane.preSave) {
+          pane.preSave();
+        }
         this.inherited(arguments);
       },
 
