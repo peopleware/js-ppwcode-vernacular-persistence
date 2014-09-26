@@ -173,6 +173,9 @@ define(["dojo/_base/declare", "dojo/dom-style",
         //   Override: before we save, put the focus on the button, to make sure
         //   that the last edited field has lost focus. This might be necessary
         //   (onChange) to propagate changes from the field to the viewmodel object.
+        //   We also call a preSave function on the child pane in case it exists.
+        //   The preSave is the place to write code that need to be executed right before the save.
+        //   It is the ideal place to update some properties before saving the persistentObject.
 
         this._btnSave.focus();
         var pane = this.get("persistentObjectPane");
