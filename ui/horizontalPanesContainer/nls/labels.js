@@ -19,7 +19,7 @@ define({
     editButton: "Bewerk ... (E)",
     cancelButton: "Annuleer",
     cancelButtonTitle: "Annuleer (ESC)",
-    saveButton: "Bewaar (CTLR/COMMAND-S)",
+    saveButton: "Bewaar (CTRL/COMMAND-S)",
     deleteButton: "Verwijder",
     closeButton: "Sluit (W)",
     busy: "Aan het verzenden"
