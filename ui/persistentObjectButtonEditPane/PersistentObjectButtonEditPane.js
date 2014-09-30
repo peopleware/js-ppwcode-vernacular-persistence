@@ -179,7 +179,7 @@ define(["dojo/_base/declare", "dojo/dom-style",
 
         this._btnSave.focus();
         var pane = this.get("persistentObjectPane");
-        if (pane && pane.preSave) {
+        if (pane && pane.preSave && typeof pane.preSave === "function") {
           pane.preSave();
         }
         this.inherited(arguments);
