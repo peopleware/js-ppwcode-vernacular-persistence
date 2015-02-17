@@ -17,7 +17,7 @@ limitations under the License.
 define(["ppwcode-util-contracts/doh",
         "../polymorphAmdRevive",
         "../_Cache",
-        "ppwcode-util-oddsAndEnds/typeOf", "dojo/promise/Promise", "dojo/Deferred",
+        "ppwcode-util-oddsAndEnds/js", "dojo/promise/Promise", "dojo/Deferred",
         "require"],
   // NOTE: don't require Person; this will ruin the test (reviver must find it itself)
 
@@ -25,7 +25,7 @@ define(["ppwcode-util-contracts/doh",
     function(doh,
              revive,
              _Cache,
-             typeOf, Promise, Deferred,
+             js, Promise, Deferred,
              require) {
 
       var referer = {};
@@ -88,7 +88,7 @@ define(["ppwcode-util-contracts/doh",
           },
           runTest: function() {
             var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
-            doh.is("string", typeOf(result));
+            doh.is("string", js.typeOf(result));
             doh.is(this.parsedJson, result);
             console.log(cache.report());
           },
@@ -104,7 +104,7 @@ define(["ppwcode-util-contracts/doh",
           },
           runTest: function() {
             var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
-            doh.is("string", typeOf(result));
+            doh.is("string", js.typeOf(result));
             doh.is(this.parsedJson, result);
             console.log(cache.report());
           },
@@ -120,7 +120,7 @@ define(["ppwcode-util-contracts/doh",
           },
           runTest: function() {
             var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
-            doh.is("number", typeOf(result));
+            doh.is("number", js.typeOf(result));
             doh.is(this.parsedJson, result);
             console.log(cache.report());
           },
@@ -136,7 +136,7 @@ define(["ppwcode-util-contracts/doh",
           },
           runTest: function() {
             var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
-            doh.is("number", typeOf(result));
+            doh.is("number", js.typeOf(result));
             doh.is(this.parsedJson, result);
             console.log(cache.report());
           },
@@ -152,7 +152,7 @@ define(["ppwcode-util-contracts/doh",
           },
           runTest: function() {
             var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
-            doh.is("number", typeOf(result));
+            doh.is("number", js.typeOf(result));
             doh.is(this.parsedJson, result);
             console.log(cache.report());
           },
@@ -168,7 +168,7 @@ define(["ppwcode-util-contracts/doh",
           },
           runTest: function() {
             var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
-            doh.is("boolean", typeOf(result));
+            doh.is("boolean", js.typeOf(result));
             doh.is(this.parsedJson, result);
             console.log(cache.report());
           },
@@ -184,7 +184,7 @@ define(["ppwcode-util-contracts/doh",
           },
           runTest: function() {
             var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
-            doh.is("boolean", typeOf(result));
+            doh.is("boolean", js.typeOf(result));
             doh.is(this.parsedJson, result);
             console.log(cache.report());
           },
@@ -200,7 +200,7 @@ define(["ppwcode-util-contracts/doh",
           },
           runTest: function() {
             var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
-            doh.is("json", typeOf(result));
+            doh.is("json", js.typeOf(result));
             doh.is(this.parsedJson, result);
             console.log(cache.report());
           },
@@ -216,7 +216,7 @@ define(["ppwcode-util-contracts/doh",
           },
           runTest: function() {
             var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
-            doh.is("math", typeOf(result));
+            doh.is("math", js.typeOf(result));
             doh.is(this.parsedJson, result);
             console.log(cache.report());
           },
@@ -232,7 +232,7 @@ define(["ppwcode-util-contracts/doh",
           },
           runTest: function() {
             var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
-            doh.is("error", typeOf(result));
+            doh.is("error", js.typeOf(result));
             doh.is(this.parsedJson, result);
             console.log(cache.report());
           },
@@ -248,7 +248,7 @@ define(["ppwcode-util-contracts/doh",
           },
           runTest: function() {
             var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
-            doh.is("date", typeOf(result));
+            doh.is("date", js.typeOf(result));
             doh.is(this.parsedJson, result);
             console.log(cache.report());
           },
@@ -264,7 +264,7 @@ define(["ppwcode-util-contracts/doh",
           },
           runTest: function() {
             var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
-            doh.is("regexp", typeOf(result));
+            doh.is("regexp", js.typeOf(result));
             doh.is(this.parsedJson, result);
             console.log(cache.report());
           },
@@ -281,12 +281,12 @@ define(["ppwcode-util-contracts/doh",
           runTest: function() {
             var deferred = new doh.Deferred();
             var resultPromise = revive(this.parsedJson, referer, serverType2Constructor, cache);
-            doh.is("object", typeOf(resultPromise)); // a Promise
+            doh.is("object", js.typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
             resultPromise.then(
               function(result) {
                 try {
-                  doh.is("array", typeOf(result));
+                  doh.is("array", js.typeOf(result));
                   doh.is(0, result.length);
                   console.log(cache.report());
                   deferred.callback(result);
@@ -315,12 +315,12 @@ define(["ppwcode-util-contracts/doh",
             var deferred = new doh.Deferred();
             var parsedJson = this.parsedJson;
             var resultPromise = revive(parsedJson, referer, serverType2Constructor, cache);
-            doh.is("object", typeOf(resultPromise)); // a Promise
+            doh.is("object", js.typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
             resultPromise.then(
               function(result) {
                 try {
-                  doh.is("array", typeOf(result));
+                  doh.is("array", js.typeOf(result));
                   doh.is(9, result.length);
                   doh.is(parsedJson, result);
                   doh.f(parsedJson === result);
@@ -354,12 +354,12 @@ define(["ppwcode-util-contracts/doh",
           runTest: function() {
             var deferred = new doh.Deferred();
             var resultPromise = revive(this.parsedJson, referer, serverType2Constructor, cache);
-            doh.is("object", typeOf(resultPromise)); // a Promise
+            doh.is("object", js.typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
             resultPromise.then(
               function(result) {
                 try {
-                  doh.is("object", typeOf(result));
+                  doh.is("object", js.typeOf(result));
                   doh.is(0, Object.keys(result));
                   console.log(cache.report());
                   deferred.callback(result);
@@ -404,12 +404,12 @@ define(["ppwcode-util-contracts/doh",
             var deferred = new doh.Deferred();
             var parsedJson = this.parsedJson;
             var resultPromise = revive(parsedJson, referer, serverType2Constructor, cache);
-            doh.is("object", typeOf(resultPromise)); // a Promise
+            doh.is("object", js.typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
             resultPromise.then(
               function(result) {
                 try {
-                  doh.is("object", typeOf(result));
+                  doh.is("object", js.typeOf(result));
                   doh.is(7, Object.keys(result).length);
                   doh.is(parsedJson, result);
                   doh.f(parsedJson === result);
@@ -452,12 +452,12 @@ define(["ppwcode-util-contracts/doh",
           runTest: function() {
             var deferred = new doh.Deferred();
             var resultPromise = revive(this.parsedJson, referer, serverType2Constructor, cache);
-            doh.is("object", typeOf(resultPromise)); // a Promise
+            doh.is("object", js.typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
             resultPromise.then(
               function(result) {
                 try {
-                  doh.is("object", typeOf(result));
+                  doh.is("object", js.typeOf(result));
                   doh.t(result.isInstanceOf && Object.getPrototypeOf(result).getTypeDescription() === "PERSON");
                   doh.is(7, result.get("persistenceId"));
                   console.log(cache.report());
@@ -531,13 +531,13 @@ define(["ppwcode-util-contracts/doh",
           runTest: function() {
             var deferred = new doh.Deferred();
             var resultPromise = revive(this.parsedJson, referer, serverType2Constructor, cache);
-            doh.is("object", typeOf(resultPromise)); // a Promise
+            doh.is("object", js.typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
             var parsedJson = this.parsedJson;
             resultPromise.then(
               function(result) {
                 try {
-                  doh.is("array", typeOf(result));
+                  doh.is("array", js.typeOf(result));
                   doh.is(5, result.length);
                   doh.t(result[0] === result[2]);
                   doh.f(result[0] === result[1]);
@@ -640,13 +640,13 @@ define(["ppwcode-util-contracts/doh",
           runTest: function() {
             var deferred = new doh.Deferred();
             var resultPromise = revive(this.parsedJson, referer, serverType2Constructor, cache);
-            doh.is("object", typeOf(resultPromise)); // a Promise
+            doh.is("object", js.typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
             var parsedJson = this.parsedJson;
             resultPromise.then(
               function(result) {
                 try {
-                  doh.is("array", typeOf(result));
+                  doh.is("array", js.typeOf(result));
                   doh.is(4, result.length);
                   doh.t(result[0].parent === result[2].parent);
                   doh.t(result[1].parent === result[3].parent);

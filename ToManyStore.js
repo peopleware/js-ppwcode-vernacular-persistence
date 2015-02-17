@@ -14,8 +14,8 @@
  limitations under the License.
 */
 
-define(["dojo/_base/declare", "./PersistentObjectStore", "dojo/Stateful", "ppwcode-util-oddsAndEnds/typeOf", "ppwcode-util-oddsAndEnds/promise/Arbiter"],
-  function(declare, PersistentObjectStore, Stateful, typeOf, Arbiter) {
+define(["dojo/_base/declare", "./PersistentObjectStore", "dojo/Stateful", "ppwcode-util-oddsAndEnds/js", "ppwcode-util-oddsAndEnds/promise/Arbiter"],
+  function(declare, PersistentObjectStore, Stateful, js, Arbiter) {
 
     var ToManyStore = declare([PersistentObjectStore, Stateful], {
       // summary:
@@ -52,7 +52,7 @@ define(["dojo/_base/declare", "./PersistentObjectStore", "dojo/Stateful", "ppwco
       _arbiter: null,
 
       constructor: function(/*Object*/ kwargs) {
-        this._c_pre(function() {return kwargs && kwargs.serverPropertyName && typeOf(kwargs.serverPropertyName) === "string";});
+        this._c_pre(function() {return kwargs && kwargs.serverPropertyName && js.typeOf(kwargs.serverPropertyName) === "string";});
 
         this.serverPropertyName = kwargs.serverPropertyName;
         this._arbiter = new Arbiter();

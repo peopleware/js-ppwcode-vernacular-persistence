@@ -14,10 +14,10 @@
  limitations under the License.
 */
 
-define(["ppwcode-util-oddsAndEnds/typeOf", "dojo/promise/all",
+define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
         "./PersistentObject", "ppwcode-vernacular-semantics/SemanticObject", "ppwcode-vernacular-semantics/EnumerationValue",
         "dojo/Deferred", "dojo/when", "ppwcode-util-oddsAndEnds/promise/relent", "ppwcode-util-oddsAndEnds/log/logger!"],
-  function(typeOf, all,
+  function(js, all,
            PersistentObject, SemanticObject, EnumerationValue,
            Deferred, when, relent, logger) {
 
@@ -391,7 +391,7 @@ define(["ppwcode-util-oddsAndEnds/typeOf", "dojo/promise/all",
         var poConstructorPromiseOrConstructor = serverType2Constructor(jsonObject["$type"]);
         var processedPromise = when(poConstructorPromiseOrConstructor).then(
           function(Constructor) {
-            if (Constructor && (typeOf(Constructor) !== "function")) {
+            if (Constructor && (js.typeOf(Constructor) !== "function")) {
               throw "ERROR: serverType2Constructor returned something that is not a Function (" +
                 Constructor + ") for type " + jsonObject["$type"];
             }
@@ -434,7 +434,7 @@ define(["ppwcode-util-oddsAndEnds/typeOf", "dojo/promise/all",
           // all falsy's can be returned immediately
           return value; // return Object
         }
-        var valueType = typeOf(value);
+        var valueType = js.typeOf(value);
         if (canUseAsIs(valueType)) {
           // no processing required
           return value; // return Object

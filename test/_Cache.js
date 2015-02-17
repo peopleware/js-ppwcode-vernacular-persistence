@@ -17,11 +17,11 @@ limitations under the License.
 define(["ppwcode-util-contracts/doh",
         "../_Cache",
         "./mock/Person",
-        "ppwcode-util-oddsAndEnds/typeOf"],
+        "ppwcode-util-oddsAndEnds/js"],
   function(doh,
            _Cache,
            Person,
-           typeOf) {
+           js) {
 
 
     var personId1 = 898942;
@@ -179,7 +179,7 @@ define(["ppwcode-util-contracts/doh",
           var subject = new _Cache();
           doh.invars(subject);
           doh.t(subject._data);
-          doh.t(typeOf(subject._data) === "object");
+          doh.t(js.typeOf(subject._data) === "object");
           doh.is(0, Object.keys(subject._data).length);
         }
       ]

@@ -18,13 +18,13 @@ define(["dojo/_base/declare",
         "../../CrudDao",
         "../../UrlBuilder",
         "../../VersionedPersistentObject", "../../AuditableObject", "../../IdNotFoundException",
-        "./Person", "ppwcode-util-oddsAndEnds/typeOf",
+        "./Person", "ppwcode-util-oddsAndEnds/js",
         "dojo/Deferred", "require"],
   function(declare,
            CrudDao,
            UrlBuilder,
            VersionedPersistentObject, AuditableObject, IdNotFoundException,
-           Person, typeOf,
+           Person, js,
            Deferred, require) {
 
     function markDeletedFromServer(cache, p) {
@@ -63,7 +63,7 @@ define(["dojo/_base/declare",
         var self = this;
         self.urlBuilder = new UrlBuilderMock();
         self.revive = function revive(/*Object*/ json, /*Object*/ referer) {
-          if (typeOf(json) === "array") {
+          if (js.typeOf(json) === "array") {
             return json.map(function(e) {
               return revive(e, referer);
             });
