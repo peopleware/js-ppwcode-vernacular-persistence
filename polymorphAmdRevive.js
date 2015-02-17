@@ -24,7 +24,7 @@ define(["ppwcode-util-oddsAndEnds/typeOf", "dojo/promise/all",
     function revive(/*Object*/   graphRoot,
                     /*Object*/   referer,
                     /*Function*/ serverType2Constructor,
-                    /*CrudDao*/  crudDao) {
+                    /*_Cache*/   cache) {
       // summary:
       //   Returns the Promise of a result, or a result, transforming
       //   graphRoot, deep, depth-first, to a graph of instances of classes
@@ -38,7 +38,7 @@ define(["ppwcode-util-oddsAndEnds/typeOf", "dojo/promise/all",
       //   graph, after JSON.parse of a JSON structure, but can deal with more.
       //   This should be a tree (no cross-references, no loops).
       // referer: Object
-      //   The first referer when adding resulting objects to the cache of `crudDao`.
+      //   The first referer when adding resulting objects to the `cache`.
       // serverType2Constructor: Function
       //   String --> Promise<Constructor> | Constructor
       //   Will be called with the value of type-properties of objects in the value-graph,
@@ -51,15 +51,15 @@ define(["ppwcode-util-oddsAndEnds/typeOf", "dojo/promise/all",
       //   that the String value is at fault, or the function cannot deal with the String value.
       //   The function may return null or undefined. In this case, the object for which
       //   type property the call was made, is handled as an untyped object.
-      // crudDao: CrudDao
+      // cache: _Cache
       //   When an object with a "$type"-property is encountered in
       //   the graph of which `graphRoot` is the root, and serverType2Constructor returns a type
       //   that is a subtype of PersistentObject, we first check if an object
-      //   with that `typeDescription` and `persistenceId` exists in the cache of `crudDao`.
+      //   with that `typeDescription` and `persistenceId` exists in the `cache`.
       //   If it does, it is reloaded with the revival of the properties of the graph-object.
       //   If such an object does not exist in the cache, a new object is created with the
       //   Constructor returned by `serverType2Constructor` given the type defined in the object,
-      //   and this new object is added to the cache of `crudDao` with a referer.
+      //   and this new object is added to the `cache` with a referer.
       //   The referer is the given `referer` for the first levels of the graph, but
       //   the found or created PersistentObjects for the revival of their properties.
       //
@@ -101,7 +101,7 @@ define(["ppwcode-util-oddsAndEnds/typeOf", "dojo/promise/all",
       //   of the first encountered occurrence of a object with a given business key in the
       //   given graph is used).
       //
-      //   If we do not find such a Promise, we ask the cache of `crudDao` for an entry with the
+      //   If we do not find such a Promise, we ask the `cache` for an entry with the
       //   business key. If such an object is found, it will be reloaded with a new object
       //   that contains the result of a recursive revive of all the property values of the
       //   original object, where the found object is used as referer. The original referer is
@@ -113,13 +113,13 @@ define(["ppwcode-util-oddsAndEnds/typeOf", "dojo/promise/all",
       //   graph more than once. This does not however deal with loops in the graph
       //   with arrays, or objects that have no peristenceId.
       //
-      //   If no entry is found in the cache of `crudDao` for objects with a "$type"-property
+      //   If no entry is found in the `cache` for objects with a "$type"-property
       //   and a non-null persistenceId for which there is no Promise in the private revive-cache,
       //   we will try to create an object of the given type with the Constructor returned by
       //   `serverType2Constructor`, without arguments. This object will be reloaded with a new object
       //   that contains the result of a recursive revive of all the property values of the
       //   original object, where the new object is used as referer. Once reloaded, the new
-      //   object is added to the cache of `crudDao` with the original referer as referer. We
+      //   object is added to the `cache` with the original referer as referer. We
       //   return a Promise that resolves to the new object once it is reloaded. Before we go
       //   deep, reviving the property values, we add this Promise to the private revive-cache.
       //
@@ -189,7 +189,7 @@ define(["ppwcode-util-oddsAndEnds/typeOf", "dojo/promise/all",
       function reloadPersistentObject(jsonPo, po, referer, debugPrefix) {
         // summary:
         //   Returns Promise that resolves with po, reloaded with jsonPo,
-        //   and tracked in `crudDao` by `referer`.
+        //   and tracked in `cache` by `referer`.
         // jsonPo: Object
         //   A low level, native object. All its properties must be
         //   primitives, other jsonPos, recursively, or Arrays with
@@ -201,7 +201,7 @@ define(["ppwcode-util-oddsAndEnds/typeOf", "dojo/promise/all",
         //   Also used as referer when reviving `jsonPo` property values
         //   recursively.
         // referer: Object
-        //   This object, if given, will track `po` in `crudDao` when the Promise
+        //   This object, if given, will track `po` in `cache` when the Promise
         //   is resolved.
 
         logger.debug(debugPrefix + "reloading object for " + jsonPo["$type"] + "@" + jsonPo.persistenceId);
@@ -213,7 +213,7 @@ define(["ppwcode-util-oddsAndEnds/typeOf", "dojo/promise/all",
             logger.trace(debugPrefix + "reloaded: " + po.toString());
             if (referer) {
               logger.trace(debugPrefix + "tracking: " + po.toString() + " by " + referer);
-              crudDao.track(po, referer);
+              cache.track(po, referer);
             }
             logger.debug(debugPrefix + "ready: " + po.toString());
             return po;
@@ -225,7 +225,7 @@ define(["ppwcode-util-oddsAndEnds/typeOf", "dojo/promise/all",
       function processPersistentObject(jsonPo, referer, Constructor, debugPrefix) {
         // summary:
         //   Returns the Promise of an object. It is either an object from the
-        //   `crudDao` cache, or a new one , reloaded with `jsonPo`. When the Promise resolves,
+        //   `cache`, or a new one , reloaded with `jsonPo`. When the Promise resolves,
         //   referer will be tracking the resolved object.
         // jsonObject: Object
         //   A low level, native object. All its properties must be
@@ -234,7 +234,7 @@ define(["ppwcode-util-oddsAndEnds/typeOf", "dojo/promise/all",
         //   Must conform to the rules of json objects to reload PersistentObjects in general,
         //   and of type jsonObject["$type"] in particular.
         // referer: Object
-        //   This object, if given, will track the resulting object in `crudDao`
+        //   This object, if given, will track the resulting object in `cache`
         //   when the Promise resolves.
 
         if (!jsonPo.persistenceId) {
@@ -255,7 +255,7 @@ define(["ppwcode-util-oddsAndEnds/typeOf", "dojo/promise/all",
           return cachedPromise.then(
             function(po) {
               if (referer) {
-                crudDao.track(po, referer);
+                cache.track(po, referer);
               }
               return po;
             }
@@ -267,7 +267,7 @@ define(["ppwcode-util-oddsAndEnds/typeOf", "dojo/promise/all",
         //   do not store the resulting promise of the deep call, but create a deferred first.
         var deferred = new Deferred();
         promiseCache[key] = deferred.promise;
-        var /*PersistentObject*/ reloadTarget = crudDao.getCachedByTypeAndId(type, id);
+        var /*PersistentObject*/ reloadTarget = cache.getByTypeAndId(type, id);
         if (reloadTarget) {
           logger.debug(debugPrefix + "found in cache: " + key);
           // TODO only reload if dirty or !== persistenceVersion (if there is one); jsonPo needs to be processed deep, though
@@ -364,7 +364,7 @@ define(["ppwcode-util-oddsAndEnds/typeOf", "dojo/promise/all",
         //   Returns the Promise of an object. If the type described in
         //   `jsonObject["$type"]` can be matched to a Constructor, it will be an instance of that type.
         //   If the Constructor is a subtype of PersistentObject, it is either an object from the
-        //   `crudDao` cache, or a new one , reloaded with `jsonObject`. When the Promise resolves,
+        //   `cache`, or a new one , reloaded with `jsonObject`. When the Promise resolves,
         //   referer will be tracking the resolved object.
         //   If the Constructor is not a subtype of PersistentObject, it is a new Object, created
         //   with `jsonObject` as constructor arguments.
@@ -381,7 +381,7 @@ define(["ppwcode-util-oddsAndEnds/typeOf", "dojo/promise/all",
         //   Must conform to the rules of the arguments of a Constructor if jsonObject["$type"]
         //   can be matched to a Constructor that is not a subtype of PersistentObject.
         // referer: Object
-        //   This object, if given, will track the resulting object in `crudDao`
+        //   This object, if given, will track the resulting object in `cache`
         //   when the Promise resolves, if jsonObject["$type"] can be matched
         //   to a Constructor that is a subtype of PersistentObject.
 

@@ -60,7 +60,7 @@ define(["dojo/_base/declare",
       urlBuilder: null,
 
       // revive: Function
-      //   Object x Object x CrudDao -> Object|Promise of Object
+      //   Object x Object -> Object|Promise of Object
       //   Function that returns the Promise of a revived object graph, based on an
       //   object tree (intended to be parsed JSON) of which the objects are to be reloaded
       //   in PersistentObjects, new or found in the cache of CrudDao. Objects are added to the cache
@@ -322,7 +322,7 @@ define(["dojo/_base/declare",
             }
             logger.debug("Retrieved successfully from server: " + data.length + " items");
             // the then Promise resolves with the resolution of the revive Promise, an Array
-            return self.revive(data, referer, self); // return Promise
+            return self.revive(data, referer); // return Promise
           },
           function(err) {
             throw self._handleException(err, "_refresh - GET " + url); // of the request
@@ -442,7 +442,7 @@ define(["dojo/_base/declare",
         var revivePromise = loadPromise.then(
           function(data) {
             logger.debug(method + " success in server: " + data);
-            return self.revive(data, referer, self);
+            return self.revive(data, referer);
           },
           function(err) {
             throw self._handleException(err, "_poAction - " + method + " " + url); // of the request
@@ -592,7 +592,7 @@ define(["dojo/_base/declare",
             var revivePromise = loadPromise.then(
               function(data) {
                 logger.debug("Retrieved successfully from server: " + data);
-                var revived = self.revive(data, referer, self);
+                var revived = self.revive(data, referer);
                 delete self._retrievePromiseCache[retrievePromiseCacheKey];
                 return revived;
               },

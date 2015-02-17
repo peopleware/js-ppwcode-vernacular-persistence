@@ -60,11 +60,12 @@ define(["dojo/_base/declare",
       //   Private. Contains a CacheEntry for each retrieved object, that is not yet released.
 
       constructor: function() {
-        this.urlBuilder = new UrlBuilderMock();
-        this.revive = function revive(/*Object*/ json, /*Object*/ referer, /*_Cache*/ cache) {
+        var self = this;
+        self.urlBuilder = new UrlBuilderMock();
+        self.revive = function revive(/*Object*/ json, /*Object*/ referer) {
           if (typeOf(json) === "array") {
             return json.map(function(e) {
-              return revive(e, referer, cache);
+              return revive(e, referer);
             });
           }
           else {
