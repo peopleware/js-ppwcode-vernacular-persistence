@@ -16,12 +16,12 @@
 
 define(["dojo/_base/declare",
         "ppwcode-util-contracts/_Mixin",
-        "./UrlBuilder", "./_Cache", "./PersistentObject", "./IdNotFoundException", "ppwcode-vernacular-exceptions/SecurityException", "./ObjectAlreadyChangedException",
+        "./UrlBuilder", "./PersistentObject", "./IdNotFoundException", "ppwcode-vernacular-exceptions/SecurityException", "./ObjectAlreadyChangedException",
         "dojo/Deferred", "dojo/request", "dojo/_base/lang", "ppwcode-util-oddsAndEnds/js",
         "dojo/has", "dojo/promise/all", "ppwcode-util-oddsAndEnds/log/logger!", "module"],
   function(declare,
            _ContractMixin,
-           UrlBuilder, _Cache, PersistentObject, IdNotFoundException, SecurityException, ObjectAlreadyChangedException,
+           UrlBuilder, PersistentObject, IdNotFoundException, SecurityException, ObjectAlreadyChangedException,
            Deferred, request, lang, js,
            has, all, logger, module) {
 
@@ -69,12 +69,10 @@ define(["dojo/_base/declare",
       //   As this might require module loading, the result might be a Promise.
       revive: null,
 
-      // _cache: _Cache
+      // cache: _Cache
       //   Hash that stores all tracked objects and stores, using a cacheKey
       //   Contains an entry for each retrieved object, that is not yet released.
-      // tags:
-      //   private
-      _cache: null,
+      cache: null,
 
       // reporting: Boolean
       //   We report the state of the cache each _cacheReportingPeriod.
@@ -89,18 +87,18 @@ define(["dojo/_base/declare",
         }
         this._cacheReportingPeriod = (js.typeOf(value) === "number") ? value : (value ? 0 : -1);
         if (value > 0) {
-          this._cacheReportingTimer = setTimeout(lang.hitch(this._cache, this._cache.report), value);
+          this._cacheReportingTimer = setTimeout(lang.hitch(this.cache, this.cache.report), value);
         }
       },
 
       _optionalCacheReporting: function() {
         if (this._cacheReportingPeriod === 0) {
-          console.info(this._cache.report());
+          console.info(this.cache.report());
         }
       },
 
-      constructor: function() {
-        this._cache = new _Cache();
+      constructor: function(kwargs) {
+        this.cache = (kwargs && kwargs.cache) || null;
         this.setCacheReportingPeriod(has(module.id + "-cacheReporting"));
         this._retrievePromiseCache = {};
         this._queuedRequests = [];
@@ -455,7 +453,7 @@ define(["dojo/_base/declare",
       },
 
       isOperational: function() {
-        return this.urlBuilder && this.revive;
+        return this.urlBuilder && this.revive && this.cache;
       },
 
       getCachedByTypeAndId: function(/*String*/ serverType, /*Number*/ persistenceId) {
@@ -466,7 +464,7 @@ define(["dojo/_base/declare",
         // IDEA subtype of PersistentObject
         this._c_pre(function() {return js.typeOf(persistenceId) === "number";});
 
-        return this._cache.getByTypeAndId(serverType, persistenceId);
+        return this.cache.getByTypeAndId(serverType, persistenceId);
       },
 
       track: function(/*PersistentObject*/ po, /*Any*/ referrer) {
@@ -479,7 +477,7 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
         this._c_pre(function() {return referrer;});
 
-        this._cache.track(po, referrer); // TODO or store? not needed?
+        this.cache.track(po, referrer); // TODO or store? not needed?
         this._optionalCacheReporting();
       },
 
@@ -494,14 +492,14 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
         this._c_pre(function() {return referer;});
 
-        this._cache.stopTracking(po, referer);
+        this.cache.stopTracking(po, referer);
         this._optionalCacheReporting();
       },
 
       stopTrackingAsReferer: function(/*Any*/ referer) {
         this._c_pre(function() {return referer;});
 
-        this._cache.stopTrackingAsReferer(referer);
+        this.cache.stopTrackingAsReferer(referer);
         this._optionalCacheReporting();
       },
 
@@ -718,7 +716,7 @@ define(["dojo/_base/declare",
         var cleanupPromise = deletePromise.then(
           function(data) {
             logger.debug("DELETE success in server: " + data);
-            self._cache.stopTrackingCompletely(po);
+            self.cache.stopTrackingCompletely(po);
             // signal deletion
             po._changeAttrValue("persistenceId", null);
             if (po.get("persistenceVersion")) {
@@ -733,7 +731,7 @@ define(["dojo/_base/declare",
               po._changeAttrValue("lastModifiedAt", null);
             }
             return all(js.getAllKeys(po).
-              filter(function(k) {return po[k] && po[k].isInstanceOf && po[k].isInstanceOf(PersistentObject) && self._cache.get(po[k]);}).
+              filter(function(k) {return po[k] && po[k].isInstanceOf && po[k].isInstanceOf(PersistentObject) && self.cache.get(po[k]);}).
               map(function(k) {
                 // this will update object in cache, but don't add a referer for my sake,
                 // and don't care about IdNotFoundExceptions (delete might have cascaded)

@@ -83,7 +83,7 @@ define(["dojo/_base/declare",
         //   referer.resultJson will be the result, of type referer.PoType
         //   referer.waitMillis is the time the promise will take
 
-        var cachedPo = this._cache.getByTypeAndId(serverType, persistenceId);
+        var cachedPo = this.cache.getByTypeAndId(serverType, persistenceId);
         var p = null;
         if (! cachedPo) {
           p = new referer.PoType();
@@ -107,7 +107,7 @@ define(["dojo/_base/declare",
         else if (referer.idNotFoundException) {
           setTimeout(
             function() {
-              markDeletedFromServer(thisDao._cache, p);
+              markDeletedFromServer(thisDao.cache, p);
               resultDeferred.reject(referer.idNotFoundException);
             },
             referer.waitMillis
@@ -195,7 +195,7 @@ define(["dojo/_base/declare",
           setTimeout(
             function() {
               if (p.semanticException.isInstanceOf && p.semanticException.isInstanceOf(IdNotFoundException)) {
-                markDeletedFromServer(thisDao._cache, p);
+                markDeletedFromServer(thisDao.cache, p);
               }
               resultDeferred.reject(p.semanticException);
             },
@@ -251,7 +251,7 @@ define(["dojo/_base/declare",
         else {
           setTimeout(
             function() {
-              markDeletedFromServer(thisDao._cache, p);
+              markDeletedFromServer(thisDao.cache, p);
               resultDeferred.resolve(p);
             },
             p.waitMillis

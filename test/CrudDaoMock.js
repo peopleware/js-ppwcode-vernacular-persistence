@@ -50,7 +50,7 @@ define(["dojo/_base/declare",
         //   referer.waitMillis is the time the promise will take
 
         var key = cacheKey(declaredClass(PoType), persistenceId);
-        var entry = this._cache[key];
+        var entry = this.cache[key];
         var p = null;
         if (! entry) {
           p = new PoType();
