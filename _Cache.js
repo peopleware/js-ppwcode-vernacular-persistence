@@ -408,7 +408,7 @@ define(["dojo/_base/declare",
 
       report: function() {
         var self = this;
-        var pNames = Object.keys(this._data);
+        var pNames = Object.keys(self._data);
         var minCreatedAt = pNames.reduce(
           function(acc, pn) {
             return acc && acc < self._data[pn].createdAt ? acc : self._data[pn].createdAt;
