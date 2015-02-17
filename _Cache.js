@@ -406,6 +406,15 @@ define(["dojo/_base/declare",
         }
       },
 
+      forEach: function(callback, thisArg) {
+        var self = this;
+        var pNames = Object.keys(self._data);
+        var entries = pNames.map(function(pn) {
+          return self._data[pn].payload;
+        });
+        entries.forEach(callback, thisArg);
+      },
+
       report: function() {
         var self = this;
         var pNames = Object.keys(self._data);
