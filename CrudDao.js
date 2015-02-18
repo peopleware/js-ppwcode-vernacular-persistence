@@ -97,8 +97,17 @@ define(["dojo/_base/declare",
         }
       },
 
+      _copyKwargsProperties: function(kwargs, propertyNames) {
+        var self = this;
+        if (kwargs) {
+          propertyNames.
+            filter(function(pName) {return kwargs[pName];}).
+            forEach(function(pName) {self[pName] = kwargs[pName];});
+        }
+      },
+
       constructor: function(kwargs) {
-        this.cache = (kwargs && kwargs.cache) || null;
+        this._copyKwargsProperties(kwargs, ["urlBuilder", "revive", "cache", "replacer", "timeout"]);
         this.setCacheReportingPeriod(has(module.id + "-cacheReporting"));
         this._retrievePromiseCache = {};
         this._queuedRequests = [];
