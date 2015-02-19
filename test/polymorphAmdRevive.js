@@ -16,16 +16,16 @@ limitations under the License.
 
 define(["ppwcode-util-contracts/doh",
         "../polymorphAmdRevive",
-        "../CrudDao",
-        "ppwcode-util-oddsAndEnds/typeOf", "dojo/promise/Promise", "dojo/Deferred",
+        "../_Cache",
+        "ppwcode-util-oddsAndEnds/js", "dojo/promise/Promise", "dojo/Deferred",
         "require"],
   // NOTE: don't require Person; this will ruin the test (reviver must find it itself)
 
 
     function(doh,
              revive,
-             CrudDao,
-             typeOf, Promise, Deferred,
+             _Cache,
+             js, Promise, Deferred,
              require) {
 
       var referer = {};
@@ -47,11 +47,7 @@ define(["ppwcode-util-contracts/doh",
         });
         return deferred.promise;
       };
-      var crudDao = new CrudDao();
-      crudDao.revive = function(data, referer, crudDao) {
-        return revive(data, referer, serverType2Constructor, crudDao);
-      };
-//      crudDao.urlBuilder = ???; not needed for test
+      var cache = new _Cache();
 
       doh.register("ppwcode vernacular semantics revive", [
 
@@ -61,9 +57,9 @@ define(["ppwcode-util-contracts/doh",
             this.parsedJson = undefined;
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
+            var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
             doh.is(undefined, result);
-            console.log(crudDao._cache.report());
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -76,9 +72,9 @@ define(["ppwcode-util-contracts/doh",
             this.parsedJson = null;
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
+            var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
             doh.is(null, result);
-            console.log(crudDao._cache.report());
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -91,10 +87,10 @@ define(["ppwcode-util-contracts/doh",
             this.parsedJson = "This is a string";
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
-            doh.is("string", typeOf(result));
+            var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
+            doh.is("string", js.typeOf(result));
             doh.is(this.parsedJson, result);
-            console.log(crudDao._cache.report());
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -107,10 +103,10 @@ define(["ppwcode-util-contracts/doh",
             this.parsedJson = "";
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
-            doh.is("string", typeOf(result));
+            var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
+            doh.is("string", js.typeOf(result));
             doh.is(this.parsedJson, result);
-            console.log(crudDao._cache.report());
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -123,10 +119,10 @@ define(["ppwcode-util-contracts/doh",
             this.parsedJson = 5;
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
-            doh.is("number", typeOf(result));
+            var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
+            doh.is("number", js.typeOf(result));
             doh.is(this.parsedJson, result);
-            console.log(crudDao._cache.report());
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -139,10 +135,10 @@ define(["ppwcode-util-contracts/doh",
             this.parsedJson = 0;
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
-            doh.is("number", typeOf(result));
+            var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
+            doh.is("number", js.typeOf(result));
             doh.is(this.parsedJson, result);
-            console.log(crudDao._cache.report());
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -155,10 +151,10 @@ define(["ppwcode-util-contracts/doh",
             this.parsedJson = -5.4;
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
-            doh.is("number", typeOf(result));
+            var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
+            doh.is("number", js.typeOf(result));
             doh.is(this.parsedJson, result);
-            console.log(crudDao._cache.report());
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -171,10 +167,10 @@ define(["ppwcode-util-contracts/doh",
             this.parsedJson = true;
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
-            doh.is("boolean", typeOf(result));
+            var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
+            doh.is("boolean", js.typeOf(result));
             doh.is(this.parsedJson, result);
-            console.log(crudDao._cache.report());
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -187,10 +183,10 @@ define(["ppwcode-util-contracts/doh",
             this.parsedJson = false;
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
-            doh.is("boolean", typeOf(result));
+            var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
+            doh.is("boolean", js.typeOf(result));
             doh.is(this.parsedJson, result);
-            console.log(crudDao._cache.report());
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -203,10 +199,10 @@ define(["ppwcode-util-contracts/doh",
             this.parsedJson = JSON;
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
-            doh.is("json", typeOf(result));
+            var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
+            doh.is("json", js.typeOf(result));
             doh.is(this.parsedJson, result);
-            console.log(crudDao._cache.report());
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -219,10 +215,10 @@ define(["ppwcode-util-contracts/doh",
             this.parsedJson = Math;
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
-            doh.is("math", typeOf(result));
+            var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
+            doh.is("math", js.typeOf(result));
             doh.is(this.parsedJson, result);
-            console.log(crudDao._cache.report());
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -235,10 +231,10 @@ define(["ppwcode-util-contracts/doh",
             this.parsedJson = new ReferenceError();
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
-            doh.is("error", typeOf(result));
+            var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
+            doh.is("error", js.typeOf(result));
             doh.is(this.parsedJson, result);
-            console.log(crudDao._cache.report());
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -251,10 +247,10 @@ define(["ppwcode-util-contracts/doh",
             this.parsedJson = new Date();
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
-            doh.is("date", typeOf(result));
+            var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
+            doh.is("date", js.typeOf(result));
             doh.is(this.parsedJson, result);
-            console.log(crudDao._cache.report());
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -267,10 +263,10 @@ define(["ppwcode-util-contracts/doh",
             this.parsedJson = /abc/g;
           },
           runTest: function() {
-            var result = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
-            doh.is("regexp", typeOf(result));
+            var result = revive(this.parsedJson, referer, serverType2Constructor, cache);
+            doh.is("regexp", js.typeOf(result));
             doh.is(this.parsedJson, result);
-            console.log(crudDao._cache.report());
+            console.log(cache.report());
           },
           tearDown: function() {
             this.parsedJson = null;
@@ -284,15 +280,15 @@ define(["ppwcode-util-contracts/doh",
           },
           runTest: function() {
             var deferred = new doh.Deferred();
-            var resultPromise = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
-            doh.is("object", typeOf(resultPromise)); // a Promise
+            var resultPromise = revive(this.parsedJson, referer, serverType2Constructor, cache);
+            doh.is("object", js.typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
             resultPromise.then(
               function(result) {
                 try {
-                  doh.is("array", typeOf(result));
+                  doh.is("array", js.typeOf(result));
                   doh.is(0, result.length);
-                  console.log(crudDao._cache.report());
+                  console.log(cache.report());
                   deferred.callback(result);
                 }
                 catch(e) {
@@ -318,13 +314,13 @@ define(["ppwcode-util-contracts/doh",
           runTest: function() {
             var deferred = new doh.Deferred();
             var parsedJson = this.parsedJson;
-            var resultPromise = revive(parsedJson, referer, serverType2Constructor, crudDao);
-            doh.is("object", typeOf(resultPromise)); // a Promise
+            var resultPromise = revive(parsedJson, referer, serverType2Constructor, cache);
+            doh.is("object", js.typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
             resultPromise.then(
               function(result) {
                 try {
-                  doh.is("array", typeOf(result));
+                  doh.is("array", js.typeOf(result));
                   doh.is(9, result.length);
                   doh.is(parsedJson, result);
                   doh.f(parsedJson === result);
@@ -332,7 +328,7 @@ define(["ppwcode-util-contracts/doh",
                   doh.f(parsedJson[8] === result[8]);
                   doh.f(parsedJson[8][4] === result[8][4]);
                   doh.f(parsedJson[8][4][1] === result[8][4][1]);
-                  console.log(crudDao._cache.report());
+                  console.log(cache.report());
                   deferred.callback(result);
                 }
                 catch(e) {
@@ -357,15 +353,15 @@ define(["ppwcode-util-contracts/doh",
           },
           runTest: function() {
             var deferred = new doh.Deferred();
-            var resultPromise = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
-            doh.is("object", typeOf(resultPromise)); // a Promise
+            var resultPromise = revive(this.parsedJson, referer, serverType2Constructor, cache);
+            doh.is("object", js.typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
             resultPromise.then(
               function(result) {
                 try {
-                  doh.is("object", typeOf(result));
+                  doh.is("object", js.typeOf(result));
                   doh.is(0, Object.keys(result));
-                  console.log(crudDao._cache.report());
+                  console.log(cache.report());
                   deferred.callback(result);
                 }
                 catch(e) {
@@ -407,13 +403,13 @@ define(["ppwcode-util-contracts/doh",
           runTest: function() {
             var deferred = new doh.Deferred();
             var parsedJson = this.parsedJson;
-            var resultPromise = revive(parsedJson, referer, serverType2Constructor, crudDao);
-            doh.is("object", typeOf(resultPromise)); // a Promise
+            var resultPromise = revive(parsedJson, referer, serverType2Constructor, cache);
+            doh.is("object", js.typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
             resultPromise.then(
               function(result) {
                 try {
-                  doh.is("object", typeOf(result));
+                  doh.is("object", js.typeOf(result));
                   doh.is(7, Object.keys(result).length);
                   doh.is(parsedJson, result);
                   doh.f(parsedJson === result);
@@ -422,7 +418,7 @@ define(["ppwcode-util-contracts/doh",
                   doh.f(parsedJson.nestedObject2.pDate === result.nestedObject2.pDate);
                   doh.f(parsedJson.nestedObject2.nestedObject === result.nestedObject2.nestedObject);
                   doh.f(parsedJson.nestedObject2.nestedObject.arrayProp === result.nestedObject2.nestedObject.arrayProp);
-                  console.log(crudDao._cache.report());
+                  console.log(cache.report());
                   deferred.callback(result);
                 }
                 catch(e) {
@@ -455,16 +451,16 @@ define(["ppwcode-util-contracts/doh",
           },
           runTest: function() {
             var deferred = new doh.Deferred();
-            var resultPromise = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
-            doh.is("object", typeOf(resultPromise)); // a Promise
+            var resultPromise = revive(this.parsedJson, referer, serverType2Constructor, cache);
+            doh.is("object", js.typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
             resultPromise.then(
               function(result) {
                 try {
-                  doh.is("object", typeOf(result));
+                  doh.is("object", js.typeOf(result));
                   doh.t(result.isInstanceOf && Object.getPrototypeOf(result).getTypeDescription() === "PERSON");
                   doh.is(7, result.get("persistenceId"));
-                  console.log(crudDao._cache.report());
+                  console.log(cache.report());
                   deferred.callback(result);
                 }
                 catch(e) {
@@ -534,19 +530,19 @@ define(["ppwcode-util-contracts/doh",
           },
           runTest: function() {
             var deferred = new doh.Deferred();
-            var resultPromise = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
-            doh.is("object", typeOf(resultPromise)); // a Promise
+            var resultPromise = revive(this.parsedJson, referer, serverType2Constructor, cache);
+            doh.is("object", js.typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
             var parsedJson = this.parsedJson;
             resultPromise.then(
               function(result) {
                 try {
-                  doh.is("array", typeOf(result));
+                  doh.is("array", js.typeOf(result));
                   doh.is(5, result.length);
                   doh.t(result[0] === result[2]);
                   doh.f(result[0] === result[1]);
                   doh.f(result[0] === result[3]);
-                  console.log(crudDao._cache.report());
+                  console.log(cache.report());
                   deferred.callback(result);
                 }
                 catch(e) {
@@ -643,20 +639,20 @@ define(["ppwcode-util-contracts/doh",
           },
           runTest: function() {
             var deferred = new doh.Deferred();
-            var resultPromise = revive(this.parsedJson, referer, serverType2Constructor, crudDao);
-            doh.is("object", typeOf(resultPromise)); // a Promise
+            var resultPromise = revive(this.parsedJson, referer, serverType2Constructor, cache);
+            doh.is("object", js.typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
             var parsedJson = this.parsedJson;
             resultPromise.then(
               function(result) {
                 try {
-                  doh.is("array", typeOf(result));
+                  doh.is("array", js.typeOf(result));
                   doh.is(4, result.length);
                   doh.t(result[0].parent === result[2].parent);
                   doh.t(result[1].parent === result[3].parent);
                   doh.f(result[0].parent === result[1].parent);
                   doh.f(result[2].parent === result[3].parent);
-                  console.log(crudDao._cache.report());
+                  console.log(cache.report());
                   deferred.callback(result);
                 }
                 catch(e) {

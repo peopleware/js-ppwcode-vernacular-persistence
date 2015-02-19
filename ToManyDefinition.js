@@ -14,8 +14,8 @@
  limitations under the License.
 */
 
-define(["dojo/_base/declare", "ppwcode-util-contracts/_Mixin", "ppwcode-util-oddsAndEnds/typeOf"],
-  function(declare, _ContractsMixin, typeOf) {
+define(["dojo/_base/declare", "ppwcode-util-contracts/_Mixin", "ppwcode-util-oddsAndEnds/js"],
+  function(declare, _ContractsMixin, js) {
 
     var ToManyDefinition = declare([_ContractsMixin], {
       // summary:
@@ -39,7 +39,7 @@ define(["dojo/_base/declare", "ppwcode-util-contracts/_Mixin", "ppwcode-util-odd
       serverPropertyName: null,
 
       constructor: function(/*String*/ serverPropertyName) {
-        this._c_pre(function() {return serverPropertyName && typeOf(serverPropertyName) === "string";});
+        this._c_pre(function() {return serverPropertyName && js.typeOf(serverPropertyName) === "string";});
 
         this.serverPropertyName = serverPropertyName;
       },

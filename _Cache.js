@@ -17,11 +17,11 @@
 define(["dojo/_base/declare",
         "ppwcode-util-contracts/_Mixin",
         "./PersistentObject", "ppwcode-util-collections/ArraySet",
-        "ppwcode-util-oddsAndEnds/typeOf", "ppwcode-util-oddsAndEnds/log/logger!"],
+        "ppwcode-util-oddsAndEnds/js", "ppwcode-util-oddsAndEnds/log/logger!"],
   function(declare,
            _ContractMixin,
            PersistentObject, Set,
-           typeOf, logger) {
+           js, logger) {
 
     var _Entry = declare([_ContractMixin], {
       // summary:
@@ -172,7 +172,7 @@ define(["dojo/_base/declare",
       },
 
       _track: function (/*String*/ key, /*PersistentObject*/ po, /*Object*/ referer) {
-        this._c_pre(function() {return typeOf(key) === "string";});
+        this._c_pre(function() {return js.typeOf(key) === "string";});
         this._c_pre(function() {return po;});
         this._c_pre(function() {return referer;});
 
@@ -212,7 +212,7 @@ define(["dojo/_base/declare",
         //   from all other entries (recursively).
         //   If referer is a PersistentObject, all its LazyToMany property values
         //   are also removed as referer from all other entries (recursively).
-        this._c_pre(function() {return typeOf(key) === "string";});
+        this._c_pre(function() {return js.typeOf(key) === "string";});
         this._c_pre(function() {return referer;});
 
         var self = this;
@@ -261,9 +261,9 @@ define(["dojo/_base/declare",
         // summary:
         //   gets a cached PersistentObject by serverType and id
         //   returns undefined or null if there is no such entry
-        this._c_pre(function() {return typeOf(serverType) === "string";});
+        this._c_pre(function() {return js.typeOf(serverType) === "string";});
         // IDEA subtype of PersistentObject
-        this._c_pre(function() {return typeOf(persistenceId) === "number";});
+        this._c_pre(function() {return js.typeOf(persistenceId) === "number";});
 
         // We have a crossReference. We need to test keys for serverType and all its subtypes
         // (that we know of).
@@ -406,9 +406,18 @@ define(["dojo/_base/declare",
         }
       },
 
+      forEach: function(callback, thisArg) {
+        var self = this;
+        var pNames = Object.keys(self._data);
+        var entries = pNames.map(function(pn) {
+          return self._data[pn].payload;
+        });
+        entries.forEach(callback, thisArg);
+      },
+
       report: function() {
         var self = this;
-        var pNames = Object.keys(this._data);
+        var pNames = Object.keys(self._data);
         var minCreatedAt = pNames.reduce(
           function(acc, pn) {
             return acc && acc < self._data[pn].createdAt ? acc : self._data[pn].createdAt;

@@ -18,13 +18,13 @@ define(["dojo/_base/declare",
         "../../CrudDao",
         "../../UrlBuilder",
         "../../VersionedPersistentObject", "../../AuditableObject", "../../IdNotFoundException",
-        "./Person", "ppwcode-util-oddsAndEnds/typeOf",
+        "./Person", "ppwcode-util-oddsAndEnds/js",
         "dojo/Deferred", "require"],
   function(declare,
            CrudDao,
            UrlBuilder,
            VersionedPersistentObject, AuditableObject, IdNotFoundException,
-           Person, typeOf,
+           Person, js,
            Deferred, require) {
 
     function markDeletedFromServer(cache, p) {
@@ -60,11 +60,12 @@ define(["dojo/_base/declare",
       //   Private. Contains a CacheEntry for each retrieved object, that is not yet released.
 
       constructor: function() {
-        this.urlBuilder = new UrlBuilderMock();
-        this.revive = function revive(/*Object*/ json, /*Object*/ referer, /*_Cache*/ cache) {
-          if (typeOf(json) === "array") {
+        var self = this;
+        self.urlBuilder = new UrlBuilderMock();
+        self.revive = function revive(/*Object*/ json, /*Object*/ referer) {
+          if (js.typeOf(json) === "array") {
             return json.map(function(e) {
-              return revive(e, referer, cache);
+              return revive(e, referer);
             });
           }
           else {
@@ -82,7 +83,7 @@ define(["dojo/_base/declare",
         //   referer.resultJson will be the result, of type referer.PoType
         //   referer.waitMillis is the time the promise will take
 
-        var cachedPo = this._cache.getByTypeAndId(serverType, persistenceId);
+        var cachedPo = this.cache.getByTypeAndId(serverType, persistenceId);
         var p = null;
         if (! cachedPo) {
           p = new referer.PoType();
@@ -106,7 +107,7 @@ define(["dojo/_base/declare",
         else if (referer.idNotFoundException) {
           setTimeout(
             function() {
-              markDeletedFromServer(thisDao._cache, p);
+              markDeletedFromServer(thisDao.cache, p);
               resultDeferred.reject(referer.idNotFoundException);
             },
             referer.waitMillis
@@ -194,7 +195,7 @@ define(["dojo/_base/declare",
           setTimeout(
             function() {
               if (p.semanticException.isInstanceOf && p.semanticException.isInstanceOf(IdNotFoundException)) {
-                markDeletedFromServer(thisDao._cache, p);
+                markDeletedFromServer(thisDao.cache, p);
               }
               resultDeferred.reject(p.semanticException);
             },
@@ -250,7 +251,7 @@ define(["dojo/_base/declare",
         else {
           setTimeout(
             function() {
-              markDeletedFromServer(thisDao._cache, p);
+              markDeletedFromServer(thisDao.cache, p);
               resultDeferred.resolve(p);
             },
             p.waitMillis

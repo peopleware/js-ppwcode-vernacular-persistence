@@ -14,8 +14,8 @@
  limitations under the License.
 */
 
-define(["dojo/_base/declare", "ppwcode-util-contracts/_Mixin", "ppwcode-util-oddsAndEnds/typeOf", "dojo/_base/lang"],
-    function(declare, _ContractMixin, typeOf, lang) {
+define(["dojo/_base/declare", "ppwcode-util-contracts/_Mixin", "ppwcode-util-oddsAndEnds/js", "dojo/_base/lang"],
+    function(declare, _ContractMixin, js, lang) {
 
       var UrlBuilder = declare([_ContractMixin], {
         // summary:
@@ -28,7 +28,7 @@ define(["dojo/_base/declare", "ppwcode-util-contracts/_Mixin", "ppwcode-util-odd
         ],
 
         get: function(/*String*/ method) {
-          this._c_pre(function() {return typeOf(method) === "string";});
+          this._c_pre(function() {return js.typeOf(method) === "string";});
 
           switch (method) {
             case "GET":
@@ -55,8 +55,8 @@ define(["dojo/_base/declare", "ppwcode-util-contracts/_Mixin", "ppwcode-util-odd
           //   The semantics of a search without a specific `serverType`, with
           //   or without a `query`, is open.
           //   The semantics of the `query`, is open.
-          this._c_pre(function() {return !serverType || typeOf(serverType) === "string";});
-          this._c_pre(function() {return !query || typeOf(query) === "object";});
+          this._c_pre(function() {return !serverType || js.typeOf(serverType) === "string";});
+          this._c_pre(function() {return !query || js.typeOf(query) === "object";});
 
           this._c_ABSTRACT();
         },
@@ -64,9 +64,9 @@ define(["dojo/_base/declare", "ppwcode-util-contracts/_Mixin", "ppwcode-util-odd
         toMany: function(serverType, id, serverPropertyName) {
           // summary:
           //   Returns a URL to retrieve all objects of a to-many property of an object.
-          this._c_pre(function() {return typeOf(serverType) === "string";});
-          this._c_pre(function() {return typeOf(id) === "number";});
-          this._c_pre(function() {return typeOf(serverPropertyName) === "string";});
+          this._c_pre(function() {return js.typeOf(serverType) === "string";});
+          this._c_pre(function() {return js.typeOf(id) === "number";});
+          this._c_pre(function() {return js.typeOf(serverPropertyName) === "string";});
 
           this._c_ABSTRACT();
         },
@@ -74,8 +74,8 @@ define(["dojo/_base/declare", "ppwcode-util-contracts/_Mixin", "ppwcode-util-odd
         retrieve: function(serverType, id) {
           // summary:
           //   Returns a URL to retrieve an object of the given `serverType` with the given id.
-          this._c_pre(function() {return typeOf(serverType) === "string";});
-          this._c_pre(function() {return typeOf(id) === "number";});
+          this._c_pre(function() {return js.typeOf(serverType) === "string";});
+          this._c_pre(function() {return js.typeOf(id) === "number";});
 
           this._c_ABSTRACT();
         },
@@ -83,7 +83,7 @@ define(["dojo/_base/declare", "ppwcode-util-contracts/_Mixin", "ppwcode-util-odd
         create: function(serverType) {
           // summary:
           //   Returns a URL to create an object of the given `serverType`.
-          this._c_pre(function() {return typeOf(serverType) === "string";});
+          this._c_pre(function() {return js.typeOf(serverType) === "string";});
 
           this._c_ABSTRACT();
         },
@@ -91,8 +91,8 @@ define(["dojo/_base/declare", "ppwcode-util-contracts/_Mixin", "ppwcode-util-odd
         update: function(serverType, id) {
           // summary:
           //   Returns a URL to update an object of the given `serverType`.
-          this._c_pre(function() {return typeOf(serverType) === "string";});
-          this._c_pre(function() {return typeOf(id) === "number";});
+          this._c_pre(function() {return js.typeOf(serverType) === "string";});
+          this._c_pre(function() {return js.typeOf(id) === "number";});
 
           this._c_ABSTRACT();
         },
@@ -102,8 +102,8 @@ define(["dojo/_base/declare", "ppwcode-util-contracts/_Mixin", "ppwcode-util-odd
           //   Returns a URL to delete an object of the given `serverType`.
           //   Note: cannot call this "delete", because IE9 is annoying
 
-          this._c_pre(function() {return typeOf(serverType) === "string";});
-          this._c_pre(function() {return typeOf(id) === "number";});
+          this._c_pre(function() {return js.typeOf(serverType) === "string";});
+          this._c_pre(function() {return js.typeOf(id) === "number";});
 
           this._c_ABSTRACT();
         },
@@ -112,7 +112,7 @@ define(["dojo/_base/declare", "ppwcode-util-contracts/_Mixin", "ppwcode-util-odd
           // summary:
           //   Returns a URL to get all the persistenceIds that exist for the given
           //   `serverType`.
-          this._c_pre(function() {return typeOf(serverType) === "string";});
+          this._c_pre(function() {return js.typeOf(serverType) === "string";});
 
           this._c_ABSTRACT();
         }

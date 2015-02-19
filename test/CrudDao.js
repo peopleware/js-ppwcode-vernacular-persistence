@@ -14,12 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-define(["ppwcode-util-contracts/doh", "./mock/CrudDao1",
+define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
         "../PersistentObject", "../IdNotFoundException", "dojo/_base/declare"],
-    function(doh, CrudDaoMock, PersistentObject, IdNotFoundException, declare) {
+    function(doh, CrudDaoMock, _Cache, PersistentObject, IdNotFoundException, declare) {
 
       var subjectSetup = function() {
-        var subject = new CrudDaoMock();
+        var subject = new CrudDaoMock({cache: new _Cache()});
         this.subject = subject;
       };
 
@@ -54,8 +54,8 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1",
       }
 
       function getCacheEntry(crudDao, po) {
-        var key = crudDao._cache._lookupKeyOf(po);
-        return crudDao._cache._data[key];
+        var key = crudDao.cache._lookupKeyOf(po);
+        return crudDao.cache._data[key];
       }
 
       function testCreate(subject, waitMillis, semanticException, error) {
@@ -481,7 +481,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1",
       doh.register("CrudDao (Mock)", [
 
         function testConstructor() {
-          var subject = new CrudDaoMock();
+          var subject = new CrudDaoMock({cache: new _Cache()});
           doh.invars(subject);
         },
 
