@@ -70,11 +70,12 @@
       function(parser, AuditableObject, AuditableInfoPane, registry) {
 
         var parsePromise = parser.parse();
-        var maintenant = new Date();
-        var earlier = new Date(maintenant.getTime() - 7200000);
+        var now = new Date();
+        //noinspection MagicNumberJS
+        var earlier = new Date(now.getTime() - 7200000);
         parsePromise.then(function() {
           var json = {createdAt: earlier, createdBy: "Jos2", lastModifiedAt: earlier, lastModifiedBy: "Mieke"};
-          window.json2 = {createdAt: earlier, createdBy: "Jos2", lastModifiedAt: maintenant, lastModifiedBy: "NEW NAME"};
+          window.json2 = {createdAt: earlier, createdBy: "Jos2", lastModifiedAt: now, lastModifiedBy: "NEW NAME"};
 
           function createAO() {
             var ao = new AuditableObject();

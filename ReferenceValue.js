@@ -20,7 +20,7 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/Value", "module"],
       var ReferenceValue = declare([Value], {
         // summary:
         //   Values that represent a reference to a `PersistentObject`.
-        //   They contain a `referenceType`, i.e., the constructor of the PeristentObject subclass
+        //   They contain a `referenceType`, i.e., the constructor of the PersistentObject subclass
         //   that is referenced, and a `referenceId`, i.e., the `persistenceId` of the referenced object.
         // description:
         //   `referenceType` does not have to be a concrete type

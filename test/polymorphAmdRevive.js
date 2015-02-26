@@ -309,7 +309,7 @@ define(["ppwcode-util-contracts/doh",
         {
           name: "Array (mixed content)",
           setUp: function() {
-            this.parsedJson = [1, "a", Math, JSON, { name: "a NAme"}, [], null, undefined, [4, 6, 88, "a", [24, { another: "ANother"}]]];
+            this.parsedJson = [1, "a", Math, JSON, { name: "a NAme"}, [], null, undefined, [4, 6, 88, "a", [24, { another: "Another"}]]];
           },
           runTest: function() {
             var deferred = new doh.Deferred();
@@ -387,7 +387,7 @@ define(["ppwcode-util-contracts/doh",
               prop1: 1,
               propMath: Math,
               arrayPropEmpty: [],
-              arrayProp: [1, "a", Math, JSON, { name: "a NAme"}, [], null, undefined, [4, 6, 88, "a", [24, { another: "ANother"}]]],
+              arrayProp: [1, "a", Math, JSON, { name: "a NAme"}, [], null, undefined, [4, 6, 88, "a", [24, { another: "Another"}]]],
               nestedObject: {},
               nestedObject2: {
                 pA: "A",
@@ -395,7 +395,7 @@ define(["ppwcode-util-contracts/doh",
                 pDate: new Date(),
                 nestedObject: {
                   nestedAlpha: "alpha",
-                  arrayProp: [1, "a", Math, JSON, { name: "a NAme"}, [], null, undefined, [4, 6, 88, "a", [24, { another: "ANother"}]]]
+                  arrayProp: [1, "a", Math, JSON, { name: "a NAme"}, [], null, undefined, [4, 6, 88, "a", [24, { another: "Another"}]]]
                 }
               }
             };

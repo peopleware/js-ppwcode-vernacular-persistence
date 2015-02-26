@@ -237,7 +237,7 @@ define(["dojo/_base/declare",
 //        if (entry) {
 //          entry.removeReferer(referer);
 //          setTimeout(
-//            function() { // wait a moment; we might need the data againg in a second; we can take our time to clean the cache
+//            function() { // wait a moment; we might need the data again in a second; we can take our time to clean the cache
 //              var entry = self._data[key]; // again; entry might have been removed already
 //              if (entry && entry.getNrOfReferers() <= 0) {
 //                delete self._data[key];

@@ -20,7 +20,7 @@ define({
     address: "Adress",
     street: "Street + nr",
     zip: "Zip",
-    city: "Muincipality",
+    city: "Municipality",
     tel: "Tel."
   }
 });

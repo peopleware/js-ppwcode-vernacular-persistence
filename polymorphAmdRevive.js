@@ -425,7 +425,7 @@ define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
       }
 
       function reviveBackTrack(value, /*Object*/ referer, debugPrefix) {
-        // decription:
+        // description:
         //    inner method in revive, because all calls of this method
         //    inside one revive call need to share the cache
 

@@ -138,7 +138,7 @@ define(["dojo/_base/declare",
             resultDeferred.resolve(p);
           };
         }
-        if(p.waitMillis) { // TODO: we will alway have a delay
+        if(p.waitMillis) { // TODO: we will always have a delay
           setTimeout(action, p.waitMillis);
         }
         else {
@@ -190,7 +190,7 @@ define(["dojo/_base/declare",
             resultDeferred.resolve(p);
           };
         }
-        if(p.waitMillis) { // TODO: we will alway have a delay
+        if(p.waitMillis) { // TODO: we will always have a delay
           setTimeout(action, p.waitMillis);
         }
         else {
@@ -206,7 +206,7 @@ define(["dojo/_base/declare",
       remove: function(/*PersistentObject*/ p) {
         var thisDao = this;
         var resultDeferred = new Deferred();
-        // TODO: we will alway have a delay
+        // TODO: we will always have a delay
         if (p.error) {
           setTimeout(function() {
               var PoType = Object.getPrototypeOf(p).constructor;

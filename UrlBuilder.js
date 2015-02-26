@@ -20,7 +20,7 @@ define(["dojo/_base/declare", "ppwcode-util-contracts/_Mixin", "ppwcode-util-odd
       var UrlBuilder = declare([_ContractMixin], {
         // summary:
         //   An interface for which you have to provide an implementation.
-        //   Instances, when operational, return url's for CRUD functions,
+        //   Instances, when operational, return urls for CRUD functions,
         //   for specific objects.
         //   How they do it, is up to the implementation.
 

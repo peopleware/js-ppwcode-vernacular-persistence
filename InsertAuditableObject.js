@@ -77,7 +77,7 @@ define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js
       //      When server and client are in a different timezone, when the JSON contains timezone information,
       //      the string is interpreted in the timezone of the server. When the JSON does not contain
       //      timezone information, the string is interpreted in the timezone of the client.
-      //      For webapplications, this in unacceptable.
+      //      For web applications, this in unacceptable.
       // MUDO for now we work around this by NOT SENDING THE DATA TO THE SERVER IN THE FIRST PLACE
       //      that was another workaround; the effect of this is that we will not see this data after update
       // MUDO but it is obviously wrong

@@ -57,7 +57,7 @@ define(["ppwcode-util-contracts/doh",
     }
 
     var aPersistentObject = createPerson(99999);
-    var toManyPropertyName = "TOMANY";
+    var toManyPropertyName = "TO_MANY";
 
     function generateTests(what, payloadCreator, track, getAndTest) {
       return [
@@ -98,7 +98,7 @@ define(["ppwcode-util-contracts/doh",
         },
 
         {
-          name: what + " track quatro",
+          name: what + " track four",
           setUp: function() {
             this.payload = payloadCreator();
             this.subject = new _Cache();
