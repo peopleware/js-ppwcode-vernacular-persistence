@@ -18,8 +18,10 @@ define(["ppwcode-util-contracts/doh", "require"],
   function(doh, require) {
 
     // TODO there are no such tests
+    //noinspection MagicNumberJS
     doh.register("test _PersistentObjectEditPane Person",
       require.toUrl("./_PersistentObjectEditPane_Person.html"), 999999);
+    //noinspection MagicNumberJS
     doh.register("test _PersistentObjectEditPane SpecialPerson",
       require.toUrl("./_PersistentObjectEditPane_SpecialPerson.html"), 999999);
 

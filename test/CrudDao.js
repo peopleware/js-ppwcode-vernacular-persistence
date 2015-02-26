@@ -19,8 +19,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
     function(doh, CrudDaoMock, _Cache, PersistentObject, IdNotFoundException, declare) {
 
       var subjectSetup = function() {
-        var subject = new CrudDaoMock({cache: new _Cache()});
-        this.subject = subject;
+        this.subject = new CrudDaoMock({cache: new _Cache()});
       };
 
       var typeDescription = "A PERSISTENCE TYPE";
@@ -49,6 +48,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
 
       function createMockPo() {
         var result = new MockPo();
+        //noinspection MagicNumberJS
         result.reload({persistenceId: 777});
         return result;
       }
@@ -126,6 +126,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
 
       function testUpdateNothingChanged(subject, p, persistenceIdEvent, firstTestPropertyEvent, testPropertyEvent, tracker) {
         doh.t(p.persistenceId);
+        //noinspection MagicNumberJS
         doh.is(777, p.get("persistenceId"));
         doh.f(persistenceIdEvent);
         var ce = getCacheEntry(subject, p);
@@ -141,6 +142,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
         doh.is(null, p.get("persistenceId"));
         doh.t(persistenceIdEvent);
         doh.is("persistenceId", persistenceIdEvent.propertyName);
+        //noinspection MagicNumberJS
         doh.is(777, persistenceIdEvent.oldValue);
         doh.is(null, persistenceIdEvent.newValue);
         var ce = getCacheEntry(subject, p);
@@ -230,6 +232,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
         doh.is(null, p.get("persistenceId"));
         doh.t(persistenceIdEvent);
         doh.is("persistenceId", persistenceIdEvent.propertyName);
+        //noinspection MagicNumberJS
         doh.is(777, persistenceIdEvent.oldValue);
         doh.is(null, persistenceIdEvent.newValue);
         var ce = getCacheEntry(subject, p);
@@ -239,6 +242,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
 
       function testDeleteNothingChanged(subject, p, persistenceIdEvent, testPropertyEvent, tracker) {
         doh.t(p.get("persistenceId"));
+        //noinspection MagicNumberJS
         doh.is(777, p.get("persistenceId"));
         doh.f(persistenceIdEvent);
 
@@ -335,6 +339,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
       }
 
       function testGetCached(subject, waitMillis, idNotFoundException, error) {
+        //noinspection MagicNumberJS
         var id = 777;
         var p = new MockPo();
         p.reload({persistenceId: id});
@@ -359,6 +364,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
         });
         var tracker2 = {};
         tracker2.PoType = MockPo;
+        //noinspection MagicNumberJS
         tracker2.resultJson = { persistenceId: 777 };
         var newTestValue = 9;
         tracker2.resultJson.testProperty = newTestValue;
@@ -420,9 +426,12 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
         return deferred;
       }
 
+      //noinspection JSUnusedLocalSymbols,JSHint
       function testGetNonCached(subject, waitMillis, idNotFoundException, error) {
+        //noinspection MagicNumberJS
         var id = 777;
         var tracker2 = {};
+        //noinspection MagicNumberJS
         tracker2.resultJson = { persistenceId: 777 };
         var newTestValue = 3;
         tracker2.resultJson.testProperty = newTestValue;
@@ -478,6 +487,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
         return deferred;
       }
 
+      //noinspection MagicNumberJS
       doh.register("CrudDao (Mock)", [
 
         function testConstructor() {
@@ -600,6 +610,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
           name: "create2",
           setUp: subjectSetup,
           runTest: function() {
+            //noinspection MagicNumberJS
             return testCreate(this.subject, 100);
           },
           timeout: 3000
@@ -617,6 +628,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
           name: "create4",
           setUp: subjectSetup,
           runTest: function() {
+            //noinspection MagicNumberJS
             return testCreate(this.subject, 100, "SemanticException");
           },
           timeout: 3000
@@ -634,6 +646,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
           name: "create6",
           setUp: subjectSetup,
           runTest: function() {
+            //noinspection MagicNumberJS
             return testCreate(this.subject, 100, null, "AN ERROR");
           },
           timeout: 3000
@@ -651,6 +664,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
           name: "update2",
           setUp: subjectSetup,
           runTest: function() {
+            //noinspection MagicNumberJS
             return testUpdate(this.subject, 100);
           },
           timeout: 3000
@@ -668,6 +682,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
           name: "update4",
           setUp: subjectSetup,
           runTest: function() {
+            //noinspection MagicNumberJS
             return testUpdate(this.subject, 100, "SemanticException");
           },
           timeout: 3000
@@ -685,6 +700,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
           name: "update6",
           setUp: subjectSetup,
           runTest: function() {
+            //noinspection MagicNumberJS
             return testUpdate(this.subject, 100, new IdNotFoundException());
           },
           timeout: 3000
@@ -702,6 +718,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
           name: "update8",
           setUp: subjectSetup,
           runTest: function() {
+            //noinspection MagicNumberJS
             return testUpdate(this.subject, 100, null, "AN ERROR");
           },
           timeout: 3000
@@ -715,10 +732,12 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
           }
         },
 
+        //noinspection MagicNumberJS
         {
           name: "delete2",
           setUp: subjectSetup,
           runTest: function() {
+            //noinspection MagicNumberJS
             return testDelete(this.subject, 100);
           },
           timeout: 3000
@@ -736,6 +755,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
           name: "delete4",
           setUp: subjectSetup,
           runTest: function() {
+            //noinspection MagicNumberJS
             return testDelete(this.subject, 100, "SemanticException");
           },
           timeout: 3000
@@ -753,6 +773,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
           name: "delete6",
           setUp: subjectSetup,
           runTest: function() {
+            //noinspection MagicNumberJS
             return testDelete(this.subject, 100, null, "AN ERROR");
           },
           timeout: 3000
@@ -771,6 +792,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
           name: "get-Cached-2",
           setUp: subjectSetup,
           runTest: function() {
+            //noinspection MagicNumberJS
             return testGetCached(this.subject, 100);
           },
           timeout: 3000
@@ -789,6 +811,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
           name: "get-Cached-4",
           setUp: subjectSetup,
           runTest: function() {
+            //noinspection MagicNumberJS
             return testGetCached(this.subject, 100, new IdNotFoundException());
           },
           timeout: 3000
@@ -807,6 +830,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
           name: "get-Cached-6",
           setUp: subjectSetup,
           runTest: function() {
+            //noinspection MagicNumberJS
             return testGetCached(this.subject, 100, null, "AN ERROR");
           },
           timeout: 3000

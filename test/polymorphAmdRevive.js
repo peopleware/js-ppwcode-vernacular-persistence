@@ -148,6 +148,7 @@ define(["ppwcode-util-contracts/doh",
         {
           name: "number (neg decimal)",
           setUp: function() {
+            //noinspection MagicNumberJS
             this.parsedJson = -5.4;
           },
           runTest: function() {
@@ -309,6 +310,7 @@ define(["ppwcode-util-contracts/doh",
         {
           name: "Array (mixed content)",
           setUp: function() {
+            //noinspection MagicNumberJS
             this.parsedJson = [1, "a", Math, JSON, { name: "a NAme"}, [], null, undefined, [4, 6, 88, "a", [24, { another: "Another"}]]];
           },
           runTest: function() {
@@ -382,6 +384,7 @@ define(["ppwcode-util-contracts/doh",
         {
           name: "Object (complex)",
           setUp: function() {
+            //noinspection MagicNumberJS
             this.parsedJson = {
               propa: "a",
               prop1: 1,
@@ -533,6 +536,7 @@ define(["ppwcode-util-contracts/doh",
             var resultPromise = revive(this.parsedJson, referer, serverType2Constructor, cache);
             doh.is("object", js.typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
+            //noinspection JSUnusedLocalSymbols,JSHint
             var parsedJson = this.parsedJson;
             resultPromise.then(
               function(result) {
@@ -563,6 +567,7 @@ define(["ppwcode-util-contracts/doh",
         {
           name: "AMD (Array of Children with 2 parents)",
           setUp: function() {
+            //noinspection MagicNumberJS
             this.parsedJson = [
               {
                 "$type": "Child",
@@ -642,6 +647,7 @@ define(["ppwcode-util-contracts/doh",
             var resultPromise = revive(this.parsedJson, referer, serverType2Constructor, cache);
             doh.is("object", js.typeOf(resultPromise)); // a Promise
             doh.t(resultPromise instanceof Promise);
+            //noinspection JSUnusedLocalSymbols,JSHint
             var parsedJson = this.parsedJson;
             resultPromise.then(
               function(result) {

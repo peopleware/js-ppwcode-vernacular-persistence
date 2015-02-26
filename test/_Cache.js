@@ -24,6 +24,7 @@ define(["ppwcode-util-contracts/doh",
            js) {
 
 
+    //noinspection MagicNumberJS
     var personId1 = 898942;
     var personJson = {
       "name":"Pete Peeters",
@@ -56,7 +57,9 @@ define(["ppwcode-util-contracts/doh",
       }
     }
 
+    //noinspection MagicNumberJS,JSUnusedLocalSymbols,JSHint
     var aPersistentObject = createPerson(99999);
+    //noinspection JSUnusedLocalSymbols,JSHint
     var toManyPropertyName = "TO_MANY";
 
     function generateTests(what, payloadCreator, track, getAndTest) {
@@ -172,6 +175,7 @@ define(["ppwcode-util-contracts/doh",
     }
 
 
+    //noinspection FunctionTooLongJS,JSHint
     doh.register("_Cache",
 
       [
@@ -201,10 +205,15 @@ define(["ppwcode-util-contracts/doh",
         name: "recursiveStopTracking",
         setUp: function() {
           this.person1 = createPerson(personId1);
+          //noinspection MagicNumberJS
           this.person2 = createPerson(85029859025);
+          //noinspection MagicNumberJS
           this.person3 = createPerson(752890);
+          //noinspection MagicNumberJS
           this.person4 = createPerson(578059230);
+          //noinspection MagicNumberJS
           this.person5 = createPerson(74924902890);
+          //noinspection MagicNumberJS
           this.person6 = createPerson(524523523);
           this.subject = new _Cache();
           this.referer1 = {};

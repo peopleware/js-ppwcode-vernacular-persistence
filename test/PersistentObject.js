@@ -64,9 +64,11 @@ define(["ppwcode-util-contracts/doh",
         var subject = generateMock(persistenceId);
         var listenerCalled1 = false;
         var listenerCalled2 = false;
+        //noinspection JSUnusedLocalSymbols
         subject.watch("persistenceId", function( propertyName, oldValue, newValue) {
           listenerCalled1 = true;
         });
+        //noinspection JSUnusedLocalSymbols
         subject.watch(function(propertyName, oldValue, newValue) {
           listenerCalled2 = true;
         });
@@ -84,9 +86,11 @@ define(["ppwcode-util-contracts/doh",
         var subject = generateMock(persistenceId);
         var listenerCalled1 = false;
         var listenerCalled2 = false;
+        //noinspection JSUnusedLocalSymbols
         subject.watch("persistenceId", function( propertyName, oldValue, newValue) {
           listenerCalled1 = true;
         });
+        //noinspection JSUnusedLocalSymbols
         subject.watch(function(propertyName, oldValue, newValue) {
           listenerCalled2 = true;
         });
@@ -104,9 +108,11 @@ define(["ppwcode-util-contracts/doh",
         var subject = generateMock(persistenceId);
         var listenerCalled1 = false;
         var listenerCalled2 = false;
+        //noinspection JSUnusedLocalSymbols
         subject.watch("persistenceId", function( propertyName, oldValue, newValue) {
           listenerCalled1 = true;
         });
+        //noinspection JSUnusedLocalSymbols
         subject.watch(function(propertyName, oldValue, newValue) {
           listenerCalled2 = true;
         });
@@ -245,6 +251,7 @@ define(["ppwcode-util-contracts/doh",
       },
 
       function testKeyForId() {
+        //noinspection MagicNumberJS
         var id = 9859893;
         var key = PersistentObject.keyForId(type, id);
         doh.t(lang.isString(key));

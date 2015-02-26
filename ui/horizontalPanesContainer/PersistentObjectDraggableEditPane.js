@@ -38,6 +38,7 @@ define(["dojo/_base/declare",
              template, labels,
              module) {
 
+      //noinspection LocalVariableNamingConventionJS
       var PersistentObjectDraggableEditPane = declare([PersistentObjectButtonEditPane, DraggablePane], {
         // summary:
         //   A PersistentObjectDraggableEditPane is a PersistentObjectButtonEditPane with a different template.

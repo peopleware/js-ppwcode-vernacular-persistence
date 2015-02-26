@@ -50,6 +50,7 @@ define(["ppwcode-util-contracts/doh", "../AuditableObject"],
 
         function testReload1() {
           var subject = new AuditableObject();
+          //noinspection JSCheckFunctionSignatures
           subject.reload();
 
           doh.invars(subject);
@@ -68,6 +69,7 @@ define(["ppwcode-util-contracts/doh", "../AuditableObject"],
           var lastModifiedBy = "modifier";
           var subject = new AuditableObject({persistenceId: persistenceId,
             createdAt: createdAt, createdBy: createdBy, lastModifiedAt: lastModifiedAt, lastModifiedBy: lastModifiedBy});
+          //noinspection JSCheckFunctionSignatures
           subject.reload();
 
           doh.invars(subject);

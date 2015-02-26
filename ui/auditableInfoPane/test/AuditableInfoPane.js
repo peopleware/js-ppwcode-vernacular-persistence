@@ -17,6 +17,7 @@ limitations under the License.
 define(["ppwcode-util-contracts/doh", "require"],
   function(doh, require) {
 
+    //noinspection MagicNumberJS
     doh.register("test AuditableInfoPane",
                  require.toUrl("./AuditableInfoPane.html"), 999999);
 

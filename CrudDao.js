@@ -25,7 +25,7 @@ define(["dojo/_base/declare",
            Deferred, request, lang, js,
            has, all, logger, module) {
 
-    //noinspection MagicNumberJS,FunctionTooLongJS,OverlyComplexFunctionJS,OverlyNestedFunctionJS
+    //noinspection MagicNumberJS
     var CrudDao = declare([_ContractMixin], {
       // summary:
       //

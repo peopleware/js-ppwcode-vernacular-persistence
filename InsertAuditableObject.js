@@ -57,9 +57,11 @@ define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js
           return +1;
         }
         var delta = d1.getTime() - d2.getTime();
+        //noinspection MagicNumberJS
         if (delta < -1000) {
           return -1;
         }
+        //noinspection MagicNumberJS
         if (delta > +1000) {
           return +1;
         }
@@ -96,8 +98,10 @@ define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js
             createdAt must be in the past
             but we cannot test that: server time and time of this local computer are incomparable
            */
-          function() {return !!this.get("persistenceId") === !!this.get("createdBy");}, // both exist together or not
-          function() {return !!this.get("createdBy") === !!this.get("createdAt");} // both exist together or not
+          // both exist together or not
+          function() {return !!this.get("persistenceId") === !!this.get("createdBy");}, // jshint ignore:line
+          // both exist together or not
+          function() {return !!this.get("createdBy") === !!this.get("createdAt");} // jshint ignore:line
         ],
 
         // createdBy: String
@@ -120,7 +124,7 @@ define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js
           // created.. can change from null to an actual date and username number after create,
           this._c_pre(function() {return json;});
 // MUDO PICTOPERFECT-482          this._c_pre(function() {return !!json.persistenceId === !!json.createdBy;});
-          this._c_pre(function() {return !!json.createdBy === !!json.createdAt;});
+          this._c_pre(function() {return !!json.createdBy === !!json.createdAt;}); // jshint ignore:line
           this._c_pre(function() {return this._c_prop_string(json, "createdBy");});
           /*
           this._c_pre(function() {return !this.get("persistenceId") || !json.persistenceId || (this.get("createdBy") === json.createdBy);});

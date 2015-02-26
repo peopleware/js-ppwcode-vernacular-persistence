@@ -27,6 +27,7 @@ define(["dojo/_base/declare", "dojo/_base/lang", "ppwcode-vernacular-semantics/u
            logger,
            module) {
 
+    //noinspection LocalVariableNamingConventionJS
     var _PersistentObjectEditPane = declare([_SemanticObjectPane, _PropagationMixin], {
       // summary:
       //   Widget that represents a PersistentObject in detail, and that gives the opportunity

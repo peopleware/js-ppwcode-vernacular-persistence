@@ -46,6 +46,7 @@ define(["dojo/_base/declare",
       p.reload(json); // should remove from cache
     }
 
+    //noinspection JSUnusedLocalSymbols
     var UrlBuilderMock = declare([UrlBuilder], {
       toMany: function(serverType, id, serverPropertyName) {
         return require.toUrl("./persons.json");
@@ -154,6 +155,7 @@ define(["dojo/_base/declare",
             function() {
               console.log("Simulated positive outcome of remote create - " + p.toString());
               var json = p.toJSON();
+              //noinspection MagicNumberJS
               json.persistenceId = Math.floor(Math.random() * 1000000000);
               if (p.isInstanceOf(VersionedPersistentObject)) {
                 json.persistenceVersion = 1;

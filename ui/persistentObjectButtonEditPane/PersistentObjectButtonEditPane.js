@@ -151,6 +151,7 @@ define(["dojo/_base/declare", "dojo/dom-style",
             logger.info("poPane has no width set.");
           }
           else {
+            //noinspection MagicNumberJS
             domStyle.set(this.domNode, "width", (poPaneWidth + 16) + "px"); // see css: 16px padding
           }
           this._contentPane.addChild(poPane);

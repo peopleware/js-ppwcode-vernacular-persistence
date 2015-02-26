@@ -26,6 +26,7 @@ define(["dojo/_base/declare", "ppwcode-util-oddsAndEnds/ui/horizontalPanesContai
              PersistentObjectButtonEditPane,
              module) {
 
+      //noinspection LocalVariableNamingConventionJS
       var PersistentObjectHorizontalPanesContainer = declare([HorizontalPanesContainer], {
         // summary:
         //   The objects for which DraggablePanes are opened are PersistentObjects, and each opened Pane is

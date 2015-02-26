@@ -33,8 +33,8 @@ define(["ppwcode-util-contracts/doh", "../VersionedPersistentObject"],
         },
 
         function testConstructor2() {
-          var persistenceId = 1;
-          var persistenceVersion = 2;
+          var persistenceId = 1; // jshint ignore:line
+          var persistenceVersion = 2; // jshint ignore:line
           var subject = new VersionedPersistentObject();
           doh.invars(subject);
           // post
@@ -49,7 +49,9 @@ define(["ppwcode-util-contracts/doh", "../VersionedPersistentObject"],
         function testReload1() {
           //noinspection MagicNumberJS
           var subject = new VersionedPersistentObject();
+          //noinspection MagicNumberJS
           subject.reload({persistenceId: 1, persistenceVersion: 884});
+          //noinspection JSCheckFunctionSignatures
           subject.reload();
 
           doh.invars(subject);
@@ -61,6 +63,7 @@ define(["ppwcode-util-contracts/doh", "../VersionedPersistentObject"],
         function testReload2a() {
           //noinspection MagicNumberJS
           var subject = new VersionedPersistentObject();
+          //noinspection MagicNumberJS
           subject.reload({persistenceId: 1, persistenceVersion: 884});
           //noinspection MagicNumberJS
           subject.reload({persistenceId: 1, persistenceVersion: 885});
@@ -74,6 +77,7 @@ define(["ppwcode-util-contracts/doh", "../VersionedPersistentObject"],
         function testReload2b() {
           //noinspection MagicNumberJS
           var subject = new VersionedPersistentObject();
+          //noinspection MagicNumberJS
           subject.reload({persistenceId: 1, persistenceVersion: 884});
           //noinspection MagicNumberJS
           subject.reload({persistenceId: 1, persistenceVersion: 885});
@@ -87,7 +91,9 @@ define(["ppwcode-util-contracts/doh", "../VersionedPersistentObject"],
         function testReload3() {
           //noinspection MagicNumberJS
           var subject = new VersionedPersistentObject();
+          //noinspection MagicNumberJS
           subject.reload({persistenceId: 1, persistenceVersion: 884});
+          //noinspection JSCheckFunctionSignatures
           subject.reload();
 
           doh.invars(subject);
@@ -99,6 +105,7 @@ define(["ppwcode-util-contracts/doh", "../VersionedPersistentObject"],
         function testReload4() {
           //noinspection MagicNumberJS
           var subject = new VersionedPersistentObject();
+          //noinspection MagicNumberJS
           subject.reload({persistenceId: 1, persistenceVersion: 884});
           //noinspection MagicNumberJS
           subject.reload({persistenceId: 1, persistenceVersion: 884});
@@ -131,6 +138,7 @@ define(["ppwcode-util-contracts/doh", "../VersionedPersistentObject"],
         function testToJSON2() {
           //noinspection MagicNumberJS
           var subject = new VersionedPersistentObject();
+          //noinspection MagicNumberJS
           subject.reload({persistenceId: 5, persistenceVersion: 8848});
           var result = subject.toJSON();
 

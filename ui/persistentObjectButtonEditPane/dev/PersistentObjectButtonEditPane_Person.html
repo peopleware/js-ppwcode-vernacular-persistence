@@ -50,9 +50,11 @@ limitations under the License.
 
   <script type="text/javascript">
     function cycle() {
+      //noinspection MagicNumberJS
       setTimeout(function() {
         person.set("name", "NEW NAME");
       }, 2000);
+      //noinspection MagicNumberJS
       setTimeout(function() {
         var nameTextBox = subject.get("persistentObjectPane").get("txtName");
         nameTextBox.set("value", "NEW NAME 2");
@@ -71,11 +73,14 @@ limitations under the License.
         var parsePromise = parser.parse();
         parsePromise.then(function() {
           window.subject = registry.byId("subject");
+          //noinspection JSUnusedLocalSymbols
           subject.set("refresher", function(po, force) {
             console.log("refresh requested of " + po);
             var temp = po.toJSON();
+            //noinspection MagicNumberJS
             temp.nrOfRawMaterials = Math.floor((Math.random()*10000)+1);
             var result = new Deferred();
+            //noinspection MagicNumberJS
             setTimeout(function() {
               console.log("refreshing");
               po.reload(temp);
@@ -92,8 +97,10 @@ limitations under the License.
           subject.set("saver", function(po) {
             console.log("save requested of " + po);
             var temp = po.toJSON();
+            //noinspection MagicNumberJS
             temp.nrOfRawMaterials = Math.floor((Math.random()*10000)+1);
             var result = new Deferred();
+            //noinspection MagicNumberJS
             setTimeout(function() {
               console.log("saving");
               po.reload(temp);
@@ -111,8 +118,10 @@ limitations under the License.
             console.log("create requested of " + po);
             var temp = po.toJSON();
             temp.persistenceId = 2;
+            //noinspection MagicNumberJS
             temp.nrOfRawMaterials = Math.floor((Math.random()*10000)+1);
             var result = new Deferred();
+            //noinspection MagicNumberJS
             setTimeout(function() {
               console.log("creating");
               po.reload(temp);
@@ -131,6 +140,7 @@ limitations under the License.
             var temp = po.toJSON();
             temp.persistenceId = null;
             var result = new Deferred();
+            //noinspection MagicNumberJS
             setTimeout(function() {
               console.log("removing");
               po.reload(temp);

@@ -122,6 +122,7 @@ define(["dojo/_base/declare",
             console.log("Simulated positive outcome of remote create - " + p.toString());
             thisDao._resetErrorCount();
             var json = p.toJSON();
+            //noinspection MagicNumberJS
             json.persistenceId = Math.floor(Math.random() * 1000000000);
             if (p.isInstanceOf(VersionedPersistentObject)) {
               json.persistenceVersion = 1;

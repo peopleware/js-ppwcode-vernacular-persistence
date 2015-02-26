@@ -156,7 +156,7 @@ define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
           elementsOrPromises[i] =  (function() { // lock ar[i] in scope
             var element = ar[i];
             return relent(function() {return reviveBackTrack(element, referer, debugPrefix + "    ");});
-          })();
+          })(); // jshint ignore:line
         }
         return all(elementsOrPromises); // all does when internally, and puts all results in an array
       }
@@ -291,6 +291,7 @@ define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
         return deferred.promise;
       }
 
+      //noinspection FunctionNamingConventionJS
       function processSemanticNonPersistentObject(jsonObject, referer, Constructor, debugPrefix) {
         // summary:
         //   Returns the Promise of an object constructed with `Constructor` without arguments
@@ -388,6 +389,7 @@ define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
         logger.debug(debugPrefix + "processing typed object " + jsonObject + " ($type: " + jsonObject["$type"] + ")");
         // for the $type, we don't want to wait for the promises on the intermediateObject
         // we can use the original value: strings are not revived in any special way anyway
+        //noinspection LocalVariableNamingConventionJS
         var poConstructorPromiseOrConstructor = serverType2Constructor(jsonObject["$type"]);
         var processedPromise = when(poConstructorPromiseOrConstructor).then(
           function(Constructor) {

@@ -39,6 +39,7 @@ define(["ppwcode-util-contracts/doh",
       },
 
       function testKeyForId() {
+        //noinspection MagicNumberJS
         var id = 9859893;
         var toMany = "A TOO MANY NAME";
         var key = PersistentObjectStore.keyForId(Mock, id, toMany);
@@ -47,6 +48,7 @@ define(["ppwcode-util-contracts/doh",
       },
 
       function testKeyForObject() {
+        //noinspection MagicNumberJS
         var id = 9859893;
         var subject = new Mock({persistenceId: id});
         var toMany = "A TOO MANY NAME";

@@ -114,6 +114,7 @@ define(["dojo/_base/declare",
 
     });
 
+    //noinspection LocalVariableNamingConventionJS
     var _Cache = declare([_ContractMixin], {
       // summary:
       //   Cache for PersistentObject instances.
@@ -316,6 +317,7 @@ define(["dojo/_base/declare",
           for (var i = 0; i < propertyNames.length; i++) {
             if (this._data[propertyNames[i]].payload === po) {
               key = propertyNames[i];
+              //noinspection BreakStatementJS
               break;
             }
           }

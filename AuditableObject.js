@@ -32,8 +32,10 @@ define(["dojo/_base/declare", "./InsertAuditableObject", "module"],
            lastModifiedAt must be in the past
            but we cannot test that: server time and time of this local computer are incomparable
            */
-          function() {return !!this.get("persistenceId") === !!this.get("lastModifiedBy");}, // both exist together or not
-          function() {return !!this.get("lastModifiedBy") === !!this.get("lastModifiedAt");} // both exist together or not
+          // both exist together or not
+          function() {return !!this.get("persistenceId") === !!this.get("lastModifiedBy");}, // jshint ignore:line
+          // both exist together or not
+          function() {return !!this.get("lastModifiedBy") === !!this.get("lastModifiedAt");} // jshint ignore:line
         ],
 
         // lastModifiedBy: String
@@ -55,8 +57,8 @@ define(["dojo/_base/declare", "./InsertAuditableObject", "module"],
         reload: function(/*Object*/ json) {
           // created.. can change from null to an actual date and username number after create,
           this._c_pre(function() {return json;});
-          this._c_pre(function() {return !!json.persistenceId === !!json.lastModifiedBy;});
-          this._c_pre(function() {return !!json.lastModifiedBy === !!json.lastModifiedBy;});
+          this._c_pre(function() {return !!json.persistenceId === !!json.lastModifiedBy;}); // jshint ignore:line
+          this._c_pre(function() {return !!json.lastModifiedBy === !!json.lastModifiedBy;}); // jshint ignore:line
           this._c_pre(function() {return this._c_prop_string(json, "lastModifiedBy");});
           this._c_pre(function() {return this._c_prop_string(json, "lastModifiedAt") || this._c_prop_date(json, "lastModifiedAt");});
           this._c_pre(function() {

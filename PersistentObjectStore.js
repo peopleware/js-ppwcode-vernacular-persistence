@@ -45,7 +45,7 @@ define(["dojo/_base/declare", "ppwcode-util-collections/StoreOfStateful",
       if (! (Constructor && lang.isFunction(Constructor))) {
         throw new Error("precondition violation: Constructor && lang.isFunction(Constructor)");
       }
-      // IDEA must be a subtype of PeristentObject
+      // IDEA must be a subtype of PersistentObject
       if (! (Constructor.prototype.getTypeDescription) || !(Constructor.prototype.getTypeDescription())) {
         throw new Error("precondition violation: Constructor.prototype.getTypeDescription does not exist");
       }
