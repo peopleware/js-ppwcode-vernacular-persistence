@@ -129,6 +129,8 @@ define(["dojo/_base/declare",
         //   that will be thrown if that is applicable, or return the original exc to be thrown. It always
         //   returns an exception to be thrown.
 
+        // TODO function too complex; refactor
+
         if (!exc) {
           logger.error("Asked to handle an exception, but there is none (" + contextDescription + ").");
           return undefined;
@@ -559,6 +561,8 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return js.typeOf(serverType) === "string";});
         this._c_pre(function() {return js.typeOf(persistenceId) === "number";});
         this._c_pre(function() {return !referer || js.typeOf(referer) === "object";});
+
+        // TODO function too complex; refactor
 
         var self = this;
         logger.debug("Requested GET of: '" + serverType + "' with id '" + persistenceId + "'");

@@ -77,6 +77,9 @@ define(["dojo/_base/declare",
               self.save(event);
             }
           }));
+
+          // TODO below function too complex; refactor
+
           self.own(self.on("keydown", function(event) {
             var presentationMode = self.get("presentationMode");
             if ((presentationMode === self.EDIT || presentationMode === self.WILD) &&
