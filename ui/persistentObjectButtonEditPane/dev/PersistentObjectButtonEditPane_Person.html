@@ -62,13 +62,14 @@ limitations under the License.
     }
 
     require(["dojo/parser",
-             "ppwcode-vernacular-persistence/ui/persistentObjectButtonEditPane/PersistentObjectButtonEditPane",
              "ppwcode-vernacular-persistence/ui/test/mock/PersonPane",
              "ppwcode-vernacular-persistence/test/mock/Person",
              "dijit/registry",
              "dojo/Deferred",
+
+             "ppwcode-vernacular-persistence/ui/persistentObjectButtonEditPane/PersistentObjectButtonEditPane",
              "dojo/domReady!"],
-      function(parser, PersistentObjectButtonEditPane, PersonPane, Person, registry, Deferred) {
+      function(parser, PersonPane, Person, registry, Deferred) {
         window.testMode = "NOMINAL";
         var parsePromise = parser.parse();
         parsePromise.then(function() {

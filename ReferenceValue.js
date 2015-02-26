@@ -88,7 +88,7 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/Value", "module"],
 
       ReferenceValue.format = function(referenceValue, options) {
         if (!referenceValue) {
-          return (options && (options.na || options.na === "")) ? options.na : 'N/A';
+          return (options && (options.na || options.na === "")) ? options.na : "N/A";
         }
         else {
           return referenceValue.referenceId;
@@ -96,7 +96,7 @@ define(["dojo/_base/declare", "ppwcode-vernacular-semantics/Value", "module"],
       };
 
       ReferenceValue.parse = function(str, options) {
-        if (!str || str === (options && options.na ? options.na : 'N/A')) {
+        if (!str || str === (options && options.na ? options.na : "N/A")) {
           return null;
         }
         else {

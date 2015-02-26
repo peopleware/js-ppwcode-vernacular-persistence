@@ -171,7 +171,7 @@ define(["ppwcode-util-contracts/doh",
             delete this.referer2;
           }
         }
-      ]
+      ];
     }
 
 

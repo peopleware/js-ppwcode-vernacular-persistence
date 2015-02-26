@@ -74,7 +74,7 @@ define(["dojo/_base/declare",
             p.reload(json);
             return p;
           }
-        }
+        };
       },
 
       retrieve: function(/*String*/ serverType, /*Number*/ persistenceId, /*Any*/ referer) {

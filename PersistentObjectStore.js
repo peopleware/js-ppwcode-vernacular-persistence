@@ -60,12 +60,14 @@ define(["dojo/_base/declare", "ppwcode-util-collections/StoreOfStateful",
       return result; // return String
     };
 
+
+
     PersistentObjectStore.keyForObject = function(/*PersistentObject*/ po, /*String*/ toManyPropertyName) {
       // summary:
       //   When PersistentObjectStore is used to express a to-many reference
       //   of a PersistentObject, this returns a unique key for such a store.
       // IDEA can't use current form of precondition here
-      if (! (po && po.get("persistenceId") != null)) {
+      if (! (po && po.get("persistenceId") !== null)) {
         throw new Error("precondition violation: po && po.get('persistenceId') != null");
       }
       if (! (toManyPropertyName && lang.isString(toManyPropertyName))) {

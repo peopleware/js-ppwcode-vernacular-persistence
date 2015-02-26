@@ -69,11 +69,12 @@
     require(
       ["dojo/parser",
         "ppwcode-vernacular-persistence/AuditableObject",
-        "ppwcode-vernacular-persistence/ui/auditableInfoPane/AuditableInfoPane",
         "dijit/registry",
+
+        "ppwcode-vernacular-persistence/ui/auditableInfoPane/AuditableInfoPane",
         "dojo/domReady!"
       ],
-      function(parser, AuditableObject, AuditableInfoPane, registry) {
+      function(parser, AuditableObject, registry) {
 
         var parsePromise = parser.parse();
         var now = new Date();
@@ -109,7 +110,7 @@
         <button onclick="subject.set('presentationMode', subject.ERROR)">ERROR</button>
         <button onclick="subject.set('presentationMode', subject.VIEW)">VIEW</button>
       </span>
-      <span style="float: right">
+      <span style="float: right;">
         <button onclick="subject.set('target', null)">Clear Target</button>
         <button onclick="subject.set('target', window.ao)">Set Target</button>
       </span>

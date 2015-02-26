@@ -50,12 +50,13 @@
       ["dojo/parser",
         "ppwcode-util-contracts/doh",
         "ppwcode-vernacular-persistence/AuditableObject",
-        "ppwcode-vernacular-persistence/ui/auditableInfoPane/AuditableInfoPane",
         "dijit/registry",
         "ppwcode-vernacular-semantics/ui/_semanticObjectPane/test/semanticObjectPaneTestGenerator",
+
+        "ppwcode-vernacular-persistence/ui/auditableInfoPane/AuditableInfoPane",
         "dojo/domReady!"
       ],
-      function(parser, doh, AuditableObject, AuditableInfoPane, registry, generator) {
+      function(parser, doh, AuditableObject, registry, semanticObjectPaneTestGenerator) {
 
         var parsePromise = parser.parse();
         parsePromise.then(function() {
@@ -72,7 +73,7 @@
 
           doh.register(
             "Auditable Info Pane",
-            generator(subject, AuditableObject, createAO)
+            semanticObjectPaneTestGenerator(subject, AuditableObject, createAO)
           );
           doh.run();
         });

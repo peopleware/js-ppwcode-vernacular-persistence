@@ -17,13 +17,11 @@
 define(["dojo/_base/declare", "ppwcode-util-oddsAndEnds/ui/horizontalPanesContainer/HorizontalPanesContainer",
         "ppwcode-vernacular-persistence/PersistentObject", "./PersistentObjectDraggableEditPane",
         "dojo/dom-class",
-        "ppwcode-vernacular-persistence/ui/persistentObjectButtonEditPane/PersistentObjectButtonEditPane",
         "module"],
     function(declare, HorizontalPanesContainer,
              PersistentObject,
              PersistentObjectDraggableEditPane,
              domClass,
-             PersistentObjectButtonEditPane,
              module) {
 
       //noinspection LocalVariableNamingConventionJS

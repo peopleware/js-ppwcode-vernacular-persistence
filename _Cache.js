@@ -23,7 +23,7 @@ define(["dojo/_base/declare",
            PersistentObject, Set,
            js, logger) {
 
-    var _Entry = declare([_ContractMixin], {
+    var Entry = declare([_ContractMixin], {
       // summary:
       //   Helper class for _Cache. Defines the cache entries, and methods to deal with it.
       // description:
@@ -34,7 +34,7 @@ define(["dojo/_base/declare",
       _c_invar: [
         function() {return this._c_prop_mandatory("payload");},
         function() {return this.payload.isInstanceOf && this.payload.isInstanceOf(PersistentObject);},
-        function() {return this.payload.getKey() != null;},
+        function() {return this.payload.getKey() !== null;},
         function() {return this.getNrOfReferers() >= 0;}
       ],
 
@@ -60,7 +60,7 @@ define(["dojo/_base/declare",
       constructor: function(/*PersistentObject*/ po, /*_Cache*/ cache) {
         this._c_pre(function() {return po;});
         this._c_pre(function() {return po.isInstanceOf && po.isInstanceOf(PersistentObject);});
-        this._c_pre(function() {return po.getKey() != null;});
+        this._c_pre(function() {return po.getKey() !== null;});
         this._c_pre(function() {return cache;});
 
         this.payload = po;
@@ -84,7 +84,7 @@ define(["dojo/_base/declare",
         //   the object holding a reference to `payload`, or otherwise
         //   responsible for maintaining this reference (i.e., releasing it
         //   when no longer needed, for garbage collection).
-        this._c_pre(function() { return referer != null;});
+        this._c_pre(function() { return referer !== null;});
 
         this._referers.add(referer);
       },
@@ -140,13 +140,13 @@ define(["dojo/_base/declare",
             return this._data;
           },
           invars: [
-            function() {return this.isInstanceOf && this.isInstanceOf(_Entry);}
+            function() {return this.isInstanceOf && this.isInstanceOf(Entry);}
           ]
         }
       ],
 
       // _data: Object
-      //    Hash for the cache _Entry instances
+      //    Hash for the cache Entry instances
       //    The keys are getKey() for PersistentObject
       _data: null,
 
@@ -180,7 +180,7 @@ define(["dojo/_base/declare",
         this._buildTypeCrossReference(po.constructor);
         var entry = this._data[key];
         if (!entry) {
-          entry = new _Entry(po, this);
+          entry = new Entry(po, this);
           this._data[key] = entry;
           if (logger.isInfoEnabled()) {
             var numberOfEntries = Object.keys(this._data).length;

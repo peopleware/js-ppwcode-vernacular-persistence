@@ -307,7 +307,7 @@ define(["dojo/_base/declare",
         var headers = {"Accept": "application/json"};
         if (options && (options.start >= 0 || options.count >= 0)) {
           var rangeStart = options.start || 0;
-          var rangeEnd = (options.count && options.count != Infinity) ? (rangeStart + options.count - 1) : "";
+          var rangeEnd = (options.count && options.count !== Infinity) ? (rangeStart + options.count - 1) : "";
           headers["Range"] = "items=" + rangeStart + "-" + rangeEnd;
           headers["X-Range"] = headers["Range"]; //set X-Range for Opera since it blocks "Range" header (source: JsonRest)
         }
@@ -476,7 +476,7 @@ define(["dojo/_base/declare",
         return this.cache.getByTypeAndId(serverType, persistenceId);
       },
 
-      track: function(/*PersistentObject*/ po, /*Any*/ referrer) {
+      track: function(/*PersistentObject*/ po, /*Object*/ referrer) {
         // summary:
         //   After this call, po will be in the cache, and be tracked by referrer.
         // description:
@@ -490,7 +490,7 @@ define(["dojo/_base/declare",
         this._optionalCacheReporting();
       },
 
-      stopTracking: function(/*PersistentObject*/ po, /*Any*/ referer) {
+      stopTracking: function(/*PersistentObject*/ po, /*Object*/ referer) {
         // summary:
         //   We note that referer no longer uses po.
         // description:
@@ -516,7 +516,7 @@ define(["dojo/_base/declare",
       //   This hash avoids loading the same object twice at the same time.
       _retrievePromiseCache: null,
 
-      retrieve: function(/*String*/ serverType, /*Number*/ persistenceId, /*Any*/ referer, /*Boolean*/ force) {
+      retrieve: function(/*String*/ serverType, /*Number*/ persistenceId, /*Object*/ referer, /*Boolean*/ force) {
         // summary:
         //   Get the object of type `serverType` with `persistenceId` from the remote server.
         //   This returns a Promise.

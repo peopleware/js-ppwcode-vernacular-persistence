@@ -16,10 +16,10 @@ limitations under the License.
 
 define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
         "../PersistentObject", "../IdNotFoundException", "dojo/_base/declare"],
-    function(doh, CrudDaoMock, _Cache, PersistentObject, IdNotFoundException, declare) {
+    function(doh, CrudDao1, _Cache, PersistentObject, IdNotFoundException, declare) {
 
       var subjectSetup = function() {
-        this.subject = new CrudDaoMock({cache: new _Cache()});
+        this.subject = new CrudDao1({cache: new _Cache()});
       };
 
       var typeDescription = "A PERSISTENCE TYPE";
@@ -76,7 +76,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
             propertyName: propertyName,
             oldValue: oldValue,
             newValue: newValue
-          }
+          };
         });
         var deferred = new doh.Deferred();
         var resultPromise = subject.create(p, tracker1);
@@ -116,8 +116,8 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
               }
               deferred.callback(true);
             }
-            catch (error) {
-              deferred.errback(error);
+            catch (err) {
+              deferred.errback(err);
             }
           }
         );
@@ -170,7 +170,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
             propertyName: propertyName,
             oldValue: oldValue,
             newValue: newValue
-          }
+          };
         });
         var testPropertyEvent = null;
         p.watch("testProperty", function(propertyName, oldValue, newValue) {
@@ -178,7 +178,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
             propertyName: propertyName,
             oldValue: oldValue,
             newValue: newValue
-          }
+          };
         });
         p.set("testProperty", 9);
         var firstTestPropertyEvent = testPropertyEvent;
@@ -220,8 +220,8 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
               }
               deferred.callback(true);
             }
-            catch (error) {
-              deferred.errback(error);
+            catch (err) {
+              deferred.errback(err);
             }
           }
         );
@@ -278,7 +278,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
             propertyName: propertyName,
             oldValue: oldValue,
             newValue: newValue
-          }
+          };
         });
         var testPropertyEvent = null;
         p.watch("testProperty", function(propertyName, oldValue, newValue) {
@@ -286,7 +286,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
             propertyName: propertyName,
             oldValue: oldValue,
             newValue: newValue
-          }
+          };
         });
         var deferred = new doh.Deferred();
         var resultPromise = subject.remove(p);
@@ -317,8 +317,8 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
               }
               deferred.callback(true);
             }
-            catch (error) {
-              deferred.errback(error);
+            catch (err) {
+              deferred.errback(err);
             }
           }
         );
@@ -352,7 +352,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
             propertyName: propertyName,
             oldValue: oldValue,
             newValue: newValue
-          }
+          };
         });
         var testPropertyEvent = null;
         p.watch("testProperty", function(propertyName, oldValue, newValue) {
@@ -360,7 +360,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
             propertyName: propertyName,
             oldValue: oldValue,
             newValue: newValue
-          }
+          };
         });
         var tracker2 = {};
         tracker2.PoType = MockPo;
@@ -418,8 +418,8 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
               }
               deferred.callback(true);
             }
-            catch (error) {
-              deferred.errback(error);
+            catch (err) {
+              deferred.errback(err);
             }
           }
         );
@@ -454,7 +454,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
               doh.is(id, pSuccess.get("persistenceId"));
               doh.t(pSuccess.isInstanceOf(MockPo));
               doh.is(newTestValue, pSuccess.get("testProperty"));
-              var ce = getCacheEntry(subject, p);
+              var ce = getCacheEntry(subject, tracker2);
               doh.t(ce);
               doh.is(pSuccess, ce.payload);
               doh.is(1, ce.getNrOfReferers());
@@ -479,8 +479,8 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
               }
               deferred.callback(true);
             }
-            catch (error) {
-              deferred.errback(error);
+            catch (err) {
+              deferred.errback(err);
             }
           }
         );
@@ -491,7 +491,7 @@ define(["ppwcode-util-contracts/doh", "./mock/CrudDao1", "../_Cache",
       doh.register("CrudDao (Mock)", [
 
         function testConstructor() {
-          var subject = new CrudDaoMock({cache: new _Cache()});
+          var subject = new CrudDao1({cache: new _Cache()});
           doh.invars(subject);
         },
 

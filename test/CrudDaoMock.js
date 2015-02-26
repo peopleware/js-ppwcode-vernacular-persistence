@@ -17,9 +17,9 @@ limitations under the License.
 // TODO OBSOLETE; REMOVE
 
 define(["dojo/_base/declare",
-        "../PersistentObject", "../VersionedPersistentObject", "../AuditableObject", "../IdNotFoundException", "../CrudDao",
+        "../VersionedPersistentObject", "../AuditableObject", "../IdNotFoundException", "../CrudDao",
         "dojo/Deferred"],
-  function(declare, PersistentObject, VersionedPersistentObject, AuditableObject, IdNotFoundException, CrudDao, Deferred) {
+  function(declare, VersionedPersistentObject, AuditableObject, IdNotFoundException, CrudDao, Deferred) {
 
     function cacheKey(/*String*/ type, /*Number*/ persistenceId) {
       // summary:

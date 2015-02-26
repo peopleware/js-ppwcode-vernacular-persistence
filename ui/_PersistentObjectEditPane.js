@@ -14,13 +14,13 @@
  limitations under the License.
 */
 
-define(["dojo/_base/declare", "dojo/_base/lang", "ppwcode-vernacular-semantics/ui/_semanticObjectPane/_SemanticObjectPane", "ppwcode-util-oddsAndEnds/_PropagationMixin",
+define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPane/_SemanticObjectPane", "ppwcode-util-oddsAndEnds/_PropagationMixin",
         "ppwcode-vernacular-exceptions/SemanticException", "../IdNotFoundException", "../ObjectAlreadyChangedException", "ppwcode-vernacular-exceptions/SecurityException",
         "../PersistentObject", "dijit/registry", "dijit/form/TextBox", "dojo/Deferred",
         "dojo/i18n!./nls/messages",
         "ppwcode-util-oddsAndEnds/log/logger!",
         "module"],
-  function(declare, lang, _SemanticObjectPane, _PropagationMixin,
+  function(declare, _SemanticObjectPane, _PropagationMixin,
            SemanticException, IdNotFoundException, ObjectAlreadyChangedException, SecurityException,
            PersistentObject, registry, TextBox, Deferred,
            messages,
@@ -115,7 +115,7 @@ define(["dojo/_base/declare", "dojo/_base/lang", "ppwcode-vernacular-semantics/u
         //   We remember the state of `target` before this operation,
         //   so we can reset it on `cancel`.
 
-        this._c_pre(function() {return this.get("target")});
+        this._c_pre(function() {return this.get("target");});
         this._c_pre(function() {return this.get("target").get("editable") || this.get("target").get("deletable");});
 
         this.set("presentationMode", this.EDIT);
@@ -307,19 +307,20 @@ define(["dojo/_base/declare", "dojo/_base/lang", "ppwcode-vernacular-semantics/u
 
       _focusOnFirstActiveTextBox: function(presentationMode) {
         var self = this;
+
+        function recursiveChildWidgets(domNode) {
+          // TODO C/P from ppwcode/vernacular/semantics/ui/_SemanticObjectPane; generalize somewhere
+          return registry.findWidgets(domNode).reduce(
+            function(acc, w) {
+              acc.push(w);
+              return acc.concat(recursiveChildWidgets(w.domNode));
+            },
+            []
+          );
+        }
+
         if (presentationMode === self.EDIT) {
           // now focus on the first active focusable widget inside
-          function recursiveChildWidgets(domNode) {
-            // TODO C/P from ppwcode/vernacular/semantics/ui/_SemanticObjectPane; generalize somewhere
-            return registry.findWidgets(domNode).reduce(
-              function(acc, w) {
-                acc.push(w);
-                return acc.concat(recursiveChildWidgets(w.domNode));
-              },
-              []
-            );
-          }
-
           var childWidgets = recursiveChildWidgets(self.domNode);
           var activeInputs = childWidgets.filter(function(w) {return w.isInstanceOf(TextBox) && w.isFocusable && w.isFocusable() && !w.get("readOnly");});
           if (activeInputs.length > 0) {
