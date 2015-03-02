@@ -15,8 +15,10 @@
 */
 
 define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
-        "./PersistentObject", "ppwcode-vernacular-semantics/SemanticObject", "ppwcode-vernacular-semantics/EnumerationValue",
-        "dojo/Deferred", "dojo/when", "ppwcode-util-oddsAndEnds/promise/relent", "ppwcode-util-oddsAndEnds/log/logger!"],
+        "./PersistentObject", "ppwcode-vernacular-semantics/SemanticObject",
+        "ppwcode-vernacular-semantics/EnumerationValue",
+        "dojo/Deferred", "dojo/when", "ppwcode-util-oddsAndEnds/promise/relent",
+        "ppwcode-util-oddsAndEnds/log/logger!"],
   function(js, all,
            PersistentObject, SemanticObject, EnumerationValue,
            Deferred, when, relent, logger) {
@@ -135,12 +137,12 @@ define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
 
       function canUseAsIs(valueType) {
         return valueType === "string" ||
-          valueType === "boolean" ||
-          valueType === "number" ||
-          valueType === "json" ||
-          valueType === "math" ||
-          valueType === "regexp" ||
-          valueType === "error";
+               valueType === "boolean" ||
+               valueType === "number" ||
+               valueType === "json" ||
+               valueType === "math" ||
+               valueType === "regexp" ||
+               valueType === "error";
       }
 
       function isSubtypeOf(SuperConstructor, Constructor) {
@@ -152,8 +154,10 @@ define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
         var elementsOrPromises = [];
         // don't use map, because arguments doesn't support it
         for (var i = 0; i < ar.length; i++) {
-          logger.debug(debugPrefix + "  processing array element: " + ar[i] + " (going deep)");
-          elementsOrPromises[i] =  (function() { // lock ar[i] in scope
+          if (logger.isDebugEnabled()) {
+            logger.debug(debugPrefix + "  processing array element: " + ar[i] + " (going deep)");
+          }
+          elementsOrPromises[i] = (function() { // lock ar[i] in scope
             var element = ar[i];
             return relent(function() {return reviveBackTrack(element, referer, debugPrefix + "    ");});
           })(); // jshint ignore:line
@@ -173,11 +177,15 @@ define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
         //   This object, if given, is used as referer in reviving the
         //   the properties of jsonObject.
 
-        logger.debug(debugPrefix + "processing " + jsonObject + " (going deep)");
+        if (logger.isDebugEnabled()) {
+          logger.debug(debugPrefix + "processing " + jsonObject + " (going deep)");
+        }
         var propertyValuesOrPromises = Object.keys(jsonObject).reduce(
-          function (acc, pName) {
-            logger.debug(debugPrefix + "  processing object property: " +
-              pName + ": " + jsonObject[pName] + " (going deep)");
+          function(acc, pName) {
+            if (logger.isDebugEnabled()) {
+              logger.debug(debugPrefix + "  processing object property: " +
+                           pName + ": " + jsonObject[pName] + " (going deep)");
+            }
             acc[pName] = reviveBackTrack(jsonObject[pName], referer, debugPrefix + "    ");
             return acc;
           },
@@ -207,15 +215,22 @@ define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
         logger.debug(debugPrefix + "reloading object for " + jsonPo["$type"] + "@" + jsonPo.persistenceId);
         var intermediateObjectPromise = processObject(jsonPo, po, debugPrefix + "  "); // po is referer going deep
         var reloadedPromise = intermediateObjectPromise.then(
-          function (intermediateObject) {
-            logger.trace(debugPrefix + "intermediate object ready for reloading " + jsonPo["$type"] + "@" + jsonPo.persistenceId);
+          function(intermediateObject) {
+            logger.trace(debugPrefix + "intermediate object ready for reloading " +
+                         jsonPo["$type"] + "@" + jsonPo.persistenceId);
             po.reload(intermediateObject);
-            logger.trace(debugPrefix + "reloaded: " + po.toString());
+            if (logger.isTraceEnabled()) {
+              logger.trace(debugPrefix + "reloaded: " + po.toString());
+            }
             if (referer) {
-              logger.trace(debugPrefix + "tracking: " + po.toString() + " by " + referer);
+              if (logger.isTraceEnabled()) {
+                logger.trace(debugPrefix + "tracking: " + po.toString() + " by " + referer);
+              }
               cache.track(po, referer);
             }
-            logger.debug(debugPrefix + "ready: " + po.toString());
+            if (logger.isDebugEnabled()) {
+              logger.debug(debugPrefix + "ready: " + po.toString());
+            }
             return po;
           }
         );
@@ -239,8 +254,8 @@ define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
 
         if (!jsonPo.persistenceId) {
           throw "ERROR: found object in graph to revive with type " + jsonPo["$type"] +
-            " that resolved to a Constructor that is a subtype of PersistentObject, but contained no " +
-            "meaningful persistenceId - " + jsonPo;
+                " that resolved to a Constructor that is a subtype of PersistentObject, but contained no " +
+                "meaningful persistenceId - " + jsonPo;
         }
         var type = Constructor.prototype.getTypeDescription();
         var id = jsonPo.persistenceId;
@@ -270,7 +285,8 @@ define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
         var /*PersistentObject*/ reloadTarget = cache.getByTypeAndId(type, id);
         if (reloadTarget) {
           logger.debug(debugPrefix + "found in cache: " + key);
-          // TODO only reload if dirty or !== persistenceVersion (if there is one); jsonPo needs to be processed deep, though
+          // TODO only reload if dirty or !== persistenceVersion (if there is one); jsonPo needs to be processed deep,
+          // though
         }
         else {
           logger.info(debugPrefix + "not found in cache; creating new object for: " + key);
@@ -304,14 +320,18 @@ define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
         // referer: Object
         //   This object is used as referer for the processing of jsonObject.
 
-        logger.debug(debugPrefix + "processing semantic non-persistent-object " + jsonObject +
-          " ($type = " + jsonObject["$type"] + ")");
+        if (logger.isDebugEnabled()) {
+          logger.debug(debugPrefix + "processing semantic non-persistent-object " + jsonObject +
+                       " ($type = " + jsonObject["$type"] + ")");
+        }
         var intermediateObjectPromise = processObject(jsonObject, referer, debugPrefix + "  ");
         var objectPromise = intermediateObjectPromise.then(
           function(intermediate) {
             var fresh = new Constructor();
             fresh.reload(intermediate);
-            logger.debug(debugPrefix + "created fresh object: " + fresh);
+            if (logger.isDebugEnabled()) {
+              logger.debug(debugPrefix + "created fresh object: " + fresh.toString());
+            }
             return fresh;
           }
         );
@@ -325,12 +345,14 @@ define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
         // jsonObject: Object
         //   A low level, native object. It must have a String property `representation`.
 
-        logger.debug(debugPrefix + "processing typed enumeration value " + jsonObject +
-          " ($type = " + jsonObject["$type"] + ")");
+        if (logger.isDebugEnabled()) {
+          logger.debug(debugPrefix + "processing typed enumeration value " + jsonObject +
+                       " ($type = " + jsonObject["$type"] + ")");
+        }
         var result = Constructor.revive(jsonObject.representation);
         if (!result) {
           throw "ERROR: could not revive " + jsonObject + ". No value with representation '" +
-            jsonObject.representation + "' in " + (Constructor.mid || Constructor.values());
+                jsonObject.representation + "' in " + (Constructor.mid || Constructor.values());
         }
         return result;
       }
@@ -347,13 +369,17 @@ define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
         // referer: Object
         //   This object is used as referer for the processing of jsonObject.
 
-        logger.debug(debugPrefix + "processing typed non-persistent-object " + jsonObject +
-          " ($type = " + jsonObject["$type"] + ")");
+        if (logger.isDebugEnabled()) {
+          logger.debug(debugPrefix + "processing typed non-persistent-object " + jsonObject +
+                       " ($type = " + jsonObject["$type"] + ")");
+        }
         var intermediateObjectPromise = processObject(jsonObject, referer, debugPrefix + "  ");
         var objectPromise = intermediateObjectPromise.then(
           function(intermediate) {
             var fresh = new Constructor(intermediate);
-            logger.debug(debugPrefix + "created fresh object: " + fresh);
+            if (logger.isDebugEnabled()) {
+              logger.debug(debugPrefix + "created fresh object: " + fresh.toString());
+            }
             return fresh;
           }
         );
@@ -386,7 +412,9 @@ define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
         //   when the Promise resolves, if jsonObject["$type"] can be matched
         //   to a Constructor that is a subtype of PersistentObject.
 
-        logger.debug(debugPrefix + "processing typed object " + jsonObject + " ($type: " + jsonObject["$type"] + ")");
+        if (logger.isDebugEnabled()) {
+          logger.debug(debugPrefix + "processing typed object " + jsonObject + " ($type: " + jsonObject["$type"] + ")");
+        }
         // for the $type, we don't want to wait for the promises on the intermediateObject
         // we can use the original value: strings are not revived in any special way anyway
         //noinspection LocalVariableNamingConventionJS
@@ -395,30 +423,34 @@ define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
           function(Constructor) {
             if (Constructor && (js.typeOf(Constructor) !== "function")) {
               throw "ERROR: serverType2Constructor returned something that is not a Function (" +
-                Constructor + ") for type " + jsonObject["$type"];
+                    Constructor + ") for type " + jsonObject["$type"];
             }
             if (!Constructor) {
               logger.debug(debugPrefix + "serverType2Constructor returned no Constructor for " + jsonObject["$type"]);
               return processObject(jsonObject, referer, debugPrefix + "  ");
             }
             else if (isSubtypeOf(PersistentObject, Constructor) && jsonObject.persistenceId) {
-              logger.debug(debugPrefix + "serverType2Constructor returned Constructor, subtype of PersistentObject, for " +
-                jsonObject["$type"] + "@" + jsonObject.persistenceId);
+              logger.debug(debugPrefix +
+                           "serverType2Constructor returned Constructor, subtype of PersistentObject, for " +
+                           jsonObject["$type"] + "@" + jsonObject.persistenceId);
               return processPersistentObject(jsonObject, referer, Constructor, debugPrefix);
             }
             else if (isSubtypeOf(SemanticObject, Constructor)) {
-              logger.debug(debugPrefix + "serverType2Constructor returned Constructor, subtype of SemanticObject, for " +
-                jsonObject["$type"]);
+              logger.debug(debugPrefix +
+                           "serverType2Constructor returned Constructor, subtype of SemanticObject, for " +
+                           jsonObject["$type"]);
               return processSemanticNonPersistentObject(jsonObject, referer, Constructor, debugPrefix);
             }
             else if (isSubtypeOf(EnumerationValue, Constructor)) {
-              logger.debug(debugPrefix + "serverType2Constructor returned Constructor, subtype of EnumerationValue, for " +
-                jsonObject["$type"] + "@" + jsonObject.representation);
+              logger.debug(debugPrefix +
+                           "serverType2Constructor returned Constructor, subtype of EnumerationValue, for " +
+                           jsonObject["$type"] + "@" + jsonObject.representation);
               return processEnumerationValue(jsonObject, Constructor, debugPrefix);
             }
             else {
-              logger.debug(debugPrefix + "serverType2Constructor returned Constructor, not a subtype of SemanticObject, for " +
-                jsonObject["$type"]);
+              logger.debug(debugPrefix +
+                           "serverType2Constructor returned Constructor, not a subtype of SemanticObject, for " +
+                           jsonObject["$type"]);
               return processTypedNonSemanticObject(jsonObject, referer, Constructor, debugPrefix);
             }
           }
@@ -431,7 +463,9 @@ define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
         //    inner method in revive, because all calls of this method
         //    inside one revive call need to share the cache
 
-        logger.debug(debugPrefix + "reviving " + value);
+        if (logger.isDebugEnabled()) {
+          logger.debug(debugPrefix + "reviving " + value);
+        }
         if (!value) {
           // all falsy's can be returned immediately
           return value; // return Object
@@ -461,7 +495,9 @@ define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
       }
 
       // the real method
-      logger.debug("asked to revive " + graphRoot);
+      if (logger.isDebugEnabled()) {
+        logger.debug("asked to revive " + graphRoot);
+      }
       var topResultOrPromise = reviveBackTrack(graphRoot, referer, "  ");
       return topResultOrPromise; // return /*Object|Promise*/
 
