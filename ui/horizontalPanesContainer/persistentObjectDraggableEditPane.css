@@ -14,24 +14,23 @@
   limitations under the License.
 */
 
-.persistentObjectDraggableEditPane {
-  border-bottom-left-radius: 3px;
-  border-bottom-right-radius: 3px;
-}
+/*.persistentObjectDraggableEditPane {*/
+  /*border-bottom-left-radius: 3px;*/
+  /*border-bottom-right-radius: 3px;*/
+/*}*/
 
-.persistentObjectDraggableEditPane,
-.persistentObjectDraggableEditPane .persistentObjectDraggableEditPane-heading {
-  border-top-left-radius: 3px;
-  border-top-right-radius: 3px;
-}
+/*.persistentObjectDraggableEditPane,*/
+/*.persistentObjectDraggableEditPane .persistentObjectDraggableEditPane-heading {*/
+  /*border-top-left-radius: 3px;*/
+  /*border-top-right-radius: 3px;*/
+/*}*/
 
 .persistentObjectDraggableEditPane .persistentObjectDraggableEditPane-heading {
-  background-image: linear-gradient(to bottom, #b0bccd, #889bb3 50%, #8195af 50%, #6d84a2);
-  /*border-top: 1px solid #cdd5df;*/
+  background-color: #f4f4f4;
   border-top-style: none;
-  border-bottom: 1px solid #2d3642;
-  color: white;
-  text-shadow: rgba(0, 0, 0, 0.6) 0 -1px 0;
+  border-bottom: 1px solid darkslategray;
+  color: #145d81;
+  text-shadow: rgba(244, 254, 247, 0.60) 0 -1px 0;
   height: 33px;
   padding: 0;
 }
