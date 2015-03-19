@@ -27,8 +27,6 @@ define(["dojo/_base/declare",
 
         "dijit/layout/LayoutContainer", "dijit/layout/ContentPane",
         "dojo/_base/lang", "dojox/mvc/at",
-        "dojox/mobile/Heading", "dojox/mobile/ToolBarButton",
-        "dojox/mobile/Tooltip", "dojox/mobile/Button",
         "xstyle/css!./persistentObjectDraggableEditPane.css"],
     function(declare,
              DraggablePane, PersistentObjectButtonEditPane,
