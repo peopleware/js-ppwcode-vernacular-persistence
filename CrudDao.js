@@ -17,12 +17,12 @@
 define(["dojo/_base/declare",
         "ppwcode-util-contracts/_Mixin",
         "./UrlBuilder", "./PersistentObject", "./IdNotFoundException", "ppwcode-vernacular-exceptions/SecurityException", "./ObjectAlreadyChangedException",
-        "dojo/Deferred", "dojo/request", "dojo/_base/lang", "ppwcode-util-oddsAndEnds/js",
+        "dojo/Deferred", "dojo/request", "dojo/_base/lang", "ppwcode-util-oddsAndEnds/js", "dojo/topic",
         "dojo/has", "dojo/promise/all", "ppwcode-util-oddsAndEnds/log/logger!", "module"],
   function(declare,
            _ContractMixin,
            UrlBuilder, PersistentObject, IdNotFoundException, SecurityException, ObjectAlreadyChangedException,
-           Deferred, request, lang, js,
+           Deferred, request, lang, js, topic,
            has, all, logger, module) {
 
     //noinspection MagicNumberJS
@@ -460,6 +460,15 @@ define(["dojo/_base/declare",
         // no need to handle errors of revive: they are errors
         // MUDO: when we get an IdNotFoundException
         revivePromise.then(lang.hitch(this, this._optionalCacheReporting));
+        revivePromise.then(function(revived) {
+          topic.publish(
+            module.id,
+            {
+              action: method,
+              persistentObject: revived
+            }
+          );
+        });
         return revivePromise;
       },
 
@@ -881,8 +890,8 @@ define(["dojo/_base/declare",
         //   objects of that type.
         this._c_pre(function() {return this.isOperational();});
         this._c_pre(function() {return result && result.isInstanceOf;});
-// Cannot really formulate what we want, because of stupid Observable Store wrapper
-//        this._c_pre(function() {return result && result.isInstanceOf && result.isInstanceOf(StoreOfStateful);});
+        // Cannot really formulate what we want, because of stupid Observable Store wrapper
+        // this._c_pre(function() {return result && result.isInstanceOf && result.isInstanceOf(StoreOfStateful);});
         this._c_pre(function() {return !serverType || js.typeOf(serverType) === "string";});
         this._c_pre(function() {return !query || js.typeOf(query) === "object";});
         this._c_pre(function() {return !options || js.typeOf(options) === "object";});
@@ -921,6 +930,22 @@ define(["dojo/_base/declare",
 
     //noinspection MagicNumberJS
     CrudDao.durationToStale = 60000; // 1 minute
+    CrudDao.mid = module.id;
+
+    /*=====
+    var Change = {
+
+      // action: String
+      //   The HTTP method that just concluded (POST, PUT or DELETE).
+      action: false,
+
+      // persistentObject: PersistentObject
+      //   The revived PersistentObject that was a result of the action.
+      persistentObject: burstStarted,
+    };
+
+    CrudDao.Change = Change;
+    =====*/
 
     return CrudDao; // return Function
   }
