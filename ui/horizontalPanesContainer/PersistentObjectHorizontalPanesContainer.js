@@ -51,7 +51,7 @@ define(["dojo/_base/declare", "ppwcode-util-oddsAndEnds/ui/horizontalPanesContai
           this._c_pre(function() {return po.isInstanceOf && po.isInstanceOf(PersistentObject);});
 
           var draggablePane = new PersistentObjectDraggableEditPane({crudDao: this.crudDao});
-          var detailPane = new (this._SemanticObjectPaneConstructorFor(po))();
+          var detailPane = new (this._SemanticObjectPaneConstructorFor(po))({renderItemListRow: this.renderItemListRow});
           domClass.add(draggablePane.domNode, this._draggableClassNameFor(po));
           draggablePane.set("persistentObjectPane", detailPane);
           draggablePane.set("target", po);
@@ -64,6 +64,14 @@ define(["dojo/_base/declare", "ppwcode-util-oddsAndEnds/ui/horizontalPanesContai
           this._c_pre(function() {return po;});
 
           return this._c_ABSTRACT(po);
+        },
+
+        _renderItemListRow: function(/*Object*/ o) {
+          // summary:
+          //   Function that returns a div, representing a given object in a list.
+          this._c_pre(function() {return o;});
+
+          return this._c_ABSTRACT(o);
         },
 
         _draggableClassNameFor: function(/*PersistentObject*/ po) {
