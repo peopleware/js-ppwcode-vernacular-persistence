@@ -178,7 +178,10 @@ define(["dojo/_base/declare",
             }
             if (exc.response.data["$type"].indexOf("PPWCode.Vernacular.Persistence.I.Dao.ObjectAlreadyChangedException") >= 0) {
               logger.info("Server reported object already changed (" + contextDescription + ").", exc.response.data);
-              return new ObjectAlreadyChangedException({cause: exc.response.data, newVersion: exc.response.data && exc.response.data.Data && exc.response.data.Data.sender});
+              return new ObjectAlreadyChangedException({
+                cause: exc.response.data,
+                newVersion: exc.response.data && exc.response.data.Data && exc.response.data.Data.sender
+              });
             }
           }
           //noinspection MagicNumberJS
@@ -740,6 +743,13 @@ define(["dojo/_base/declare",
             logger.debug("DELETE success in server: " + data);
             self.cache.stopTrackingCompletely(po);
             // signal deletion
+            topic.publish(
+              module.id,
+              {
+                action: "DELETE",
+                persistentObject: po
+              }
+            );
             po._changeAttrValue("persistenceId", null);
             if (po.get("persistenceVersion")) {
               po._changeAttrValue("persistenceVersion", null);
