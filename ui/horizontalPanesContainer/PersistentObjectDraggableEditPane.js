@@ -139,7 +139,7 @@ define(["dojo/_base/declare",
           return this._closeOnAlt(event, this.inherited(arguments));
         },
 
-        remove: function() {
+        remove: function(event) {
           return this._closeOnAlt(event, this.inherited(arguments));
         },
 
