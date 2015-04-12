@@ -96,7 +96,7 @@ define(["dojo/_base/declare", "dojo/dom-style",
       },
 
       _wrappedDetails: function() {
-        var result = [];
+        var result = this.inherited(arguments);
         if (this.persistentObjectPane) {
           result.push(this.persistentObjectPane);
         }
