@@ -241,7 +241,7 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
                 if (result !== po) {
                   throw "ERROR: revive should have found the same object";
                 }
-                // MUDO workaround https://projects.peopleware.be/jira44/browse/PICTOPERFECT-505
+                // MUDO workaround https://peopleware.atlassian.net/browse/PICTOPERFECT-505
                 // The server PUT result is not correct! We retrieve extra, to get the correct result for now!
                 return self.cancel(); // yes, weird, but it does the trick for now for the workaround
               }
