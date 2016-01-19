@@ -790,16 +790,16 @@ define(["dojo/_base/declare",
 
         var self = this;
         logger.debug("Requested DELETE of: " + po);
-        var url = this.urlBuilder.get("DELETE")(po);
+        var url = self.urlBuilder.get("DELETE")(po);
         logger.debug("DELETE URL is: " + url);
         var deletePromise = request.del(
           url,
           {
             handleAs: "json",
-            data: JSON.stringify(po, this.replacer),
+            data: JSON.stringify(po, self.replacer),
             headers: {"Accept" : "application/json"},
             withCredentials: true,
-            timeout: this.timeout
+            timeout: self.timeout
           }
         ).then(function(data) {
           logger.debug("DELETE success in server: " + data);
@@ -811,6 +811,7 @@ define(["dojo/_base/declare",
         });
         var deleteDonePromise = cleanupPromise.otherwise(
           function(err) {
+            //noinspection JSUnresolvedFunction
             throw self._handleException(err, "remove - DELETE " + url); // of the request
           }
         );
