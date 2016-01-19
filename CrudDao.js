@@ -695,6 +695,70 @@ define(["dojo/_base/declare",
         return this._poAction("PUT", po);
       },
 
+      _cleanupAfterRemove: function(/*PersistentObject*/ po) {
+        // summary:
+        //   The rest of the graph returned by the server cannot be trusted to be up to date after delete.
+        //   The server might have cascaded delete. Related objects on this side could still hold a reference
+        //   to the deleted object, which is removed in the mean time in the server.
+        //   Therefor, we do not revive the result, but instead stop tracking po, and retrieve fresh data
+        //   for all related elements if they are still cached.
+        this._c_pre(function() {return po;});
+        this._c_pre(function() {return po.isInstanceOf && po.isInstanceOf(PersistentObject);});
+
+        var self = this;
+        //noinspection JSUnresolvedFunction
+        self.cache.stopTrackingCompletely(po);
+        // signal deletion
+        topic.publish(
+          module.id,
+          {
+            action: "DELETE",
+            persistentObject: po
+          }
+        );
+        //noinspection JSUnresolvedFunction
+        po._changeAttrValue("persistenceId", null);
+        //noinspection JSUnresolvedFunction
+        if (po.get("persistenceVersion")) {
+          //noinspection JSUnresolvedFunction
+          po._changeAttrValue("persistenceVersion", null);
+        }
+        //noinspection JSUnresolvedFunction
+        if (po.get("createdBy")) {
+          //noinspection JSUnresolvedFunction
+          po._changeAttrValue("createdBy", null);
+          //noinspection JSUnresolvedFunction
+          po._changeAttrValue("createdAt", null);
+        }
+        //noinspection JSUnresolvedFunction
+        if (po.get("lastModifiedBy")) {
+          //noinspection JSUnresolvedFunction
+          po._changeAttrValue("lastModifiedBy", null);
+          //noinspection JSUnresolvedFunction
+          po._changeAttrValue("lastModifiedAt", null);
+        }
+        return all(js.getAllKeys(po).filter(function(k) {
+            return po[k] && po[k].isInstanceOf && po[k].isInstanceOf(PersistentObject) && po[k].get("persistenceId") && self.cache.get(po[k]);
+          }).map(function(k) {
+            // this will update object in cache, but don't add a referer for my sake,
+            // and don't care about IdNotFoundExceptions (delete might have cascaded)
+            var dependentPo = po[k];
+            logger.debug("updating " + dependentPo + " after delete of " + po);
+            return self.retrieve(dependentPo.getTypeDescription(), dependentPo.get("persistenceId"), null, true).then(
+              function(result) {
+                return result;
+              },
+              function(err) {
+                return err; // no throw // TODO filter on serious exceptions
+              }
+            );
+          })
+        ).then(function() {
+          logger.debug("All dependent objects refreshed. Delete done.");
+          return po;
+        });
+      },
+
       remove: function(/*PersistentObject*/ po) {
         // summary:
         //   Ask the server to delete po.
@@ -737,62 +801,15 @@ define(["dojo/_base/declare",
             withCredentials: true,
             timeout: this.timeout
           }
-        );
-        var cleanupPromise = deletePromise.then(
-          function(data) {
-            logger.debug("DELETE success in server: " + data);
-            self.cache.stopTrackingCompletely(po);
-            // signal deletion
-            topic.publish(
-              module.id,
-              {
-                action: "DELETE",
-                persistentObject: po
-              }
-            );
-            po._changeAttrValue("persistenceId", null);
-            if (po.get("persistenceVersion")) {
-              po._changeAttrValue("persistenceVersion", null);
-            }
-            if (po.get("createdBy")) {
-              po._changeAttrValue("createdBy", null);
-              po._changeAttrValue("createdAt", null);
-            }
-            if (po.get("lastModifiedBy")) {
-              po._changeAttrValue("lastModifiedBy", null);
-              po._changeAttrValue("lastModifiedAt", null);
-            }
-            return all(js.getAllKeys(po).
-              filter(function(k) {return po[k] && po[k].isInstanceOf && po[k].isInstanceOf(PersistentObject) && self.cache.get(po[k]);}).
-              map(function(k) {
-                // this will update object in cache, but don't add a referer for my sake,
-                // and don't care about IdNotFoundExceptions (delete might have cascaded)
-                var dependentPo = po[k];
-                logger.debug("updating " + dependentPo + " after delete of " + po);
-                return self.
-                  retrieve(dependentPo.getTypeDescription(), dependentPo.get("persistenceId"), null, true).
-                  then(
-                    function(result) {
-                      return result;
-                    },
-                    function(err) {
-                      return err; // no throw // TODO filter on serious exceptions
-                    }
-                  );
-              })
-            );
-          }
-          // MUDO: when we get an IdNotFoundException
-
-          /* TODO make this a semantic exception
-           {"$type":"NHibernate.Exceptions.GenericADOException, NHibernate","ClassName":"NHibernate.Exceptions.GenericADOException","Message":"could not delete: [PictoPerfect.API.Cloud1Client#250][SQL: DELETE FROM dbo.Organization WHERE OrganizationID = ? AND PersistenceVersion = ?]","Data":null,"InnerException":{"$type":"System.Data.SqlClient.SqlException, System.Data","Errors":[{"$type":"System.Data.SqlClient.SqlError, System.Data","class":16,"lineNumber":1,"message":"The DELETE statement conflicted with the REFERENCE constraint \"FK_Sample_Organization\". The conflict occurred in database \"pictoperfect_dev\", table \"dbo.Sample\", column 'OrganizationID'.","number":547,"procedure":"","server":"pictoperfect.co7feoyidufu.eu-west-1.rds.amazonaws.com","source":".Net SqlClient Data Provider","state":0},{"$type":"System.Data.SqlClient.SqlError, System.Data","class":0,"lineNumber":1,"message":"The statement has been terminated.","number":3621,"procedure":"","server":"pictoperfect.co7feoyidufu.eu-west-1.rds.amazonaws.com","source":".Net SqlClient Data Provider","state":0}],"ClassName":"System.Data.SqlClient.SqlException","Message":"The DELETE statement conflicted with the REFERENCE constraint \"FK_Sample_Organization\". The conflict occurred in database \"pictoperfect_dev\", table \"dbo.Sample\", column 'OrganizationID'.\r\nThe statement has been terminated.","Data":{"$type":"System.Collections.ListDictionaryInternal, mscorlib","helpLink.ProdName":"Microsoft SQL Server","helpLink.ProdVer":"11.00.2100","helpLink.EvtSrc":"MSSQLServer","helpLink.EvtID":"547","helpLink.BaseHelpUrl":"http://go.microsoft.com/fwlink","helpLink.LinkId":"20476","actual-sql-query":"DELETE FROM dbo.Organization WHERE OrganizationID = @p0 AND PersistenceVersion = @p1"},"InnerException":null,"HelpURL":null,"StackTraceString":"   at System.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection)\r\n   at System.Data.SqlClient.TdsParser.ThrowExceptionAndWarning()\r\n   at System.Data.SqlClient.TdsParser.Run(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj)\r\n   at System.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String resetOptionsString)\r\n   at System.Data.SqlClient.SqlCommand.RunExecuteReaderTds(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, Boolean async)\r\n   at System.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, Boolean returnStream, String method, DbAsyncResult result)\r\n   at System.Data.SqlClient.SqlCommand.InternalExecuteNonQuery(DbAsyncResult result, String methodName, Boolean sendToPipe)\r\n   at System.Data.SqlClient.SqlCommand.ExecuteNonQuery()\r\n   at NHibernate.AdoNet.AbstractBatcher.ExecuteNonQuery(IDbCommand cmd)\r\n   at NHibernate.Persister.Entity.AbstractEntityPersister.Delete(Object id, Object version, Int32 j, Object obj, SqlCommandInfo sql, ISessionImplementor session, Object[] loadedState)","RemoteStackTraceString":null,"RemoteStackIndex":0,"ExceptionMethod":"8\nOnError\nSystem.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089\nSystem.Data.SqlClient.SqlConnection\nVoid OnError(System.Data.SqlClient.SqlException, Boolean)","HResult":-2146232060,"Source":".Net SqlClient Data Provider","WatsonBuckets":null},"HelpURL":null,"StackTraceString":"   at NHibernate.Persister.Entity.AbstractEntityPersister.Delete(Object id, Object version, Int32 j, Object obj, SqlCommandInfo sql, ISessionImplementor session, Object[] loadedState)\r\n   at NHibernate.Persister.Entity.AbstractEntityPersister.Delete(Object id, Object version, Object obj, ISessionImplementor session)\r\n   at NHibernate.Action.EntityDeleteAction.Execute()\r\n   at NHibernate.Engine.ActionQueue.Execute(IExecutable executable)\r\n   at NHibernate.Engine.ActionQueue.ExecuteActions(IList list)\r\n   at NHibernate.Event.Default.AbstractFlushingEventListener.PerformExecutions(IEventSource session)\r\n   at NHibernate.Event.Default.DefaultFlushEventListener.OnFlush(FlushEvent event)\r\n   at NHibernate.Impl.SessionImpl.Flush()\r\n   at PPWCode.Vernacular.Persistence.I.Dao.NHibernate.NHibernateFlushSessionOperationInterceptor.PostInvoke(Object instance, Object returnedValue, Object[] outputs, Exception exception) in c:\\Development\\Sempera\\PPWCode.Vernacular.Persistence\\src\\I\\Dao\\NHibernate\\NHibernateFlushSessionOperationInterceptor.cs:line 48\r\n   at PPWCode.Vernacular.Persistence.I.Dao.Wcf.Helpers.GenericInterceptor.GenericInvoker.Invoke(Object instance, Object[] inputs, Object[]& outputs) in c:\\Development\\Sempera\\PPWCode.Vernacular.Persistence\\src\\I\\Dao\\Wcf\\Helpers\\GenericInterceptor\\GenericInvoker.cs:line 74\r\n   at System.ServiceModel.Dispatcher.DispatchOperationRuntime.InvokeBegin(MessageRpc& rpc)\r\n   at System.ServiceModel.Dispatcher.ImmutableDispatchRuntime.ProcessMessage5(MessageRpc& rpc)\r\n   at System.ServiceModel.Dispatcher.ImmutableDispatchRuntime.ProcessMessage31(MessageRpc& rpc)\r\n   at System.ServiceModel.Dispatcher.MessageRpc.Process(Boolean isOperationContextSet)","RemoteStackTraceString":null,"RemoteStackIndex":0,"ExceptionMethod":"8\nDelete\nNHibernate, Version=3.1.0.4000, Culture=neutral, PublicKeyToken=aa95f207798dfdb4\nNHibernate.Persister.Entity.AbstractEntityPersister\nVoid Delete(System.Object, System.Object, Int32, System.Object, NHibernate.SqlCommand.SqlCommandInfo, NHibernate.Engine.ISessionImplementor, System.Object[])","HResult":-2146232832,"Source":"NHibernate","WatsonBuckets":null,"sql":"DELETE FROM dbo.Organization WHERE OrganizationID = ? AND PersistenceVersion = ?"}
-           */
-        );
-        var deleteDonePromise = cleanupPromise.then(
-          function() {
-            logger.debug("All dependent objects refreshed. Delete done.");
-            return po;
-          },
+        ).then(function(data) {
+          logger.debug("DELETE success in server: " + data);
+          return data;
+        });
+        var cleanupPromise = deletePromise.then(function(data) {
+          //noinspection JSUnresolvedFunction
+          self._cleanupAfterRemove(po);
+        });
+        var deleteDonePromise = cleanupPromise.otherwise(
           function(err) {
             throw self._handleException(err, "remove - DELETE " + url); // of the request
           }
