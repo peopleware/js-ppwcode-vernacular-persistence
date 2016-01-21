@@ -74,6 +74,7 @@ define(["dojo/_base/declare", "dojo/dom-style",
 
       postCreate: function() {
         var self = this;
+        self.inherited(arguments);
         self._setButtonsStyles(this.NOTARGET);
         if (!self.get("target")) { // TODO is this really necessary? why? write a comment
           self.set("target", null);

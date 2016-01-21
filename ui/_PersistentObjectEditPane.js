@@ -87,6 +87,12 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
 
       // TODO validate should be setup here, or in _SemanticObjectPane
 
+
+      postCreate: function() {
+        var self = this;
+        // self.inherited(arguments); // MUDO this call must be made, and activates missing features, but also now introduces layout problems; fix before uncommenting
+      },
+
       close: function() {
         // summary:
         //   Close this pane.
