@@ -89,12 +89,14 @@ define(["dojo/_base/declare",
         }
         this._cacheReportingPeriod = (js.typeOf(value) === "number") ? value : (value ? 0 : -1);
         if (value > 0) {
+          //noinspection JSUnresolvedVariable
           this._cacheReportingTimer = setTimeout(lang.hitch(this.cache, this.cache.report), value);
         }
       },
 
       _optionalCacheReporting: function() {
         if (this._cacheReportingPeriod === 0) {
+          //noinspection JSUnresolvedFunction
           console.info(this.cache.report());
         }
       },
@@ -185,6 +187,7 @@ define(["dojo/_base/declare",
             }
             if (exc.response.data["$type"].indexOf("PPWCode.Vernacular.Persistence.I.Dao.ObjectAlreadyChangedException") >= 0) {
               logger.info("Server reported object already changed (" + contextDescription + ").", exc.response.data);
+              //noinspection JSUnresolvedVariable
               return new ObjectAlreadyChangedException({
                 cause: exc.response.data,
                 newVersion: exc.response.data && exc.response.data.Data && exc.response.data.Data.sender
@@ -304,7 +307,10 @@ define(["dojo/_base/declare",
         //   A search for a specific `serverType` without a `query` should return all
         //   objects of that type.
         this._c_pre(function() {return this.isOperational();});
-        this._c_pre(function() {return result && result.isInstanceOf;});
+        this._c_pre(function() {
+          //noinspection JSUnresolvedVariable
+          return result && result.isInstanceOf;
+        });
         // Cannot really formulate what we want, because of stupid Observable Store wrapper
         // this._c_pre(function() {return result && result.isInstanceOf && result.isInstanceOf(StoreOfStateful);});
         this._c_pre(function() {return js.typeOf(url) === "string";});
@@ -372,6 +378,7 @@ define(["dojo/_base/declare",
           if (js.typeOf(revived) !== "array") {
             throw new Error("expected array from remote call");
           }
+          //noinspection JSUnresolvedFunction
           var removed = result.loadAll(revived);
           /* Elements might be not PersistentObjects themselves, but a hash of PersistentObjects.
              If the element is an Object, but not a PersistentObject, we will try the properties of the object
@@ -442,7 +449,10 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return this.isOperational();});
         this._c_pre(function() {return method === "POST" || method === "PUT" || method === "DELETE";});
         this._c_pre(function() {return po;});
-        this._c_pre(function() {return po.isInstanceOf && po.isInstanceOf(PersistentObject);});
+        this._c_pre(function() {
+          //noinspection JSUnresolvedVariable,JSUnresolvedFunction
+          return po.isInstanceOf && po.isInstanceOf(PersistentObject);
+        });
 
         logger.debug("Requested " + method + " of: " + po);
         var url = this.urlBuilder.get(method)(po);
@@ -495,6 +505,7 @@ define(["dojo/_base/declare",
         // IDEA subtype of PersistentObject
         this._c_pre(function() {return js.typeOf(persistenceId) === "number";});
 
+        //noinspection JSUnresolvedFunction
         return this.cache.getByTypeAndId(serverType, persistenceId);
       },
 
@@ -505,9 +516,13 @@ define(["dojo/_base/declare",
         //   If it was not in the cache yet, it is added, and referrer is added as referrer.
         //   If it was already in the cache, referrer is added as referrer.
         //   Since the referrers of a cache are a Set, there will be no duplicate entries.
-        this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
+        this._c_pre(function() {
+          //noinspection JSUnresolvedVariable,JSUnresolvedFunction
+          return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);
+        });
         this._c_pre(function() {return referrer;});
 
+        //noinspection JSValidateTypes
         this.cache.track(po, referrer); // TODO or store? not needed?
         this._optionalCacheReporting();
       },
@@ -520,9 +535,13 @@ define(["dojo/_base/declare",
         //   If po is removed from the cache, it is also removed as a referer
         //   of all other entries (potentially resulting in removal from the cache
         //   of that entry, recursively).
-        this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
+        this._c_pre(function() {
+          //noinspection JSUnresolvedVariable,JSUnresolvedFunction
+          return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);
+        });
         this._c_pre(function() {return referer;});
 
+        //noinspection JSUnresolvedFunction
         this.cache.stopTracking(po, referer);
         this._optionalCacheReporting();
       },
@@ -530,6 +549,7 @@ define(["dojo/_base/declare",
       stopTrackingAsReferer: function(/*Any*/ referer) {
         this._c_pre(function() {return referer;});
 
+        //noinspection JSUnresolvedFunction
         this.cache.stopTrackingAsReferer(referer);
         this._optionalCacheReporting();
       },
@@ -581,8 +601,6 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return js.typeOf(serverType) === "string";});
         this._c_pre(function() {return js.typeOf(persistenceId) === "number";});
         this._c_pre(function() {return !referer || js.typeOf(referer) === "object";});
-
-        // TODO function too complex; refactor
 
         var /*CrudDao*/ self = this;
         logger.debug("Requested GET of: '" + serverType + "' with id '" + persistenceId + "'");
@@ -697,8 +715,14 @@ define(["dojo/_base/declare",
         //   All other kinds of exceptions or value are to be considered errors.
         this._c_pre(function() {return this.isOperational();});
         this._c_pre(function() {return po;});
-        this._c_pre(function() {return po.isInstanceOf && po.isInstanceOf(PersistentObject);});
-        this._c_pre(function() {return po.get("persistenceId") === null;});
+        this._c_pre(function() {
+          //noinspection JSUnresolvedVariable,JSUnresolvedFunction
+          return po.isInstanceOf && po.isInstanceOf(PersistentObject);
+        });
+        this._c_pre(function() {
+          //noinspection JSUnresolvedFunction
+          return po.get("persistenceId") === null;
+        });
         this._c_pre(function() {return referer;});
 
         return this._poAction("POST", po, referer);
@@ -724,8 +748,14 @@ define(["dojo/_base/declare",
         var thisObject = this;
         this._c_pre(function() {return thisObject.isOperational();});
         this._c_pre(function() {return po;});
-        this._c_pre(function() {return po.isInstanceOf && po.isInstanceOf(PersistentObject);});
-        this._c_pre(function() {return po.get("persistenceId") !== null;});
+        this._c_pre(function() {
+          //noinspection JSUnresolvedVariable,JSUnresolvedFunction
+          return po.isInstanceOf && po.isInstanceOf(PersistentObject);
+        });
+        this._c_pre(function() {
+          //noinspection JSUnresolvedFunction
+          return po.get("persistenceId");
+        });
 
         return this._poAction("PUT", po);
       },
@@ -738,7 +768,10 @@ define(["dojo/_base/declare",
         //   Therefor, we do not revive the result, but instead stop tracking po, and retrieve fresh data
         //   for all related elements if they are still cached.
         this._c_pre(function() {return po;});
-        this._c_pre(function() {return po.isInstanceOf && po.isInstanceOf(PersistentObject);});
+        this._c_pre(function() {
+          //noinspection JSUnresolvedVariable,JSUnresolvedFunction
+          return po.isInstanceOf && po.isInstanceOf(PersistentObject);
+        });
 
         var self = this;
         //noinspection JSUnresolvedFunction
@@ -820,8 +853,14 @@ define(["dojo/_base/declare",
         var thisObject = this;
         this._c_pre(function() {return thisObject.isOperational();});
         this._c_pre(function() {return po;});
-        this._c_pre(function() {return po.isInstanceOf && po.isInstanceOf(PersistentObject);});
-        this._c_pre(function() {return po.get("persistenceId") !== null;});
+        this._c_pre(function() {
+          //noinspection JSUnresolvedVariable,JSUnresolvedFunction
+          return po.isInstanceOf && po.isInstanceOf(PersistentObject);
+        });
+        this._c_pre(function() {
+          //noinspection JSUnresolvedFunction
+          return po.get("persistenceId");
+        });
 
         var self = this;
         logger.debug("Requested DELETE of: " + po);
@@ -883,8 +922,14 @@ define(["dojo/_base/declare",
 
         this._c_pre(function() {return this.isOperational();});
         this._c_pre(function() {return po;});
-        this._c_pre(function() {return po.isInstanceOf && po.isInstanceOf(PersistentObject);});
-        this._c_pre(function() {return po.get("persistenceId");});
+        this._c_pre(function() {
+          //noinspection JSUnresolvedVariable,JSUnresolvedFunction
+          return po.isInstanceOf && po.isInstanceOf(PersistentObject);
+        });
+        this._c_pre(function() {
+          //noinspection JSUnresolvedFunction
+          return po.get("persistenceId");
+        });
         // po should be in the cache, but we don't enforce it; your problem
         this._c_pre(function() {return js.typeOf(propertyName) === "string";});
         this._c_pre(function() {return po[propertyName] && po[propertyName].query;});
@@ -896,7 +941,9 @@ define(["dojo/_base/declare",
         var self = this;
         logger.debug("Requested GET of to many: '" + po + "[" + propertyName+ "]'");
         var store = po[propertyName];
+        //noinspection JSUnresolvedFunction
         var url = self.urlBuilder.toMany(po.getTypeDescription(), po.get("persistenceId"), store.serverPropertyName);
+        //noinspection JSUnresolvedFunction
         var guardKey = po.getKey() + "." + propertyName;
         logger.debug("Refreshing to many store for " + guardKey);
         var guardedPromise = store._arbiter.guard(
@@ -953,7 +1000,10 @@ define(["dojo/_base/declare",
         //   A search for a specific `serverType` without a `query` should return all
         //   objects of that type.
         this._c_pre(function() {return this.isOperational();});
-        this._c_pre(function() {return result && result.isInstanceOf;});
+        this._c_pre(function() {
+          //noinspection JSUnresolvedVariable
+          return result && result.isInstanceOf;
+        });
         // Cannot really formulate what we want, because of stupid Observable Store wrapper
         // this._c_pre(function() {return result && result.isInstanceOf && result.isInstanceOf(StoreOfStateful);});
         this._c_pre(function() {return !serverType || js.typeOf(serverType) === "string";});
