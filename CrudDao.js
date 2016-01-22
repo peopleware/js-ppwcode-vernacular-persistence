@@ -41,10 +41,12 @@ define(["dojo/_base/declare",
       // timeout: Number
       //   The default timeout in ms
       timeout: 10000, // needed for older hardware
-      // IDEA detect we are on older hardware, and set it to 10 then; e.g., count to 1 000 000, and depending on the speed ...
+      /* IDEA detect we are on older hardware, and set it to 10 then; e.g., count to 1 000 000, and depending on the
+         speed ... */
 
       // maxConcurrentRequests: Number
-      //   The maximum number of concurrent connections. Later requests will be queued, and handled when earlier requests finish.
+      //   The maximum number of concurrent connections. Later requests will be queued, and handled when earlier
+      //   requests finish.
       maxConcurrentRequests: 16,
       // any lower limit makes Chrome slower! this is introduced for eopdf
 
@@ -152,7 +154,8 @@ define(["dojo/_base/declare",
             // Not all browsers do that, though, for AJAX requests. In those cases, we detect it,
             // and handle it ourselves in some way. E.g., change the window location
             // to a server login page, that redirects here again after successful login.
-            // ie ("trident") has issues with a 401; this is a workaround, that will result in infinite reloads if something truly bad happens
+            // ie ("trident") has issues with a 401; this is a workaround, that will result in infinite reloads if
+            // something truly bad happens
             logger.info("Not authorized leaked through (" + contextDescription + ").", exc);
             this.handleNotAuthorized(); // this method might do a redirect, so it might not return
             return exc; // we may not get here
@@ -162,8 +165,12 @@ define(["dojo/_base/declare",
             var kwargs = {cause: exc.response.data};
             if (exc.response.data && exc.response.data["$type"] && exc.response.data["$type"].indexOf) {
               if (exc.response.data["$type"].indexOf("PPWCode.Vernacular.Persistence.I.Dao.IdNotFoundException") >= 0) {
-                kwargs.serverType = exc.response.data.Data.persistenObjectType; // NOTE: sic! Yes, there is a typo in the server code (missing "t")
-                // getting the typeDescription in general needs a require, and thus is async. We do not want to do that here.
+                // NOTE: sic! Yes, there is a typo in the server code (missing "t" in "persistenObjectType")
+                //noinspection JSUnresolvedVariable
+                kwargs.serverType = exc.response.data.Data.persistenObjectType;
+                /* getting the typeDescription in general needs a require, and thus is async. We do not want to do that
+                   here. */
+                //noinspection JSUnresolvedVariable
                 kwargs.persistenceId = exc.response.data.Data.persistenceId;
               }
             }
@@ -314,7 +321,8 @@ define(["dojo/_base/declare",
           var rangeStart = options.start || 0;
           var rangeEnd = (options.count && options.count !== Infinity) ? (rangeStart + options.count - 1) : "";
           headers["Range"] = "items=" + rangeStart + "-" + rangeEnd;
-          headers["X-Range"] = headers["Range"]; //set X-Range for Opera since it blocks "Range" header (source: JsonRest)
+          //set X-Range for Opera since it blocks "Range" header (source: JsonRest)
+          headers["X-Range"] = headers["Range"];
         }
         var loadPromise = request(
           url,
@@ -743,7 +751,7 @@ define(["dojo/_base/declare",
             // this will update object in cache, but don't add a referer for my sake,
             // and don't care about IdNotFoundExceptions (delete might have cascaded)
             var dependentPo = po[k];
-            logger.debug("updating " + dependentPo + " after delete of " + po);
+            logger.debug("refreshing " + dependentPo + " after delete of " + po);
             return self.retrieve(dependentPo.getTypeDescription(), dependentPo.get("persistenceId"), null, true).then(
               function(result) {
                 return result;
@@ -845,7 +853,6 @@ define(["dojo/_base/declare",
         //
         //   The remote retrieve might fail, with an error, or an `IdNotFoundException`, or a
         //   `SecurityException`.
-        //   TODO find a way to signal this as a state of the StoreOfStateful
 
         this._c_pre(function() {return this.isOperational();});
         this._c_pre(function() {return po;});
@@ -854,8 +861,10 @@ define(["dojo/_base/declare",
         // po should be in the cache, but we don't enforce it; your problem
         this._c_pre(function() {return js.typeOf(propertyName) === "string";});
         this._c_pre(function() {return po[propertyName] && po[propertyName].query;});
-//        this._c_pre(function() {return po[propertyName] && po[propertyName].isInstanceOf && po[propertyName].isInstanceOf(ToManyStore)});
+        // this._c_pre(function() {return po[propertyName] && po[propertyName].isInstanceOf && po[propertyName].isInstanceOf(ToManyStore)});
         // Cannot really formulate what we want, because of stupid Observable Store wrapper
+
+        //   TODO find a way to signal this as a state of the StoreOfStateful
 
         var self = this;
         logger.debug("Requested GET of to many: '" + po + "[" + propertyName+ "]'");
