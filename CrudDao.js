@@ -584,32 +584,46 @@ define(["dojo/_base/declare",
 
         // TODO function too complex; refactor
 
-        var self = this;
+        var /*CrudDao*/ self = this;
         logger.debug("Requested GET of: '" + serverType + "' with id '" + persistenceId + "'");
-        var retrievePromiseCacheKey = serverType + "@" + persistenceId;
-        if (self._retrievePromiseCache[retrievePromiseCacheKey]) {
-          logger.debug("Already loading " + retrievePromiseCacheKey + "; returning existing promise.");
-          return self._retrievePromiseCache[retrievePromiseCacheKey];
+        var cacheKey = serverType + "@" + persistenceId;
+        //noinspection JSUnresolvedVariable
+        var /*Promise*/ resultPromise = self._retrievePromiseCache[cacheKey];
+        if (resultPromise) {
+          logger.debug("Already loading " + cacheKey + "; returning existing promise.");
+          return resultPromise;
         }
-        var cached = null;
-        if (!force) {
-          cached = self.getCachedByTypeAndId(serverType, persistenceId);
-          if (cached) {
-            logger.debug("Found cached version; resolving Promise immediately (" + serverType + "@" + persistenceId + ")");
-            self.track(cached, referer); // track now, early; if we wat until reload, it might be removed from the cache already
-            // TODO this needs to be guarded; referer might stop tracking before the reload Promise resolves; that results in a memory leak;
-            // TODO also: what happens with a cancel?
+        //noinspection JSUnresolvedFunction
+        var cached = self.getCachedByTypeAndId(serverType, persistenceId);
+        if (cached) {
+          logger.debug("Found cached version (" + cacheKey + ")");
+          if (referer) {
+            // track now, early; if we wait until reload, it might be removed from the cache already
+            //noinspection JSUnresolvedFunction
+            self.track(cached, referer);
+            /* TODO this needs to be guarded?; referer might stop tracking before the reload Promise resolves;
+             that results in a memory leak? */
+          }
+          if (!force) {
+            logger.debug("Found cached version, and should not be forced: resolving Promise immediately " +
+                         "(will reload if stale) (" + cacheKey + ")");
             var deferred = new Deferred();
-            self._retrievePromiseCache[retrievePromiseCacheKey] = deferred.promise;
             deferred.resolve(cached);
+            resultPromise = deferred.promise;
           }
         }
-        if (!cached || (Date.now() - cached.lastReloaded.getTime() > CrudDao.durationToStale)) { // not recently reloaded
-          logger.debug("Not found in cache or cached version is stale. Getting '" + serverType + "' with id '" + persistenceId + "' from server.");
+        //noinspection JSUnresolvedVariable
+        var stale = cached && (Date.now() - cached.lastReloaded.getTime() > CrudDao.durationToStale);
+        if (force || !cached || stale) { // not recently reloaded
+          logger.debug("Force reload requested, not found in cache or cached version is stale. " +
+                       "Getting '" + serverType + "' with id '" + persistenceId + "' from server.");
+          //noinspection JSUnresolvedVariable
           var url = self.urlBuilder.retrieve(serverType, persistenceId);
           logger.debug("GET URL is: " + url);
+          //noinspection JSUnresolvedFunction
           var executed = self._queued(function() {
-            var loadPromise = request(
+            //noinspection JSUnresolvedVariable
+            var loadedAndRevived = request(
               url,
               {
                 method: "GET",
@@ -619,36 +633,49 @@ define(["dojo/_base/declare",
                 withCredentials: true,
                 timeout: self.timeout
               }
-            );
-            var revivePromise = loadPromise.then(
-              function(data) {
-                logger.debug("Retrieved successfully from server: " + data);
-                var revived = self.revive(data, referer);
-                delete self._retrievePromiseCache[retrievePromiseCacheKey];
-                return revived;
-              },
-              function(err) {
-                delete self._retrievePromiseCache[retrievePromiseCacheKey];
-                throw self._handleException(err, "retrieve - GET " + url); // of the request
+            ).otherwise(function(err) {
+              //noinspection JSUnresolvedFunction
+              var exc = self._handleException(err, "retrieve - GET " + url); // of the request
+              if (exc.isInstanceOf
+                  && exc.isInstanceOf(IdNotFoundException)
+                  // cannot test servertype: the exception from the server always reports IPersistentObject
+                  && exc.persistenceId === persistenceId) {
+                logger.debug("IdNotFoundException while retrieving " + cacheKey);
+                if (cached) {
+                  logger.debug("We have a cached version. Cleaning up.");
+                  //noinspection JSUnresolvedFunction
+                  self._cleanupAfterRemove(cached);
+                }
               }
-            );
-            revivePromise.then(lang.hitch(self, self._optionalCacheReporting));
+              throw exc;
+            }).then(function(data) {
+              logger.debug("Retrieved successfully from server (" + cacheKey + ")");
+              //noinspection JSUnresolvedFunction
+              return self.revive(data, referer); // errors are true errors
+            });
+            //noinspection JSUnresolvedVariable
+            loadedAndRevived.then(lang.hitch(self, self._optionalCacheReporting)); // side track
             // no need to handle errors of revive: they are errors
-            return revivePromise;
+            return loadedAndRevived;
           });
-          if (!cached) {
-            self._retrievePromiseCache[retrievePromiseCacheKey] = executed;
-          }
-          return self._retrievePromiseCache[retrievePromiseCacheKey];
+          executed.always(function(po) { // side track, always
+            logger.debug("Retrieve finalized. Forgetting the retrieve Promise (" + cacheKey + ")");
+            //noinspection JSUnresolvedVariable
+            delete self._retrievePromiseCache[cacheKey];
+          });
+          //noinspection JSUnresolvedVariable
+          self._retrievePromiseCache[cacheKey] = executed;
+          resultPromise = resultPromise || executed;
         }
-        else {
-          // cached version found, so not forced, and it was not old enough; there is a deferred promise in _retrievePromiseCache;
-          // this cannot stay there, because there is no ongoing load that will remove it
-          logger.debug("Cached version was recently reloaded; will do no server interaction (" + retrievePromiseCacheKey + ")");
-          var resultPromise = self._retrievePromiseCache[retrievePromiseCacheKey];
-          delete self._retrievePromiseCache[retrievePromiseCacheKey];
-          return resultPromise;
-        }
+        /*
+         !!resultPromise
+         === (cached && !force) || (force || !cached || stale)
+         === (cached || force || !cached || stale) && (!force || force || !cached || stale)
+         === (force || stale || true) && (!cached || stale || true)
+         === true && true
+         === true
+         */
+        return resultPromise;
       },
 
       create: function(/*PersistentObject*/ po, /*Any*/ referer) {

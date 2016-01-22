@@ -16,13 +16,13 @@
 
 define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPane/_SemanticObjectPane", "ppwcode-util-oddsAndEnds/_PropagationMixin",
         "ppwcode-vernacular-exceptions/SemanticException", "../IdNotFoundException", "../ObjectAlreadyChangedException", "ppwcode-vernacular-exceptions/SecurityException",
-        "../PersistentObject", "dijit/registry", "dijit/form/TextBox", "dojo/Deferred",
+        "../PersistentObject", "../CrudDao", "dijit/registry", "dijit/form/TextBox", "dojo/Deferred", "dojo/topic",
         "dojo/i18n!./nls/messages",
         "ppwcode-util-oddsAndEnds/log/logger!",
         "module"],
   function(declare, _SemanticObjectPane, _PropagationMixin,
            SemanticException, IdNotFoundException, ObjectAlreadyChangedException, SecurityException,
-           PersistentObject, registry, TextBox, Deferred,
+           PersistentObject, CrudDao, registry, TextBox, Deferred, topic,
            messages,
            logger,
            module) {
@@ -66,6 +66,10 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
       //   Needed for operation.
       crudDao: null,
 
+      // _deletePromise: Promise
+      //   Remember we are deleting, and we expect to receive a deleted message from `crudDao`.
+      _deletePromise: null,
+
       constructor: function(kwargs) {
         var self = this;
         if (kwargs && kwargs.crudDao) {
@@ -91,6 +95,33 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
       postCreate: function() {
         var self = this;
         // self.inherited(arguments); // MUDO this call must be made, and activates missing features, but also now introduces layout problems; fix before uncommenting
+        self.own(topic.subscribe(CrudDao.mid, function(/*CrudDao.Change*/ crudDaoChange) {
+          logger.debug("Received an event from CrudDao: ", JSON.stringify(crudDaoChange));
+          // don't react to update (save) or create, only todelete, and only if it's for me
+          if (crudDaoChange.action === "DELETE" && self.get("target") === crudDaoChange.persistentObject) {
+            logger.debug("Our target was deleted.");
+            if (!self._deletePromise) {
+              logger.info("Our target was deleted, and that was not expected. Closing window.");
+              /* We don't want a modal message if the delete was expected, but it was unexpected. */
+              /* We don't want a modal message, sinds dojo/request/xhr timeout works in a weird way. It is on a
+                 50ms interval, checking whether requests are resolved yet, but this only gets active when
+                 the event loop is free, of course. When we block the UI with a modal dialog, and the
+                 timeout check activates before the handling of the requests, all requests will time out.
+                 It would be better to have flash messages, but we do not have an infrastructure for that yet.
+                 So, no message for the time being. */
+              self.set("presentationMode", self.WILD);
+              // IDEA flash messages[IdNotFoundException.mid];
+              // don't now, we are still handling a remote request with a timeout; let that reject first
+            }
+            else {
+              // expected behavior
+              logger.debug("Our target was deleted, and it was expected. Closing window silently.");
+              self._deletePromise = null;
+              self.set("presentationMode", self.VIEW);
+            }
+            self.close(); // starts up animation on 20ms interval
+          }
+        }));
       },
 
       close: function() {
@@ -135,7 +166,14 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
         //   With false, only stale cache entries are actually refreshed.
         this._c_pre(function() {return this.get("crudDao");});
 
-        return this.crudDao.retrieve(po.getTypeDescription(), po.get("persistenceId"), this, force);
+        var retrieved = this.crudDao.retrieve(po.getTypeDescription(), po.get("persistenceId"), this, force);
+        /* If we get an IdNotFoundException, we get a delete message via topic from crudDao, and close the window
+           with a dialog warning the user. The error is propagated over the Promise here, though. */
+        retrieved.otherwise(function(err) {
+          logger.info("Error retrieving " + po.getTypeDescription() + "@" +
+                      po.get("persistenceId") + " during refresh: ", JSON.stringify(err));
+        });
+        return retrieved;
       },
 
       cancel: function() {
@@ -168,15 +206,23 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
           },
           function(e) {
             // this is not really a fatal error, but an inconvenience
-            if (e.isInstanceOf && (e.isInstanceOf(IdNotFoundException) || e.isInstanceOf(SecurityException))) {
-              self.set("presentationMode", self.WILD);
-              var messageKey = e.constructor.mid;
-              if (e.key) {
-                messageKey += "_" + e.key;
+            if (e.isInstanceOf) {
+              if (e.isInstanceOf(IdNotFoundException)) {
+                /* If we get an IdNotFoundException, we get a delete message via topic from crudDao, and close the window
+                 with a dialog warning the user. The error is propagated over the Promise here, though. */
+                logger.info("IdNotFoundException on cancel of " + po.getTypeDescription() + "@" +
+                            po.get("persistenceId") + ". Just resolving. " +
+                            "This is handled by an event from a topic from CrudDao.",
+                            JSON.stringify(e));
+                return new Deferred().resolve(po);
               }
-              var message = messages[messageKey] || messageKey;
-              alert(message);
-              return self.close();
+              if (e.isInstanceOf(SecurityException)) {
+                // IDEA handle this with a topic event too, like IdNotFoundException
+                self.set("presentationMode", self.WILD);
+                var message = messages[SecurityException.mid];
+                alert(message);
+                return self.close();
+              }
             }
             logger.error("ERROR ON REFRESH: " + e);
             self.set("presentationMode", self.ERROR);
@@ -281,27 +327,30 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
         var self = this;
         this.set("presentationMode", this.BUSY);
         var po = this.get("target");
-        var deletePromise = self.crudDao.remove(po);
-        return deletePromise.then(
-          function() {
-            self.set("presentationMode", self.VIEW);
-            return self.close();
-          },
+        /* crudDao warns via a topic on delete, and we close the window in response.
+           Because in this case we expect that, we don't want a modal dialog. We remember we are in this case. */
+        self._deletePromise = self.crudDao.remove(po);
+        // there is nothing to do on normal completion
+        return self._deletePromise.otherwise(
           function(e) {
-            if (e.isInstanceOf && e.isInstanceOf(SemanticException)) {
+            if (e.isInstanceOf) {
               if (e.isInstanceOf(IdNotFoundException)) {
-                // already gone; no problem
-                logger.info("Object was already removed.");
-                return self.close();
+                // already gone; no problem; window will be closed by event on topic from crudDao
+                logger.info("Object was already removed while removing. No problem.");
+                return new Deferred().resolve(po);
               }
-              self.set("presentationMode", self.WILD);
-              var messageKey = e.constructor.mid;
-              if (e.key) {
-                messageKey += "_" + e.key;
+              if (e.isInstanceOf(SemanticException)) {
+                logger.info("Object removal got a SemanticException. Go wild, and try to tell the user, and then reset.");
+                // IDEA handle this with a topic event too, like IdNotFoundException
+                self.set("presentationMode", self.WILD);
+                var messageKey = e.constructor.mid;
+                if (e.key) {
+                  messageKey += "_" + e.key;
+                }
+                var message = messages[messageKey] || messageKey;
+                alert(message);
+                return self.cancel();
               }
-              var message = messages[messageKey] || messageKey;
-              alert(message);
-              return self.cancel();
             }
             logger.error("ERROR ON SAVE or CREATE: TODO");
             self.set("presentationMode", self.ERROR);
@@ -336,22 +385,24 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
       },
 
       _handleSaveException: function(exc) {
+        var po = this.get("target");
         if (exc.isInstanceOf && exc.isInstanceOf(SemanticException)) {
-          this.set("presentationMode", this.WILD);
-          var messageKey = exc.constructor.mid;
-          if (exc.key) {
-            messageKey += "_" + exc.key;
+          if (!exc.isInstanceOf(IdNotFoundException)) {
+            // for IdNotFoundException, we will have gotten a delete event on the topic from crudDao, and have warned
+            // the user and closed this pane already
+            this.set("presentationMode", this.WILD);
+            var messageKey = exc.constructor.mid;
+            if (exc.key) {
+              messageKey += "_" + exc.key;
+            }
+            var message = messages[messageKey] || messageKey;
+            alert(message);
           }
-          var message = messages[messageKey] || messageKey;
-          alert(message);
           if (exc.isInstanceOf(ObjectAlreadyChangedException) || exc.isInstanceOf(SecurityException)) {
             return this.cancel();
           }
-          if (exc.isInstanceOf(IdNotFoundException)) {
-            return this.close();
-          }
-          // else other semantic exception; we are wild
-          return this.get("target");
+          // else other semantic exception; we stay wild
+          return new Deferred().resolve(po);
         }
         logger.error("ERROR ON SAVE or CREATE");
         this.set("presentationMode", this.ERROR);
