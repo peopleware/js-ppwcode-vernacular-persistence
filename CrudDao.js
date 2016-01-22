@@ -174,7 +174,7 @@ define(["dojo/_base/declare",
                 kwargs.persistenceId = exc.response.data.Data.persistenceId;
               }
             }
-            var infExc = new IdNotFoundException({cause: exc.response.data});
+            var infExc = new IdNotFoundException(kwargs);
             logger.info("Not found (" + contextDescription + "): ", infExc);
             return infExc;
           }
