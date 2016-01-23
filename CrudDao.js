@@ -385,7 +385,9 @@ define(["dojo/_base/declare",
              for PersistentObjects, and stop tracking those. */
           removed.forEach(function stopTrackingRecursive(r) {
             if (r && r.isInstanceOf && r.isInstanceOf(PersistentObject)) {
-              self.stopTracking(r, referer);
+              if (referer) {
+                self.stopTracking(r, referer);
+              }
             }
             else if (js.typeOf(r) === "array") {
               r.forEach(function(el) {stopTrackingRecursive(el);});
