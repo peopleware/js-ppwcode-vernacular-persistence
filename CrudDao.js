@@ -910,7 +910,7 @@ define(["dojo/_base/declare",
         return deleteDonePromise;
       },
 
-      retrieveToMany: function(/*PersistentObject*/ po, /*String*/ propertyName, /*Object?*/ options) {
+      retrieveToMany: function(/*PersistentObject*/ po, /*String*/ propertyName, /*Object?*/ referer, /*Object?*/ options) {
         // summary:
         //   Load the objects of a to-many relationship from the remote server.
         //   These are the many objects of `po[propertyName]`.
@@ -953,12 +953,14 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return po[propertyName] && po[propertyName].query;});
         // this._c_pre(function() {return po[propertyName] && po[propertyName].isInstanceOf && po[propertyName].isInstanceOf(ToManyStore)});
         // Cannot really formulate what we want, because of stupid Observable Store wrapper
-
-        //   TODO find a way to signal this as a state of the StoreOfStateful
+        this._c_pre(function() {return !referer || js.typeOf(referer) === "object";});
 
         var self = this;
         logger.debug("Requested GET of to many: '" + po + "[" + propertyName+ "]'");
         var store = po[propertyName];
+        if (referer) {
+          self.track(store, referer);
+        } // else nop
         //noinspection JSUnresolvedFunction
         var url = self.urlBuilder.toMany(po.getTypeDescription(), po.get("persistenceId"), store.serverPropertyName);
         //noinspection JSUnresolvedFunction
