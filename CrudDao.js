@@ -16,12 +16,14 @@
 
 define(["dojo/_base/declare",
         "ppwcode-util-contracts/_Mixin",
-        "./UrlBuilder", "./PersistentObject", "./IdNotFoundException", "ppwcode-vernacular-exceptions/SecurityException", "./ObjectAlreadyChangedException",
+        "./UrlBuilder", "./PersistentObject", "ppwcode-vernacular-semantics/IdentifiableObject",
+        "./IdNotFoundException", "ppwcode-vernacular-exceptions/SecurityException", "./ObjectAlreadyChangedException",
         "dojo/Deferred", "dojo/request", "dojo/_base/lang", "ppwcode-util-oddsAndEnds/js", "dojo/topic",
         "dojo/has", "dojo/promise/all", "ppwcode-util-oddsAndEnds/log/logger!", "module"],
   function(declare,
            _ContractMixin,
-           UrlBuilder, PersistentObject, IdNotFoundException, SecurityException, ObjectAlreadyChangedException,
+           UrlBuilder, PersistentObject, IdentifiableObject,
+           IdNotFoundException, SecurityException, ObjectAlreadyChangedException,
            Deferred, request, lang, js, topic,
            has, all, logger, module) {
 
@@ -525,44 +527,44 @@ define(["dojo/_base/declare",
         return this.cache.getByTypeAndId(serverType, persistenceId);
       },
 
-      track: function(/*PersistentObject*/ po, /*Object*/ referrer) {
+      track: function(/*IdentifiableObject*/ io, /*Object*/ referrer) {
         // summary:
-        //   After this call, po will be in the cache, and be tracked by referrer.
+        //   After this call, `io` will be in the cache, and be tracked by referrer.
         // description:
         //   If it was not in the cache yet, it is added, and referrer is added as referrer.
         //   If it was already in the cache, referrer is added as referrer.
         //   Since the referrers of a cache are a Set, there will be no duplicate entries.
         this._c_pre(function() {
           //noinspection JSUnresolvedVariable,JSUnresolvedFunction
-          return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);
+          return io && io.isInstanceOf && io.isInstanceOf(IdentifiableObject);
         });
         this._c_pre(function() {return referrer;});
 
         //noinspection JSValidateTypes
-        this.cache.track(po, referrer); // TODO or store? not needed?
+        this.cache.track(io, referrer)
         this._optionalCacheReporting();
       },
 
-      stopTracking: function(/*PersistentObject*/ po, /*Object*/ referer) {
+      stopTracking: function(/*IdentifiableObject*/ io, /*Object*/ referer) {
         // summary:
-        //   We note that referer no longer uses po.
+        //   We note that referer no longer uses `io`.
         // description:
-        //   If referer was the last referer of po, po is removed from the cache.
+        //   If referer was the last referer of `io`, `io` is removed from the cache.
         //   If po is removed from the cache, it is also removed as a referer
         //   of all other entries (potentially resulting in removal from the cache
         //   of that entry, recursively).
         this._c_pre(function() {
           //noinspection JSUnresolvedVariable,JSUnresolvedFunction
-          return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);
+          return io && io.isInstanceOf && io.isInstanceOf(IdentifiableObject);
         });
         this._c_pre(function() {return referer;});
 
         //noinspection JSUnresolvedFunction
-        this.cache.stopTracking(po, referer);
+        this.cache.stopTracking(io, referer);
         this._optionalCacheReporting();
       },
 
-      stopTrackingAsReferer: function(/*Any*/ referer) {
+      stopTrackingAsReferer: function(/*Object*/ referer) {
         this._c_pre(function() {return referer;});
 
         //noinspection JSUnresolvedFunction
