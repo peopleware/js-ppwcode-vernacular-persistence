@@ -467,16 +467,35 @@ define(["dojo/_base/declare",
 
       report: function() {
         var self = this;
-        var pNames = Object.keys(self._data);
-        var minCreatedAt = pNames.reduce(
-          function(acc, pn) {
-            return acc && acc < self._data[pn].createdAt ? acc : self._data[pn].createdAt;
+        var keys = Object.keys(self._data);
+        var accumulation = keys.reduce(
+          function(acc, key) {
+            if (!acc.minCreatedAt || self._data[key].createdAt < acc.minCreatedAt) {
+              acc.minCreatedAt = self._data[key].createdAt;
+            }
+            if (!acc.maxCreatedAt || acc.maxCreatedAt < self._data[key].createdAt) {
+              acc.maxCreatedAt = self._data[key].createdAt;
+            }
+            acc.nrOfReferers += self._data[key].getNrOfReferers();
+            return acc;
           },
-          null
+          {
+            minCreatedAt: undefined,
+            maxCreatedAt: undefined,
+            nrOfReferers: 0
+          }
         );
-        var result = { nrOfEntries: pNames.length, earliestEntry:  minCreatedAt };
-        result.entries = pNames.map(function(pn) {
-          return self._data[pn].detailedReport();
+        var result = {
+          nrOfEntries: keys.length,
+          earliestEntry: accumulation.minCreatedAt,
+          lastEntry: accumulation.maxCreatedAt,
+          nrOfReferers: accumulation.nrOfReferers
+        };
+        result.entries = keys.map(function(key) {
+          //noinspection JSUnresolvedFunction
+          var keyReport = self._data[key].detailedReport();
+          keyReport.key = key;
+          return keyReport;
         });
         return result;
       }
