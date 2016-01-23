@@ -92,29 +92,33 @@ define(["dojo/_base/declare",
         }
         this._cacheReportingPeriod = (js.typeOf(value) === "number") ? value : (value ? 0 : -1);
         if (value > 0) {
-          //noinspection JSUnresolvedVariable
-          this._cacheReportingTimer = setTimeout(lang.hitch(this.cache, this.cache.report), value);
+          this._cacheReport();
+          this._cacheReportingTimer = setTimeout(lang.hitch(this, this._cacheReport), value);
         }
       },
 
       _optionalCacheReporting: function() {
         if (this._cacheReportingPeriod === 0) {
-          //noinspection JSUnresolvedFunction
-          var report = this.cache.report();
-          this._cacheReportingHistory.push({
-            at: new Date(),
-            earliestEntry: report.earliestEntry,
-            lastEntry: report.lastEntry,
-            nrOfEntries: report.nrOfEntries,
-            nrOfReferers: report.nrOfReferers
-          });
-          console.info("\nCCCCCCCCCCC Cache report TTTTTTTTTTT");
-          console.info(report);
-          console.info(
-            this._cacheReportingHistory.map(function(reportEntry) {return JSON.stringify(reportEntry);}).join("\n"),
-            "\n\n"
-          );
+          this._cacheReport();
         }
+      },
+
+      _cacheReport: function() {
+        //noinspection JSUnresolvedFunction
+        var report = this.cache.report();
+        this._cacheReportingHistory.push({
+          at: new Date(),
+          earliestEntry: report.earliestEntry,
+          lastEntry: report.lastEntry,
+          nrOfEntries: report.nrOfEntries,
+          nrOfReferers: report.nrOfReferers
+        });
+        console.info("\nCCCCCCCCCCC Cache report TTTTTTTTTTT");
+        console.info(report);
+        console.info(
+          this._cacheReportingHistory.map(function(reportEntry) {return JSON.stringify(reportEntry);}).join("\n"),
+          "\n\n"
+        );
       },
 
       _copyKwargsProperties: function(kwargs, propertyNames) {
@@ -128,9 +132,12 @@ define(["dojo/_base/declare",
 
       constructor: function(kwargs) {
         this._copyKwargsProperties(kwargs, ["urlBuilder", "revive", "cache", "replacer", "timeout"]);
-        this.setCacheReportingPeriod(has((this.constructor.mid || module.id) + "-cacheReporting"));
         this._retrievePromiseCache = {};
         this._queuedRequests = [];
+      },
+
+      postscript: function() {
+        this.setCacheReportingPeriod(has((this.constructor.mid || module.id) + "-cacheReporting"));
       },
 
       handleNotAuthorized: function() {
