@@ -289,7 +289,15 @@ define(["dojo/_base/declare",
                );
       },
 
+      getByKey: function(/*String*/ key) {
         // summary:
+        //   gets a cached PersistentObject by key
+        //   returns undefined or null if there is no such entry
+        this._c_pre(function() {return js.typeOf(key) === "string";});
+
+        return this._getPayload(key); // return IdentifiableObject
+      },
+
       get: function(/*IdentifiableObject*/ io) {
         // summary:
         //   gets a cached IdentifiableObject for a given `io`
