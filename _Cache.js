@@ -130,6 +130,7 @@ define(["dojo/_base/declare",
       //   When the cache is asked to stop tracking an object, it also removes the object it stops
       //   tracking as a referer everywhere.
       //   When there are no more referers for a given instance, it is removed from the cache, recursively.
+      //   If the instance is a ToManyStore, it is disabled of it is no longer tracked.
       // description:
       //   In the absence of some form of weak reference in JavaScript (promised for ECMAScript 6 / Harmony,
       //   see <http://wiki.ecmascript.org/doku.php?id=harmony:harmony>), we use reference tracking to be
@@ -220,6 +221,7 @@ define(["dojo/_base/declare",
         //   If, by this removal, there are no more referers for that payload,
         //   remove the entry from the cache, and remove its payload as referer
         //   from all other entries (recursively).
+        //   If the removed entry is a ToManyStore, it is disabled.
         this._c_pre(function() {return js.typeOf(key) === "string";});
         this._c_pre(function() {return referer;});
 
@@ -232,6 +234,11 @@ define(["dojo/_base/declare",
             if (logger.isInfoEnabled()) {
               var numberOfEntries = Object.keys(self._data).length;
               logger.info("Entry removed from cache (" + numberOfEntries + "): " + entry.payload.toString());
+            }
+            if (entry.payload.isInstanceOf(ToManyStore)) {
+              logger.info("Entry was ToManyStore " + key + ". Disabling.");
+              entry.payload.removeAll();
+              entry.payload.set("lastReloaded", null);
             }
             // now, if payload was itself a referer, we need to remove if everywhere as referer
             self.stopTrackingAsReferer(entry.payload);
