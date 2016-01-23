@@ -82,6 +82,7 @@ define(["dojo/_base/declare",
       //   Use setCacheReportingPeriod to change, to trigger the intervals.
       _cacheReportingPeriod: -1,
       _cacheReportingTimer: null,
+      _cacheReportingHistory: [],
 
       setCacheReportingPeriod: function(value) {
         if (this._cacheReportingTimer) {
@@ -97,7 +98,20 @@ define(["dojo/_base/declare",
       _optionalCacheReporting: function() {
         if (this._cacheReportingPeriod === 0) {
           //noinspection JSUnresolvedFunction
-          console.info(this.cache.report());
+          var report = this.cache.report();
+          this._cacheReportingHistory.push({
+            at: new Date(),
+            earliestEntry: report.earliestEntry,
+            lastEntry: report.lastEntry,
+            nrOfEntries: report.nrOfEntries,
+            nrOfReferers: report.nrOfReferers
+          });
+          console.info("\nCCCCCCCCCCC Cache report TTTTTTTTTTT");
+          console.info(report);
+          console.info(
+            this._cacheReportingHistory.map(function(reportEntry) {return JSON.stringify(reportEntry);}).join("\n"),
+            "\n\n"
+          );
         }
       },
 
@@ -112,7 +126,7 @@ define(["dojo/_base/declare",
 
       constructor: function(kwargs) {
         this._copyKwargsProperties(kwargs, ["urlBuilder", "revive", "cache", "replacer", "timeout"]);
-        this.setCacheReportingPeriod(has(module.id + "-cacheReporting"));
+        this.setCacheReportingPeriod(has((this.constructor.mid || module.id) + "-cacheReporting"));
         this._retrievePromiseCache = {};
         this._queuedRequests = [];
       },
