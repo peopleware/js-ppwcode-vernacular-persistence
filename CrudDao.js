@@ -560,7 +560,7 @@ define(["dojo/_base/declare",
       //   This hash avoids loading the same object twice at the same time.
       _retrievePromiseCache: null,
 
-      retrieve: function(/*String*/ serverType, /*Number*/ persistenceId, /*Object*/ referer, /*Boolean*/ force) {
+      retrieve: function(/*String*/ serverType, /*Number*/ persistenceId, /*Object?*/ referer, /*Boolean*/ force) {
         // summary:
         //   Get the object of type `serverType` with `persistenceId` from the remote server.
         //   This returns a Promise.
@@ -962,7 +962,7 @@ define(["dojo/_base/declare",
         var retrievePromise = self._refresh(store, url, null, store, options); // IDEA: we can even add a query here
         var donePromise = retrievePromise.then(
           function(result) {
-            logger.debug("To-many store for" + guardKey + " refreshed.");
+            logger.debug("To-many store for " + guardKey + " refreshed.");
             result.set("lastReloaded", new Date());
             return result;
           },
