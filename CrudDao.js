@@ -88,12 +88,14 @@ define(["dojo/_base/declare",
 
       setCacheReportingPeriod: function(value) {
         if (this._cacheReportingTimer) {
-          clearTimeout(this._cacheReportingTimer);
+          //noinspection JSUnresolvedFunction
+          clearInterval(this._cacheReportingTimer);
         }
         this._cacheReportingPeriod = (js.typeOf(value) === "number") ? value : (value ? 0 : -1);
         if (value > 0) {
           this._cacheReport();
-          this._cacheReportingTimer = setTimeout(lang.hitch(this, this._cacheReport), value);
+          //noinspection JSUnresolvedFunction
+          this._cacheReportingTimer = setInterval(lang.hitch(this, this._cacheReport), value);
         }
       },
 
