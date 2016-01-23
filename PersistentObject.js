@@ -116,7 +116,9 @@ define(["dojo/_base/declare",
         throw new Error("precondition violation: po");
       }
 
+      //noinspection JSUnresolvedFunction
       var serverType = po.getTypeDescription();
+      //noinspection JSUnresolvedFunction
       return PersistentObject.keyForId(serverType, po.get("persistenceId")); // return String
     };
 
