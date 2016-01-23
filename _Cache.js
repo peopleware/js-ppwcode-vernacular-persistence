@@ -16,11 +16,12 @@
 
 define(["dojo/_base/declare",
         "ppwcode-util-contracts/_Mixin",
-        "./PersistentObject", "ppwcode-util-collections/ArraySet",
+        "ppwcode-vernacular-semantics/IdentifiableObject", "ppwcode-util-collections/ArraySet", "./PersistentObject",
+        "./ToManyStore",
         "ppwcode-util-oddsAndEnds/js", "ppwcode-util-oddsAndEnds/log/logger!"],
   function(declare,
            _ContractMixin,
-           PersistentObject, Set,
+           IdentifiableObject, Set, PersistentObject, ToManyStore,
            js, logger) {
 
     var Entry = declare([_ContractMixin], {
@@ -33,13 +34,13 @@ define(["dojo/_base/declare",
 
       _c_invar: [
         function() {return this._c_prop_mandatory("payload");},
-        function() {return this.payload.isInstanceOf && this.payload.isInstanceOf(PersistentObject);},
+        function() {return this.payload.isInstanceOf && this.payload.isInstanceOf(IdentifiableObject);},
         function() {return this.payload.getKey() !== null;},
         function() {return this.getNrOfReferers() >= 0;}
       ],
 
-      // payload: PersistentObject
-      //   Reference to the PersistentObject this is an entry for.
+      // payload: IdentifiableObject
+      //   Reference to the IdentifiableObject this is an entry for.
       //   This can never change.
       payload: null,
 
@@ -57,20 +58,27 @@ define(["dojo/_base/declare",
       //    introduced to do memory leak detection
       createdAt: null,
 
-      constructor: function(/*PersistentObject*/ po, /*_Cache*/ cache) {
-        this._c_pre(function() {return po;});
-        this._c_pre(function() {return po.isInstanceOf && po.isInstanceOf(PersistentObject);});
-        this._c_pre(function() {return po.getKey() !== null;});
+      constructor: function(/*IdentifiableObject*/ io, /*_Cache*/ cache) {
+        this._c_pre(function() {return io;});
+        this._c_pre(function() {
+          //noinspection JSUnresolvedVariable,JSUnresolvedFunction
+          return io.isInstanceOf && io.isInstanceOf(IdentifiableObject);
+        });
+        this._c_pre(function() {return io.getKey() !== null;});
         this._c_pre(function() {return cache;});
 
-        this.payload = po;
-        var watcher = po.watch("persistenceId", function(propertyName, oldValue, newValue) {
-          if (!newValue) {
-            watcher.unwatch();
-            watcher = null;
-            cache.stopTrackingCompletely(po);
-          }
-        });
+        this.payload = io;
+        //noinspection JSUnresolvedFunction
+        if (io.isInstanceOf(PersistentObject)) {
+          //noinspection JSUnresolvedFunction
+          var watcher = io.watch("persistenceId", function(propertyName, oldValue, newValue) {
+            if (!newValue) {
+              watcher.unwatch();
+              watcher = null;
+              cache.stopTrackingCompletely(io);
+            }
+          });
+        }
         this._referers = new Set();
         this.createdAt = new Date();
       },
@@ -105,11 +113,11 @@ define(["dojo/_base/declare",
       },
 
       report: function() {
-        return { payload: this.payload, createdAt: this.createdAt, nrOfReferers: this._referers.getSize() };
+        return {payload: this.payload, createdAt: this.createdAt, nrOfReferers: this._referers.getSize()};
       },
 
       detailedReport: function() {
-        return { payload: this.payload, createdAt: this.createdAt, referers: this._referers.toJson() };
+        return {payload: this.payload, createdAt: this.createdAt, referers: this._referers.toJson()};
       }
 
     });
@@ -117,11 +125,10 @@ define(["dojo/_base/declare",
     //noinspection LocalVariableNamingConventionJS
     var _Cache = declare([_ContractMixin], {
       // summary:
-      //   Cache for PersistentObject instances.
+      //   Cache for IdentifiableObject instances.
       //   Instances are cached with a referer. Subsequent track-commands add new referers.
       //   When the cache is asked to stop tracking an object, it also removes the object it stops
-      //   tracking as a referer everywhere, and removes any LazyToMany instances it has as property value
-      //   as referer everywhere.
+      //   tracking as a referer everywhere.
       //   When there are no more referers for a given instance, it is removed from the cache, recursively.
       // description:
       //   In the absence of some form of weak reference in JavaScript (promised for ECMAScript 6 / Harmony,
@@ -133,12 +140,8 @@ define(["dojo/_base/declare",
 
       _c_invar: [
         {
-          condition: function() {
-            return true;
-          },
-          selector: function() {
-            return this._data;
-          },
+          condition: function() {return true;},
+          selector: function() {return this._data;},
           invars: [
             function() {return this.isInstanceOf && this.isInstanceOf(Entry);}
           ]
@@ -147,7 +150,7 @@ define(["dojo/_base/declare",
 
       // _data: Object
       //    Hash for the cache Entry instances
-      //    The keys are getKey() for PersistentObject
+      //    The keys are getKey() for IdentifiableObject
       _data: null,
 
       // _typeCrossReference: Object
@@ -157,14 +160,15 @@ define(["dojo/_base/declare",
       _typeCrossReference: null,
 
       // extraOnRemove: Function?
-      //   PersistentObject x Cache --> undefined
+      //   IdentifiableObject x Cache --> undefined
       //   Optional. If here, this function is called when an entry disappears from the trash.
       _extraOnRemove: null,
 
       constructor: function(/*Function?*/ extraOnRemove) {
         // extraOnRemove: Function?
-        //   PersistentObject x Cache --> undefined
+        //   IdentifiableObject x Cache --> undefined
         //   Optional. If here, this function is called when an entry disappears from the trash.
+
         this._data = {};
         this._typeCrossReference = {};
         if (extraOnRemove) {
@@ -172,26 +176,31 @@ define(["dojo/_base/declare",
         }
       },
 
-      _track: function (/*String*/ key, /*PersistentObject*/ po, /*Object*/ referer) {
+      _track: function (/*String*/ key, /*IdentifiableObject*/ io, /*Object*/ referer) {
         this._c_pre(function() {return js.typeOf(key) === "string";});
-        this._c_pre(function() {return po;});
+        this._c_pre(function() {return io;});
+        this._c_pre(function() {
+          //noinspection JSUnresolvedVariable,JSUnresolvedFunction
+          return io.isInstanceOf && io.isInstanceOf(IdentifiableObject);
+        });
         this._c_pre(function() {return referer;});
 
-        this._buildTypeCrossReference(po.constructor);
-        var entry = this._data[key];
+        this._buildTypeCrossReference(io.constructor);
+        var /*Entry*/ entry = this._data[key];
         if (!entry) {
-          entry = new Entry(po, this);
+          entry = new Entry(io, this);
           this._data[key] = entry;
           if (logger.isInfoEnabled()) {
             var numberOfEntries = Object.keys(this._data).length;
-            logger.info("Entry added to cache (" + numberOfEntries + "): " + po.toString());
+            logger.info("Entry added to cache (" + numberOfEntries + "): " + io.toString());
           }
         }
         entry.addReferer(referer);
       },
 
       _getPayload: function(key) {
-        return this._data[key] && this._data[key].payload; // return PersistentObject
+        //noinspection JSUnresolvedVariable
+        return this._data[key] && this._data[key].payload; // return IdentifiableObject
       },
 
       stopTrackingAsReferer: function(referer) {
@@ -211,13 +220,11 @@ define(["dojo/_base/declare",
         //   If, by this removal, there are no more referers for that payload,
         //   remove the entry from the cache, and remove its payload as referer
         //   from all other entries (recursively).
-        //   If referer is a PersistentObject, all its LazyToMany property values
-        //   are also removed as referer from all other entries (recursively).
         this._c_pre(function() {return js.typeOf(key) === "string";});
         this._c_pre(function() {return referer;});
 
         var self = this;
-        var entry = self._data[key];
+        var /*Entry*/ entry = self._data[key];
         if (entry) {
           entry.removeReferer(referer);
           if (entry.getNrOfReferers() <= 0) {
@@ -268,55 +275,66 @@ define(["dojo/_base/declare",
 
         // We have a crossReference. We need to test keys for serverType and all its subtypes
         // (that we know of).
-
         var self = this;
+        //noinspection JSUnresolvedVariable
         return self._typeCrossReference[serverType] &&
                self._typeCrossReference[serverType].reduce(
                  function(acc, poTypeDescription) {
+                   //noinspection JSUnresolvedFunction
                    var key = PersistentObject.keyForId(poTypeDescription, persistenceId);
-                   return self._getPayload(key) || acc; // return PersistentObject, most concrete type
+                   //noinspection JSUnresolvedFunction
+                   return self._getPayload(key) || acc; // return IdentifiableObject, most concrete type
                  },
                  undefined
                );
       },
 
-      get: function(/*PersistentObject*/ po) {
         // summary:
-        //   gets a cached PersistentObject for a given po
+      get: function(/*IdentifiableObject*/ io) {
+        // summary:
+        //   gets a cached IdentifiableObject for a given `io`
         //   returns undefined if there is no such entry
-        this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
-        this._c_pre(function() {return po.get("persistenceId");});
+        this._c_pre(function() {return io;});
+        this._c_pre(function() {
+          //noinspection JSUnresolvedVariable,JSUnresolvedFunction
+          return io.isInstanceOf && io.isInstanceOf(IdentifiableObject);
+        });
+        this._c_pre(function() {return io.getKey();});
 
-        var key = po.getKey();
-        return this._getPayload(key); // return PersistentObject
+        var key = io.getKey();
+        return this._getPayload(key); // return IdentifiableObject
       },
 
-      track: function(/*PersistentObject*/ po, /*Object*/ referer) {
+      track: function(/*IdentifiableObject*/ io, /*Object*/ referer) {
         // summary:
-        //   After this call, po will be in the cache, and be tracked by referer.
+        //   After this call, io will be in the cache, and be tracked by referer.
         // description:
         //   If it was not in the cache yet, it is added, and referer is added as referer.
         //   If it was already in the cache, referer is added as referer.
         //   Since the referers of a cache are a Set, there will be no duplicate entries.
         //
-        //   This does nothing for properties of po. We do not go deep.
-        this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
-        this._c_pre(function() {return po.getKey();});
+        //   This does nothing for properties of io. We do not go deep.
+        this._c_pre(function() {
+          //noinspection JSUnresolvedVariable,JSUnresolvedFunction
+          return io && io.isInstanceOf && io.isInstanceOf(IdentifiableObject);
+        });
+        this._c_pre(function() {return io.getKey();});
         this._c_pre(function() {return referer;});
 
-        var key = po.getKey();
-        this._track(key, po, referer);
+        var key = io.getKey();
+        this._track(key, io, referer);
       },
 
-      _lookupKeyOf: function (po) {
-        var key = po.getKey();
+      _lookupKeyOf: function (io) {
+        var key = io.getKey();
         if (!key) {
           // it can already be deleted from the server, and then persistenceId is null
           // we need to travel all entries
-          var propertyNames = Object.keys(this._data);
-          for (var i = 0; i < propertyNames.length; i++) {
-            if (this._data[propertyNames[i]].payload === po) {
-              key = propertyNames[i];
+          var keys = Object.keys(this._data);
+          for (var i = 0; i < keys.length; i++) {
+            //noinspection JSUnresolvedVariable
+            if (this._data[keys[i]].payload === io) {
+              key = keys[i];
               //noinspection BreakStatementJS
               break;
             }
@@ -325,34 +343,45 @@ define(["dojo/_base/declare",
         return key;
       },
 
-      stopTracking: function(/*PersistentObject*/ po, /*Object*/ referer) {
+      stopTracking: function(/*IdentifiableObject*/ io, /*Object*/ referer) {
         // summary:
-        //   We note that referer no longer uses po.
+        //   We note that referer no longer uses io.
         // description:
-        //   If referer was the last referer of po, po is removed from the cache.
-        //   If po is removed from the cache, it and all its LazyToManyStore property values
+        //   If referer was the last referer of io, io is removed from the cache.
+        //   If io is removed from the cache, it and all its LazyToManyStore property values
         //   are also removed as a referer of all other entries (potentially resulting in
         //   removal from the cache of that entry, recursively).
         //
-        //   This also works if po doesn't have a key (anymore).
-        this._c_pre(function() {return po && po.isInstanceOf;});
+        //   This also works if io doesn't have a key (anymore).
+        this._c_pre(function() {return io;});
+        this._c_pre(function() {
+          //noinspection JSUnresolvedVariable,JSUnresolvedFunction
+          return io.isInstanceOf && io.isInstanceOf(IdentifiableObject);
+        });
         this._c_pre(function() {return referer;});
 
-        var key = this._lookupKeyOf(po);
+        var key = this._lookupKeyOf(io);
         if (key) {
           this._removeReferer(key, referer);
         }
         // else, there is no entry, so nobody is tracking anyway
       },
 
-      stopTrackingCompletely: function(/*PersistentObject*/ po) {
-        this._c_pre(function() {return po && po.isInstanceOf && po.isInstanceOf(PersistentObject);});
+      stopTrackingCompletely: function(/*IdentifiableObject*/ io) {
+        this._c_pre(function() {return io;});
+        this._c_pre(function() {
+          //noinspection JSUnresolvedVariable,JSUnresolvedFunction
+          return io.isInstanceOf && io.isInstanceOf(IdentifiableObject);
+        });
 
-        var key = this._lookupKeyOf(po);
+        var self = this;
+        //noinspection JSUnresolvedFunction
+        var key = self._lookupKeyOf(io);
         if (key) {
-          var self = this;
-          var entry = this._data[key];
+          var entry = self._data[key];
+          //noinspection JSUnresolvedVariable
           entry._referers.forEach(function(r) {
+            //noinspection JSUnresolvedFunction
             self._removeReferer(key, r);
           });
         }
@@ -377,19 +406,25 @@ define(["dojo/_base/declare",
 
         var self = this;
 
-        if (!PoType.prototype.isInstanceOf(PersistentObject)) {
+        //noinspection JSUnresolvedFunction
+        if (!PoType.prototype.isInstanceOf(IdentifiableObject)) {
           return;
         }
 
         var localSubtypes = subtypes || [];
 
+        //noinspection JSUnresolvedFunction
         var poTypeDescription = PoType.prototype.getTypeDescription();
+        //noinspection JSUnresolvedVariable
         if (!self._typeCrossReference[poTypeDescription]) {
           // PoType is not handled yet. Create an entry for it, and add subtypes.
+          //noinspection JSUnresolvedVariable
           self._typeCrossReference[poTypeDescription] = [poTypeDescription].concat(localSubtypes);
           // There might or might not be entries for all parents of PoType. In any case, PoType is not
           // in them yet, and neither are subtypes.
+          //noinspection JSUnresolvedVariable
           PoType._meta.parents.forEach(function(Parent) {
+            //noinspection JSUnresolvedFunction,JSUnresolvedVariable
             self._buildTypeCrossReference(Parent, self._typeCrossReference[poTypeDescription]);
           });
         }
@@ -399,10 +434,14 @@ define(["dojo/_base/declare",
           // to the PoType entry and all its parents, that are not known here yet.
           // Those that are known here already, are known to the super types already also.
           var delta = localSubtypes.filter(function(sub) {
+            //noinspection JSUnresolvedVariable
             return self._typeCrossReference[poTypeDescription].indexOf(sub) < 0;
           });
+          //noinspection JSUnresolvedVariable
           self._typeCrossReference[poTypeDescription].concat(delta);
+          //noinspection JSUnresolvedVariable
           PoType._meta.parents.forEach(function(Parent) {
+            //noinspection JSUnresolvedFunction
             self._buildTypeCrossReference(Parent, delta);
           });
         }
