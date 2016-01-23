@@ -14,10 +14,14 @@
  limitations under the License.
 */
 
-define(["dojo/_base/declare", "ppwcode-vernacular-semantics/SemanticObject", "dojo/_base/lang"],
-  function(declare, SemanticObject, lang) {
+define(["dojo/_base/declare",
+        "ppwcode-vernacular-semantics/SemanticObject", "ppwcode-vernacular-semantics/IdentifiableObject",
+        "dojo/_base/lang"],
+  function(declare,
+           SemanticObject, IdentifiableObject,
+           lang) {
 
-    var PersistentObject = declare([SemanticObject], {
+    var PersistentObject = declare([SemanticObject, IdentifiableObject], {
 
       _c_invar: [
         function() {return this.hasOwnProperty("persistenceId");},
