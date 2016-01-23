@@ -205,11 +205,11 @@ define(["dojo/_base/declare",
 
       stopTrackingAsReferer: function(referer) {
         var self = this;
-        Object.keys(this._data).forEach(function(propertyName) {
+        Object.keys(this._data).forEach(function(key) {
           /* Concurrent modification: by the time we get here, the entry might no longer
              exist (removed by an earlier branch of this backtrack). That is no problem
              though, because we have if (entry) above. */
-          self._removeReferer(propertyName, referer);
+          self._removeReferer(key, referer);
         });
       },
 
@@ -449,9 +449,10 @@ define(["dojo/_base/declare",
 
       forEach: function(callback, thisArg) {
         var self = this;
-        var pNames = Object.keys(self._data);
-        var entries = pNames.map(function(pn) {
-          return self._data[pn].payload;
+        var keys = Object.keys(self._data);
+        var entries = keys.map(function(key) {
+          //noinspection JSUnresolvedVariable
+          return self._data[key].payload;
         });
         entries.forEach(callback, thisArg);
       },
