@@ -19,13 +19,57 @@ define(["dojo/_base/declare",
         "./UrlBuilder", "./PersistentObject", "ppwcode-vernacular-semantics/IdentifiableObject",
         "./IdNotFoundException", "ppwcode-vernacular-exceptions/SecurityException", "./ObjectAlreadyChangedException",
         "dojo/Deferred", "dojo/request", "dojo/_base/lang", "ppwcode-util-oddsAndEnds/js", "dojo/topic",
+        "dojox/uuid/generateRandomUuid",
         "dojo/has", "dojo/promise/all", "ppwcode-util-oddsAndEnds/log/logger!", "module"],
   function(declare,
            _ContractMixin,
            UrlBuilder, PersistentObject, IdentifiableObject,
            IdNotFoundException, SecurityException, ObjectAlreadyChangedException,
            Deferred, request, lang, js, topic,
+           generateRandomUuid,
            has, all, logger, module) {
+
+    var storedSessionsKey = module.id + "/sessions";
+    var cacheHistoryKeyPostfix = "#cacheHistory";
+
+    function cacheHistoryCleanup(sessions) {
+      // remove old session
+      var numberOfDaysToKeep = has(module.id + "-cacheReporting-keepNrOfDays") || 7;
+      var cutOffDate = new Date();
+      cutOffDate.setDate(cutOffDate.getDate() - numberOfDaysToKeep);
+      var sessionsToKeep = sessions.filter(function(session) {return cutOffDate < session.createdAt;});
+      // remove cache histories with an unknown session of session that are not to be kept
+      var toBeRemoved = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var key = localStorage.key(i);
+        if (key.endsWith(cacheHistoryKeyPostfix)
+            && !sessionsToKeep.some(function(sessionToKeep) {return sessionToKeep.key + cacheHistoryKeyPostfix === key;})) {
+          toBeRemoved.push(key);
+        }
+      }
+      toBeRemoved.forEach(function(key) {
+        localStorage.removeItem(key);
+        logger.info("Removed cache history " + key);
+      });
+      return sessionsToKeep;
+    }
+
+    var session;
+    if (localStorage) {
+      session = {
+        createdAt: new Date(),
+        key: generateRandomUuid()
+      };
+      {
+        var sessions = localStorage.getItem(storedSessionsKey);
+        sessions = sessions ? JSON.parse(sessions) : [];
+        sessions.forEach(function(session) {session.createdAt = new Date(session.createdAt);});
+        sessions = cacheHistoryCleanup(sessions);
+        sessions.push(session);
+        localStorage.setItem(storedSessionsKey, JSON.stringify(sessions));
+        logger.info("Session key is " + session.key);
+      }
+    }
 
     //noinspection MagicNumberJS
     var CrudDao = declare([_ContractMixin], {
@@ -93,34 +137,37 @@ define(["dojo/_base/declare",
         }
         this._cacheReportingPeriod = (js.typeOf(value) === "number") ? value : (value ? 0 : -1);
         if (value > 0) {
-          this._cacheReport();
+          this._cacheReport(true);
           //noinspection JSUnresolvedFunction
-          this._cacheReportingTimer = setInterval(lang.hitch(this, this._cacheReport), value);
+          this._cacheReportingTimer = setInterval(lang.hitch(this, this._cacheReport, true), value);
         }
       },
 
       _optionalCacheReporting: function() {
-        if (this._cacheReportingPeriod === 0) {
-          this._cacheReport();
-        }
+        this._cacheReport(this._cacheReportingPeriod === 0);
       },
 
-      _cacheReport: function() {
+      _cacheReport: function(/*Boolean*/ log) {
         //noinspection JSUnresolvedFunction
         var report = this.cache.report();
-        this._cacheReportingHistory.push({
+        //noinspection JSUnresolvedVariable
+        var reportEntry = {
           at: new Date(),
           earliestEntry: report.earliestEntry,
           lastEntry: report.lastEntry,
           nrOfEntries: report.nrOfEntries,
           nrOfReferers: report.nrOfReferers
-        });
-        console.info("\nCCCCCCCCCCC Cache report TTTTTTTTTTT");
-        console.info(report);
-        console.info(
-          this._cacheReportingHistory.map(function(reportEntry) {return JSON.stringify(reportEntry);}).join("\n"),
-          "\n\n"
-        );
+        };
+        if (session) {
+          var cacheHistoryKey = session.key + cacheHistoryKeyPostfix;
+          var cacheHistory = localStorage.getItem(cacheHistoryKey);
+          cacheHistory = cacheHistory ? JSON.parse(cacheHistory) : [];
+          cacheHistory.push(reportEntry);
+          localStorage.setItem(cacheHistoryKey, JSON.stringify(cacheHistory));
+        }
+        if (log && logger.isInfoEnabled()) {
+          logger.info("CCCC cache report TTTT: " + JSON.stringify(reportEntry));
+        }
       },
 
       _copyKwargsProperties: function(kwargs, propertyNames) {
