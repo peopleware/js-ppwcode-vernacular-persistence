@@ -213,7 +213,7 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
                 logger.info("IdNotFoundException on cancel of " + po.getTypeDescription() + "@" +
                             po.get("persistenceId") + ". Just resolving. " +
                             "This is handled by an event from a topic from CrudDao.",
-                            JSON.stringify(e));
+                            e);
                 return new Deferred().resolve(po);
               }
               if (e.isInstanceOf(SecurityException)) {
