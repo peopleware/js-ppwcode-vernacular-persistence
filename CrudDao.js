@@ -499,11 +499,11 @@ define(["dojo/_base/declare",
 
       _poAction: function(/*String*/ method, /*PersistentObject*/ po, /*Any?*/ referer) {
         // summary:
-        //   Ask the server to create, update, or delete po, track po on success,
+        //   Ask the server to create or update po, track po on success,
         //   with referer, if provided.
         //   Returns a Promise.
         // method: String
-        //   POST for create, PUT for update, DELETE for remove
+        //   POST for create, PUT for update
         // description:
         //   The caller has a reference to po already. It is this object that will be reloaded
         //   with the result from the remote call, and thus "magically" have its properties changed,
@@ -521,7 +521,7 @@ define(["dojo/_base/declare",
         //   since the JSON has no persistenceId anymore. This however will reload potential related
         //   objects.
         this._c_pre(function() {return this.isOperational();});
-        this._c_pre(function() {return method === "POST" || method === "PUT" || method === "DELETE";});
+        this._c_pre(function() {return method === "POST" || method === "PUT";});
         this._c_pre(function() {return po;});
         this._c_pre(function() {
           //noinspection JSUnresolvedVariable,JSUnresolvedFunction
