@@ -95,11 +95,12 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
       postCreate: function() {
         var self = this;
         // self.inherited(arguments); // MUDO this call must be made, and activates missing features, but also now introduces layout problems; fix before uncommenting
-        self.own(topic.subscribe(CrudDao.mid, function(/*CrudDao.Change*/ crudDaoChange) {
-          logger.debug("Received an event from CrudDao: ", JSON.stringify(crudDaoChange));
+        self.own(topic.subscribe(CrudDao.mid, function(/*CrudDao.ActionCompleted*/ actionCompleted) {
+          logger.debug("Received an event from CrudDao: ", actionCompleted.toString());
           // don't react to update (save) or create, only todelete, and only if it's for me
-          if (crudDaoChange.action === "DELETE" && self.get("target") === crudDaoChange.persistentObject) {
-            logger.debug("Our target was deleted.");
+          var target = self.get("target");
+          if (actionCompleted.disappeared.some(function(po) {return po === target;})) {
+            logger.debug("Our target has disappeared from the server.");
             if (!self._deletePromise) {
               logger.info("Our target was deleted, and that was not expected. Closing window.");
               /* We don't want a modal message if the delete was expected, but it was unexpected. */

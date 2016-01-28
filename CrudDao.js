@@ -18,13 +18,14 @@ define(["dojo/_base/declare",
         "ppwcode-util-contracts/_Mixin",
         "./UrlBuilder", "./PersistentObject", "ppwcode-vernacular-semantics/IdentifiableObject",
         "./IdNotFoundException", "ppwcode-vernacular-exceptions/SecurityException", "./ObjectAlreadyChangedException",
+        "ppwcode-vernacular-exceptions/SemanticException",
         "dojo/Deferred", "dojo/request", "dojo/_base/lang", "ppwcode-util-oddsAndEnds/js", "dojo/topic",
         "dojox/uuid/generateRandomUuid",
         "dojo/has", "dojo/promise/all", "ppwcode-util-oddsAndEnds/log/logger!", "module"],
   function(declare,
            _ContractMixin,
            UrlBuilder, PersistentObject, IdentifiableObject,
-           IdNotFoundException, SecurityException, ObjectAlreadyChangedException,
+           IdNotFoundException, SecurityException, ObjectAlreadyChangedException, SemanticException,
            Deferred, request, lang, js, topic,
            generateRandomUuid,
            has, all, logger, module) {
@@ -71,6 +72,302 @@ define(["dojo/_base/declare",
       }
     }
 
+    //   When we do an action on the server, it either succeeds or fails.
+    //   If it fails, it is because of an `IdNotFoundException`, `SecurityException`, `ObjectAlreadyChangedException`,
+    //   another `SemanticException`, or a server or communication error.
+    //   If it succeeds, the requested action has happened.
+    //
+    //   If we get an `IdNotFoundException` or `SecurityException`, we know that the reported object
+    //   is no longer available for the current user. For all practical purposes, we should consider it
+    //   deleted on the server. We can get this report from the server for any object for any action.
+    //   It most probably is about the object we requested an action on, or a related object.
+    //   No other error signals that the reported object is no longer available. That an object is no longer
+    //   available is also signalled by successful completion of the delete action. The only difference in
+    //   this case is that the object no longer being available is the nominal effect of the action, while when
+    //   we get an exception, it is exceptional behavior. Note that delete could, in theory, also end
+    //   exceptionally with a report about another object being no longer available.
+    //   These exceptions can also occur during refresh / retrieve / cancel.
+    //   We should signal the user, with a warning in one case, and give less obtrusive feedback in the nominal case.
+    //   All references to the object that is no longer available, in RAM and in user interface, should be removed.
+    //
+    //   If we get an `ObjectAlreadyChangedException` or another `SemanticException`, it can be about the object we
+    //   requested an action for, or about another object, or even several different objects. It most probably is
+    //   about the object we requested an action on, or a related object.
+    //   We should issue the user with a warning, offer him the possibility to review or change his input, and try
+    //   again, or cancel. The message should probably be different in both cases. How to deal with this in detail
+    //   (fields to report validation problems with, resetting of fields, ..) can only be decided by the initiator
+    //   of the action. Also, no other UI elements than those from which the action was initiated should be part
+    //   of the reaction.
+    //
+    //   When we get fresh date for objects, all UI aspects are updated via revival of the cached objects.
+    //   We don't need to signal this any further. The happens with a succesful update and create, but also as a side
+    //   effect, for related objects, for any action.
+    //
+    //   When an object is discovered to be no longer available, as a result of a delete action, or as an exceptional
+    //   discovery during another action, or when we have succesfully created an object, collections of objects
+    //   might have changed (more or less objects in the collection). This collections should be signalled to refresh.
+    //
+    //   In conclusion, we can say we need the following signals:
+    //   - an object is no longer available, because
+    //     - it cannot be found anymore
+    //     - the user can (no longer) access it
+    //     This should be signalled generally, because it might be an exceptional side effect, or the intention of the
+    //     action, but the reaction should be more or less the same. In the signal, we should mention whether or not
+    //     it is exceptional or nominal, to be able to diversify the communication to the user.
+    //   - an object is already changed, or has validation issues
+    //     The calling code will handle the details, but the signal enables a communication to the user in a general
+    //     fashion.
+    //
+    //   We don't really need signals about succesful creation or update, or the reception of fresh data for objects,
+    //   but a general mechanism that also signals this might be used to post messages for the user.
+    //
+    //   A general form of the notifications should say what happened to a given object, and mention the action
+    //   that triggered the effect.
+    //   Objects can
+    //   - change data, with a new `persistenceVersion`
+    //   - change data, with the same `persistenceVersion` (reset)
+    //     If we receive data with the same `persistenceVersion` that does not differ from the data we have, we better
+    //     not signal anything.
+    //   - become available
+    //   - stop being available
+    //
+    //   What doesn't fit in this scheme is a signal about `ObjectAlreadyChangedException` or another
+    //  `SemanticException`. In neither case, anything happens to the object (and we don't want to blindly change
+    //   our object state to the new or old server state, because then we loose the user's edits).
+    //
+    //   Another approach could mention, on completion, the action, and the effect.
+    //   We know that with an action on an object, we get that object and its upstream relationships.
+    //   We will not signal about objects for which we got data, but did not change.
+    //   A reset is only executed when explicitly requested. Otherwise, it is considered an
+    //   `ObjectAlreadyChangedException`.
+    //   - object reset
+    //     - success
+    //     -- objects changed, with a new `persistenceVersion`
+    //     -- objects changed, with the same `persistenceVersion`
+    //     -- newly discovered objects
+    //     - or failure
+    //     -- `IdNotFoundException` or `SecurityException` for 1 object
+    //     - or error
+    //   - object retrieve
+    //     - success
+    //     -- objects changed, with a new `persistenceVersion`
+    //     -- newly discovered objects
+    //     - or failure
+    //     -- `IdNotFoundException` or `SecurityException` for 1 object
+    //     - or error
+    //   - object create
+    //     - success
+    //     -- 1 object added
+    //     -- objects changed, with a new `persistenceVersion`
+    //     -- newly discovered objects
+    //     - or failure
+    //     -- simple
+    //     --- IdNotFoundException` or `SecurityException` for 1 object
+    //     ---`ObjectAlreadyChangedException` for 1 object
+    //     -- or other `SemanticException`s, for related objects
+    //     - or error
+    //   - object update
+    //     - success
+    //     -- objects changed, with a new `persistenceVersion`
+    //     -- newly discovered objects
+    //     - or failure
+    //     -- simple
+    //     --- IdNotFoundException` or `SecurityException` for 1 object
+    //     ---`ObjectAlreadyChangedException` for 1 object
+    //     -- or other `SemanticException`s, for related objects
+    //     - or error
+    //   - object delete
+    //     - success
+    //     -- 1 object deleted
+    //     -- objects changed, with a new `persistenceVersion`
+    //     -- newly discovered objects
+    //     - or failure
+    //     -- simple
+    //     --- IdNotFoundException` or `SecurityException` for 1 object
+    //     ---`ObjectAlreadyChangedException` for 1 object
+    //     -- or other `SemanticException`s, for related objects
+    //     - or error
+    //
+    //   A possible signal structure thus seems to be
+    //   - the intended action
+    //   - the subject of the action, if possible
+    //   - the outcome, being
+    //     - succesful, listing
+    //       - objects changed, with a new `persistenceVersion`
+    //       - objects changed, with the same `persistenceVersion` (only reset)
+    //       - newly discovered objects
+    //       - 1 object added
+    //       - 1 object deleted
+    //     - `IdNotFoundException` or `SecurityException` for 1 object
+    //     - `ObjectAlreadyChangedException` for 1 object (not retrieve or reset)
+    //     - other `SemanticException`s, for related objects (not retrieve or reset)
+    //     - error
+    //
+    //   A possible signal structure thus seems to be
+    //   - the intended action
+    //   - the subject of the action, if possible
+    //   - the outcome, being
+    //     - success
+    //     - `IdNotFoundException` or `SecurityException` for 1 object
+    //     - `ObjectAlreadyChangedException` for 1 object (not retrieve or reset)
+    //     - other `SemanticException`s, for related objects (not retrieve or reset)
+    //     - error
+    //   - the effect, being
+    //     - objects changed, with a new `persistenceVersion`
+    //     - objects changed, with the same `persistenceVersion` (only reset)
+    //     - newly discovered objects, including the ones added
+    //     - objects that became unavailable
+    //
+    //   Note that in this proposal, we do not report on objects that just stop being cached.
+    //   In that respect, should we report on objects that are newly discovered, but not added?
+    //   This was added for collections, that need to be refreshed when objects might be added
+    //   or removed. What could happen is that we load, via a search, a child, whose parent was loaded
+    //   earlier, and is visible now, before this child was made a child of the parent.
+    //   When we signal this newly discoverd child, the list in the representation of the parent
+    //   would detect the child as relevant for him, and could refresh. The reverse, when a child stops
+    //   being a child, cannot also happen. But that is signalled as the child being changed, with a new
+    //   `persistenceVersion`. The list in the representation might detect that it has the child, but
+    //   that it should refresh because it is no longer its parent. This should be done using MVC, because
+    //   otherwise all lists should check all children on every change.
+    //
+    //   It is important to make a distinction between reporting about server state, and cache state.
+    //   We are concerned here to report about server state.
+    //   Objects changed, with a new `persistenceVersion`, 1 object added, and objects that became unavailable,
+    //   are changed in the server state.
+    //   Newly discovered objects and objects changed with the same `persistenceVersion`, are cache-related
+    //   issues. Let's not deal with that now.
+    //
+    //   SecurityException currently does not report a persistenceId. It can be anything. So we cannot conclude
+    //   that the subject of the action has become unavailable. We threat it like any other error
+    //   for now.
+
+    var ActionCompleted = declare([_ContractMixin], {
+      // summary:
+      //   Signal that `action` has happened on `persistentObject`. This might not be what you ordered.
+
+      // crudDao: CrudDao
+      crudDao: null,
+
+      // action: String
+      //   The action taken: "POST" (create), "PUT" (update) or "DELETE".
+      action: null,
+
+      // subject: PersistentObject
+      //   The object that the `action` was executed on, in the state after the succesful `action`.
+      subject: null,
+
+      // exception: Object?
+      //   A SemanticException or other error that occured during the execution of `action`.
+      //   If `null`, the action completed successfully.
+      exception: null,
+
+      // changed: VersionedPersistentObject[]
+      //   Objects of which the `persistenceVersion` changed during the action.
+      // changed: null,
+      // IDEA not supported for now
+
+      // created: PersistentObject?
+      //   An object that was created during the action, if any.
+      created: null,
+
+      // disappeared: PeristentObject[]
+      //   Objects that we became aware off that disappeared during the action.
+      disappeared: null,
+
+      _c_invar: [
+        function() {return this._c_prop_mandatory("crudDao");},
+        function() {return this._c_prop_instance("crudDao", CrudDao);},
+        function() {return this._c_prop_mandatory("action");},
+        function() {return this._c_prop_string("action");},
+        function() {["GET", "POST", "PUT", "DELETE"].indexOf(this.action) > 0},
+        function() {return (this.action === "GET" && this.exception) || this._c_prop_mandatory("subject");},
+        function() {return this._c_prop_instance("subject", PersistentObject);},
+        function() {return this._c_prop_mandatory("url");},
+        function() {return this._c_prop_string("url");},
+        // exception is optional, and can be anything
+        // function() {return this._c_prop_array("changed", VersionedPersistentObject);},
+        // IDEA changed not supported for now
+        function() {return this._c_prop_instance("created", PersistentObject);},
+        function() {return this._c_prop_array("disappeared", PersistentObject);}
+      ],
+
+      constructor: function(/*{crudDao: CrudDao,
+                               action: String,
+                               subject: PersistentObject?,
+                               url: String,
+                               exception: Object?,
+                               changed: VersionedPersistentObject[]?,
+                               created: PersistentObject?,
+                               disappeared: PersistentObject[]?}*/ kwargs) {
+        // summary:
+        //   Object.freeze this when ready, before publishing.
+        this._c_pre(function() {return kwargs;});
+        this._c_pre(function() {return this._c_prop_mandatory(kwargs, "crudDao");});
+        this._c_pre(function() {return this._c_prop_instance(kwargs, "crudDao", CrudDao);});
+        this._c_pre(function() {return this._c_prop_mandatory(kwargs, "action");});
+        this._c_pre(function() {return this._c_prop_string(kwargs, "action");});
+        this._c_pre(function() {
+          return kwargs.action === "GET"
+                 || kwargs.action === "POST"
+                 || kwargs.action === "PUT"
+                 || kwargs.action === "DELETE";
+        });
+        this._c_pre(function() {return (kwargs.action === "GET" && kwargs.exception) || this._c_prop_mandatory(kwargs, "subject");});
+        this._c_pre(function() {return !kwargs.subject || this._c_prop_instance(kwargs, "subject", PersistentObject);});
+        this._c_pre(function() {return this._c_prop_mandatory(kwargs, "url");});
+        this._c_pre(function() {return this._c_prop_string(kwargs, "url");});
+        // exception is optional, and can be anything
+        // this._c_pre(function() {return this._c_prop_array(kwargs, "changed", VersionedPersistentObject);})
+        // IDEA changed not supported for now
+        this._c_pre(function() {return !kwargs.created || this._c_prop_instance(kwargs, "created", PersistentObject);})
+        this._c_pre(function() {return !kwargs.disappeared || this._c_prop_array(kwargs, "disappeared", PersistentObject);})
+
+        Object.defineProperty(
+          this,
+          "crudDao",
+          {
+            value: kwargs.crudDao,
+            writable: false,
+            configurable: false,
+            enumerable: true
+          }
+        );
+        Object.defineProperty(
+          this,
+          "action",
+          {
+            value: kwargs.action,
+            writable: false,
+            configurable: false,
+            enumerable: true
+          }
+        );
+        Object.defineProperty(
+          this,
+          "url",
+          {
+            value: kwargs.url,
+            writable: false,
+            configurable: false,
+            enumerable: true
+          }
+        );
+        this.subject = kwargs.subject;
+        this.exception = kwargs.exception;
+        // this.changed = kwargs.changed ? kwargs.changed.slice() : [];
+        // IDEA changed not supported for now
+        this.created = kwargs.created;
+        this.disappeared = kwargs.disappeared ? kwargs.disappeared.slice() : [];
+      },
+
+      toString: function() {
+        return this.action + " for " +
+               (this.subject ? this.subject.getLabel({formatLength: "long"})  : "-- no subject known --") +
+               "; outcome: " + (this.exception ? "exceptional" : "nominal");
+      }
+
+    });
+
     //noinspection MagicNumberJS
     var CrudDao = declare([_ContractMixin], {
       // summary:
@@ -106,6 +403,25 @@ define(["dojo/_base/declare",
 
       // urlBuilder: UrlBuilder
       urlBuilder: null,
+
+      actionCompletedTopicName: module.id,
+
+      _publishActionCompleted: function(/*ActionCompleted*/ signal) {
+        // MUDO tmp
+        signal.message = signal.action + " " + signal.subject.getLabel({formatLength: "long"}) + " " + signal.exception;
+        signal.type = signal.exception ? "fatal" : "message";
+        signal.duration = 5000;
+        /*
+         {message: ”...”, type: ”...”, duration: ”...”}: where message is the message text, duration is as the attribute, and type is either:
+         fatal
+         error
+         warning
+         message
+         */
+        // MUDO end tmp
+        Object.freeze(signal);
+        topic.publish(this.actionCompletedTopicName, signal);
+      },
 
       // revive: Function
       //   Object x Object -> Object|Promise of Object
@@ -528,11 +844,17 @@ define(["dojo/_base/declare",
           return po.isInstanceOf && po.isInstanceOf(PersistentObject);
         });
 
-        logger.debug("Requested " + method + " of: " + po);
-        var url = this.urlBuilder.get(method)(po);
-        logger.debug(method + " URL is: " + url);
         var self = this;
-        var loadPromise = request(
+        logger.debug("Requested " + method + " of: " + po);
+        var url = self.urlBuilder.get(method)(po);
+        logger.debug(method + " URL is: " + url);
+        var signal = new ActionCompleted({
+          crudDao: self,
+          action: method,
+          subject: po, // might be changed for revived
+          url: url
+        });
+        var revivePromise = request(
           url,
           {
             method: method,
@@ -542,28 +864,42 @@ define(["dojo/_base/declare",
             withCredentials: true,
             timeout: this.timeout
           }
-        );
-        var revivePromise = loadPromise.then(
-          function(data) {
-            logger.debug(method + " success in server: " + data);
-            return self.revive(data, referer);
-          },
-          function(err) {
-            throw self._handleException(err, "_poAction - " + method + " " + url); // of the request
-          }
-        );
-        // no need to handle errors of revive: they are errors
-        // MUDO: when we get an IdNotFoundException
-        revivePromise.then(lang.hitch(this, this._optionalCacheReporting));
-        revivePromise.then(function(revived) {
-          topic.publish(
-            module.id,
-            {
-              action: method,
-              persistentObject: revived
+        ).otherwise(function(err) {
+          var exc = self._handleException(err, "_poAction - " + method + " " + url); // of the request
+          if (exc.isInstanceOf && exc.isInstanceOf(IdNotFoundException)) {
+            logger.debug("IdNotFoundException while doing " + method + " of " + po.getKey());
+            if (po.get("persistenceId") === exc.persistenceId) {
+              logger.debug("The object we are updating is the one that has disappeared. Cleaning up.");
+              // MUDO IdNotFoundExceptions for other objects
+              //noinspection JSUnresolvedFunction
+              self._cleanupAfterRemove(po, signal); // side track
             }
-          );
+          }
+          throw exc;
+        }).then(function(data) {
+          logger.debug(method + " success in server: " + data);
+          return self.revive(data, referer);
+        }).otherwise(function(err) {
+          signal.exception = err;
+          self._publishActionCompleted(signal);
+          throw err;
+        }).then(function(revived) {
+          signal.subject = revived;
+          if (method === "POST") {
+            signal.created = revived;
+          }
+          self._publishActionCompleted(signal);
+          return revived;
+        }).otherwise(function(err) {
+          if (err.isInstanceOf && err.isInstanceOf(SemanticException)) {
+            logger.info("SemanticException doing " + method + " for " + po.getKey() + ": " + err.toString());
+          }
+          else {
+            logger.error("Error doing " + method + " for " + po.getKey() + ": " + err.message || err, err);
+          }
+          throw err;
         });
+        revivePromise.always(lang.hitch(self, self._optionalCacheReporting)); // side track
         return revivePromise;
       },
 
@@ -714,6 +1050,12 @@ define(["dojo/_base/declare",
           logger.debug("GET URL is: " + url);
           //noinspection JSUnresolvedFunction
           var executed = self._queued(function() {
+            var signal = new ActionCompleted({
+              crudDao: self,
+              action: "GET",
+              subject: cached, // might still be changed to po, if no error
+              url: url
+            });
             //noinspection JSUnresolvedVariable
             var loadedAndRevived = request(
               url,
@@ -728,15 +1070,13 @@ define(["dojo/_base/declare",
             ).otherwise(function(err) {
               //noinspection JSUnresolvedFunction
               var exc = self._handleException(err, "retrieve - GET " + url); // of the request
-              if (exc.isInstanceOf
-                  && exc.isInstanceOf(IdNotFoundException)
-                  // cannot test servertype: the exception from the server always reports IPersistentObject
-                  && exc.persistenceId === persistenceId) {
+              if (exc.isInstanceOf && exc.isInstanceOf(IdNotFoundException)) {
                 logger.debug("IdNotFoundException while retrieving " + cacheKey);
-                if (cached) {
-                  logger.debug("We have a cached version. Cleaning up.");
+                if (cached && cached.get("persistenceId") === exc.persistenceId) {
+                  // MUDO IdNotFoundExceptions for other objects
+                  logger.debug("We have a cached version, and it is the one that has disappeared. Cleaning up.");
                   //noinspection JSUnresolvedFunction
-                  self._cleanupAfterRemove(cached);
+                  self._cleanupAfterRemove(cached, signal);
                 }
               }
               throw exc;
@@ -744,16 +1084,24 @@ define(["dojo/_base/declare",
               logger.debug("Retrieved successfully from server (" + cacheKey + ")");
               //noinspection JSUnresolvedFunction
               return self.revive(data, referer); // errors are true errors
+            }).otherwise(function(err) {
+              // no need to handle errors of revive: they are errors
+              logger.debug("Retrieve finalized (exceptional). Forgetting the retrieve Promise (" + cacheKey + ")");
+              //noinspection JSUnresolvedVariable
+              delete self._retrievePromiseCache[cacheKey];
+              signal.exception = err;
+              self._publishActionCompleted(signal);
+              throw err;
+            }).then(function(po) {
+              logger.debug("Retrieve finalized (nominal). Forgetting the retrieve Promise (" + cacheKey + ")");
+              delete self._retrievePromiseCache[cacheKey];
+              signal.subject = po;
+              self._publishActionCompleted(signal);
+              //noinspection JSUnresolvedVariable
+              return po;
             });
-            //noinspection JSUnresolvedVariable
             loadedAndRevived.then(lang.hitch(self, self._optionalCacheReporting)); // side track
-            // no need to handle errors of revive: they are errors
             return loadedAndRevived;
-          });
-          executed.always(function(po) { // side track, always
-            logger.debug("Retrieve finalized. Forgetting the retrieve Promise (" + cacheKey + ")");
-            //noinspection JSUnresolvedVariable
-            delete self._retrievePromiseCache[cacheKey];
           });
           //noinspection JSUnresolvedVariable
           self._retrievePromiseCache[cacheKey] = executed;
@@ -834,13 +1182,14 @@ define(["dojo/_base/declare",
         return this._poAction("PUT", po);
       },
 
-      _cleanupAfterRemove: function(/*PersistentObject*/ po) {
+      _cleanupAfterRemove: function(/*PersistentObject*/ po, /*ActionCompleted*/ signal) {
         // summary:
         //   The rest of the graph returned by the server cannot be trusted to be up to date after delete.
         //   The server might have cascaded delete. Related objects on this side could still hold a reference
         //   to the deleted object, which is removed in the mean time in the server.
         //   Therefor, we do not revive the result, but instead stop tracking po, and retrieve fresh data
         //   for all related elements if they are still cached.
+        //   Signal is changed synchronously as needed, but not published yet.
         this._c_pre(function() {return po;});
         this._c_pre(function() {
           //noinspection JSUnresolvedVariable,JSUnresolvedFunction
@@ -851,13 +1200,9 @@ define(["dojo/_base/declare",
         //noinspection JSUnresolvedFunction
         self.cache.stopTrackingCompletely(po);
         // signal deletion
-        topic.publish(
-          module.id,
-          {
-            action: "DELETE",
-            persistentObject: po
-          }
-        );
+        // TODO isn't this too early?
+        signal.subject = po; // should be filled out correctly already, but just to be sure
+        signal.disappeared = [po];
         //noinspection JSUnresolvedFunction
         po._changeAttrValue("persistenceId", null);
         //noinspection JSUnresolvedFunction
@@ -879,7 +1224,8 @@ define(["dojo/_base/declare",
           //noinspection JSUnresolvedFunction
           po._changeAttrValue("lastModifiedAt", null);
         }
-        return all(js.getAllKeys(po).filter(function(k) {
+        return all(
+          js.getAllKeys(po).filter(function(k) {
             return po[k] && po[k].isInstanceOf && po[k].isInstanceOf(PersistentObject) && po[k].get("persistenceId") && self.cache.get(po[k]);
           }).map(function(k) {
             // this will update object in cache, but don't add a referer for my sake,
@@ -896,6 +1242,8 @@ define(["dojo/_base/declare",
             );
           })
         ).then(function() {
+          /* TODO are we really only done when all dependents are refreshed? shouldn't that be a sidetrack?
+             But then we won't get any errors, apart from published ... */
           logger.debug("All dependent objects refreshed. Delete done.");
           return po;
         });
@@ -940,6 +1288,12 @@ define(["dojo/_base/declare",
         logger.debug("Requested DELETE of: " + po);
         var url = self.urlBuilder.get("DELETE")(po);
         logger.debug("DELETE URL is: " + url);
+        var signal = new ActionCompleted({
+          crudDao: self,
+          action: "DELETE",
+          subject: po,
+          url: url
+        });
         var deletePromise = request.del(
           url,
           {
@@ -951,19 +1305,29 @@ define(["dojo/_base/declare",
           }
         ).then(function(data) {
           logger.debug("DELETE success in server: " + data);
-          return data;
-        });
-        var cleanupPromise = deletePromise.then(function(data) {
-          //noinspection JSUnresolvedFunction
-          self._cleanupAfterRemove(po);
-        });
-        var deleteDonePromise = cleanupPromise.otherwise(
+          return self._cleanupAfterRemove(po, signal);
+        }).otherwise(
           function(err) {
             //noinspection JSUnresolvedFunction
-            throw self._handleException(err, "remove - DELETE " + url); // of the request
+            var exc = self._handleException(err, "remove - DELETE " + url); // of the request
+            /* IdNotFoundException is sad, and might be mentioned to the user, but not a problem.
+               SecurityException is an error or SemanticException for now.
+               ObjectAlreadyChangedException and other SemanticException: caller has to deal with that, like errors.
+             */
+            // MUDO IdNotFoundExceptions for other objects
+            signal.exception = exc;
+            self._publishActionCompleted(signal);
+            throw exc;
           }
-        );
-        return deleteDonePromise;
+        ).then(function(po) {
+          self._publishActionCompleted(signal);
+          return po;
+        }).otherwise(function(err) {
+          logger.error("Error deleting " + po.getKey() + ": " + err.message || err, err);
+          throw err;
+        });
+        deletePromise.always(lang.hitch(self, self._optionalCacheReporting)); // side track
+        return deletePromise;
       },
 
       retrieveToMany: function(/*PersistentObject*/ po, /*String*/ propertyName, /*Object?*/ referer, /*Object?*/ options) {
@@ -1118,6 +1482,7 @@ define(["dojo/_base/declare",
 
     });
 
+    CrudDao.ActionCompleted = ActionCompleted;
     //noinspection MagicNumberJS
     CrudDao.durationToStale = 60000; // 1 minute
     CrudDao.mid = module.id;
