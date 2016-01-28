@@ -45,6 +45,18 @@ define(["dojo/_base/declare", "ppwcode-vernacular-exceptions/SemanticException",
               this.persistenceId = props.persistenceId;
             }
           }
+        },
+
+        toString: function() {
+          var result = [];
+          if (this.typeDescription) {
+            result.push("typeDescription: " + this.typeDescription);
+          }
+          if (this.serverType) {
+            result.push("serverType: " + this.serverType);
+          }
+          result.push("persistenceId: " + (this.persistenceId ? this.persistenceId : "???"));
+          return "IdNotFoundException (" + result.join(", ") + ")";
         }
 
       });
