@@ -63,6 +63,25 @@ define(["dojo/_base/declare",
         return PersistentObject.keyForObject(this);
       },
 
+      getLabel: function(/*Object*/ options) {
+        // summary:
+        //   Semantic view model objects are often represented as a label.
+        //   This method should return a string that represents this semantic object.
+        // options: Object
+        //   options.locale is the language the UI asks the label in; for semantic objects
+        //   this can often be ignored
+        //   options.formatLength can be "long" or "short" (the default); mainly, in an object
+        //   graph, we need to show more than only local information for the user to recognize
+        //   an object. It is good practice then to add the short label of parent objects
+        //   in brackets after the local information. To avoid very long labels, the label
+        //   of the parent should be short, and parent information should only be added if
+        //   the UI requests a long label.
+        // description:
+        //   Subclasses should override this with a meaningful implementation. The default is getKey() if it is not null.
+
+        return this.getKey();
+      },
+
       _extendJsonObject: function(/*Object*/ json) {
         json.persistenceId = this.persistenceId;
       },
