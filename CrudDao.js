@@ -270,8 +270,8 @@ define(["dojo/_base/declare",
       //   An object that was created during the action, if any.
       created: null,
 
-      // disappeared: PeristentObject[]
-      //   Objects that we became aware off that disappeared during the action.
+      // disappeared: PeristentObject
+      //   An object that we became aware off that disappeared during the action.
       disappeared: null,
 
       _c_invar: [
@@ -288,7 +288,7 @@ define(["dojo/_base/declare",
         // function() {return this._c_prop_array("changed", VersionedPersistentObject);},
         // IDEA changed not supported for now
         function() {return this._c_prop_instance("created", PersistentObject);},
-        function() {return this._c_prop_array("disappeared", PersistentObject);}
+        function() {return this._c_prop_instance("disappeared", PersistentObject);}
       ],
 
       constructor: function(/*{crudDao: CrudDao,
@@ -298,7 +298,7 @@ define(["dojo/_base/declare",
                                exception: Object?,
                                changed: VersionedPersistentObject[]?,
                                created: PersistentObject?,
-                               disappeared: PersistentObject[]?}*/ kwargs) {
+                               disappeared: PersistentObject?}*/ kwargs) {
         // summary:
         //   Object.freeze this when ready, before publishing.
         this._c_pre(function() {return kwargs;});
@@ -320,7 +320,7 @@ define(["dojo/_base/declare",
         // this._c_pre(function() {return this._c_prop_array(kwargs, "changed", VersionedPersistentObject);})
         // IDEA changed not supported for now
         this._c_pre(function() {return !kwargs.created || this._c_prop_instance(kwargs, "created", PersistentObject);})
-        this._c_pre(function() {return !kwargs.disappeared || this._c_prop_array(kwargs, "disappeared", PersistentObject);})
+        this._c_pre(function() {return !kwargs.disappeared || this._c_prop_instance(kwargs, "disappeared", PersistentObject);})
 
         Object.defineProperty(
           this,
@@ -357,7 +357,7 @@ define(["dojo/_base/declare",
         // this.changed = kwargs.changed ? kwargs.changed.slice() : [];
         // IDEA changed not supported for now
         this.created = kwargs.created;
-        this.disappeared = kwargs.disappeared ? kwargs.disappeared.slice() : [];
+        this.disappeared = kwargs.disappeared;
       },
 
       toString: function() {
@@ -1202,7 +1202,7 @@ define(["dojo/_base/declare",
         // signal deletion
         // TODO isn't this too early?
         signal.subject = po; // should be filled out correctly already, but just to be sure
-        signal.disappeared = [po];
+        signal.disappeared = po;
         //noinspection JSUnresolvedFunction
         po._changeAttrValue("persistenceId", null);
         //noinspection JSUnresolvedFunction

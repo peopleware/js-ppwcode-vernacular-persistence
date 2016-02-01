@@ -99,7 +99,7 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
           logger.debug("Received an event from CrudDao: ", actionCompleted.toString());
           // don't react to update (save) or create, only todelete, and only if it's for me
           var target = self.get("target");
-          if (actionCompleted.disappeared.some(function(po) {return po === target;})) {
+          if (actionCompleted.disappeared === target) {
             logger.debug("Our target has disappeared from the server.");
             if (!self._deletePromise) {
               logger.info("Our target was deleted, and that was not expected. Closing window.");
