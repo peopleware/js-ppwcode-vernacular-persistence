@@ -249,7 +249,7 @@ define(["dojo/_base/declare",
       crudDao: null,
 
       // action: String
-      //   The action taken: "POST" (create), "PUT" (update) or "DELETE".
+      //   The action taken: "GET", "POST" (create), "PUT" (update) or "DELETE".
       action: null,
 
       // subject: PersistentObject
