@@ -103,16 +103,7 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
             logger.debug("Our target has disappeared from the server.");
             if (!self._deletePromise) {
               logger.info("Our target was deleted, and that was not expected. Closing window.");
-              /* We don't want a modal message if the delete was expected, but it was unexpected. */
-              /* We don't want a modal message, sinds dojo/request/xhr timeout works in a weird way. It is on a
-                 50ms interval, checking whether requests are resolved yet, but this only gets active when
-                 the event loop is free, of course. When we block the UI with a modal dialog, and the
-                 timeout check activates before the handling of the requests, all requests will time out.
-                 It would be better to have flash messages, but we do not have an infrastructure for that yet.
-                 So, no message for the time being. */
               self.set("presentationMode", self.WILD);
-              // IDEA flash messages[IdNotFoundException.mid];
-              // don't now, we are still handling a remote request with a timeout; let that reject first
             }
             else {
               // expected behavior

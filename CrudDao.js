@@ -1200,7 +1200,6 @@ define(["dojo/_base/declare",
         //noinspection JSUnresolvedFunction
         self.cache.stopTrackingCompletely(po);
         // signal deletion
-        // TODO isn't this too early?
         signal.subject = po; // should be filled out correctly already, but just to be sure
         signal.disappeared = po;
         //noinspection JSUnresolvedFunction
