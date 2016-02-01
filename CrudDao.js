@@ -407,18 +407,6 @@ define(["dojo/_base/declare",
       actionCompletedTopicName: module.id,
 
       _publishActionCompleted: function(/*ActionCompleted*/ signal) {
-        // MUDO tmp
-        signal.message = signal.action + " " + signal.subject.getLabel({formatLength: "long"}) + " " + signal.exception;
-        signal.type = signal.exception ? "fatal" : "message";
-        signal.duration = 5000;
-        /*
-         {message: ”...”, type: ”...”, duration: ”...”}: where message is the message text, duration is as the attribute, and type is either:
-         fatal
-         error
-         warning
-         message
-         */
-        // MUDO end tmp
         Object.freeze(signal);
         topic.publish(this.actionCompletedTopicName, signal);
       },
