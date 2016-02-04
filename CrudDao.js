@@ -1449,18 +1449,16 @@ define(["dojo/_base/declare",
       _retrieveToMany: function(store, url, options, guardKey) { // return Promise
         var self = this;
         logger.debug("Starting actual GET of to many for" + guardKey + ".");
-        var retrievePromise = self._refresh(store, url, null, store, options); // IDEA: we can even add a query here
-        var donePromise = retrievePromise.then(
-          function(result) {
+        return self
+          ._refresh(store, url, null, store, options) // IDEA: we can even add a query here
+          .otherwise(function(err) {
+            throw self._handleException(err, "_retrieveToMany - GET " + url);
+          })
+          .then(function(result) {
             logger.debug("To-many store for " + guardKey + " refreshed.");
             result.set("lastReloaded", new Date());
             return result;
-          },
-          function(err) {
-            throw self._handleException(err, "_retrieveToMany - GET " + url);
-          }
-        );
-        return donePromise;
+          });
       },
 
       searchInto: function(/*PersistentObjectStore*/ result, /*String?*/ serverType, /*Object?*/ query, /*Object?*/ options) {
