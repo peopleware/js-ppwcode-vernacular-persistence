@@ -569,6 +569,21 @@ define(["dojo/_base/declare",
                 newVersion: exc.response.data && exc.response.data.Data && exc.response.data.Data.sender
               });
             }
+            if (exc.response.data["$type"].indexOf(".DbConstraintExceptionData") >= 0) {
+              // TODO full namespace is specific for a project :-(
+              logger.info("Server reported DB constraint violated (" + contextDescription + ").", exc.response.data);
+              /* TODO naked SemanticException for now; we don't have enough info to make this more specific now
+              exc.response.data.constraintName has the name of the DB constraint that is violated, but
+              the interpretation of what that means belongs on the server.
+              Probably, if it starts with UQ, there is some uniqueness being violated.
+              We need more streamlining before we can make a good user message.
+              For now, we take the approach to only translate what we are sure of.
+               */
+              if (exc.response.data.constraintType === "DbUniqueConstraintException") {
+                return new SemanticException({key: "NOT UNIQUE", cause: exc.response.data});
+              }
+              return new SemanticException({cause: exc.response.data});
+            }
           }
           if (exc.response.status === 403) {
             /* TODO shaky, but for now we make this a very general semantic exception */

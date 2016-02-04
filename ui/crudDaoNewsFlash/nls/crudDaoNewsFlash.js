@@ -16,6 +16,10 @@ define({
       "${this.subject.getLabel({formatLength: 'long', locale: 'nl'})}$ is ondertussen reeds in een ander venster " +
       "of door een andere gebruiker aangepast. Bekijk of uw wijzigingen nog nodig zijn, en herhaal ze indien nodig.",
 
+    "ppwcode-vernacular-exceptions/SemanticException[NOT UNIQUE]":
+      "Een waarde voor ${this.subject.getLabel({formatLength: 'long', locale: 'nl'})}$ die uniek moet zijn, " +
+      "is niet uniek. Pas de gegevens aan, en probeer opnieuw.",
+
     "ppwcode-vernacular-exceptions/SemanticException":
       "De ingevulde waarden voor ${this.subject.getLabel({formatLength: 'long', locale: 'nl'})}$ worden door de " +
       "server niet aanvaard " + "(${(this.exception.key ? this.exception.key : '') + " +
