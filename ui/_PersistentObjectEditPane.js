@@ -97,13 +97,13 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
         // self.inherited(arguments); // MUDO this call must be made, and activates missing features, but also now introduces layout problems; fix before uncommenting
         self.own(topic.subscribe(CrudDao.mid, function(/*CrudDao.ActionCompleted*/ actionCompleted) {
           logger.debug("Received an event from CrudDao: ", actionCompleted.toString());
-          // don't react to update (save) or create, only todelete, and only if it's for me
+          // don't react to update (save) or create, only to delete, and only if it's for me
           var target = self.get("target");
           if (actionCompleted.disappeared === target) {
             logger.debug("Our target has disappeared from the server.");
             if (!self._deletePromise) {
               logger.info("Our target was deleted, and that was not expected. Closing window.");
-              self.set("presentationMode", self.WILD);
+              self.set("presentationMode", self.BUSY);
             }
             else {
               // expected behavior
@@ -156,16 +156,24 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
         //   Returns a promise.
         //   The second parameter is a boolean, that, when true, forces the refresh.
         //   With false, only stale cache entries are actually refreshed.
+        //   The promise returns `po`, except when we could not find the object on the server. Than we return `null`.
+        this._c_pre(function() {return po;});
         this._c_pre(function() {return this.get("crudDao");});
 
-        var retrieved = this.crudDao.retrieve(po.getTypeDescription(), po.get("persistenceId"), this, force);
+        var persistenceId = po.get("persistenceId");
+        var key = po.getKey();
+        var retrieved = this.crudDao.retrieve(po.getTypeDescription(), persistenceId, this, force);
         /* If we get an IdNotFoundException, we get a delete message via topic from crudDao, and close the window
            with a dialog warning the user. The error is propagated over the Promise here, though. */
-        retrieved.otherwise(function(err) {
+        return retrieved.otherwise(function(err) {
+          if (err.isInstanceOf && err.isInstanceOf(IdNotFoundException)) {
+            logger.info(key + " not found during refresh; user gets a message, window will be closed - no problem");
+            return null;
+          }
           logger.info("Error retrieving " + po.getTypeDescription() + "@" +
                       po.get("persistenceId") + " during refresh: ", JSON.stringify(err));
+          throw err;
         });
-        return retrieved;
       },
 
       cancel: function() {
@@ -190,38 +198,31 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
           // this avoids the focus being ripped away from this completely.
           this.focus();
         }
-        var refreshPromise = self.refresh(po, true);
-        return refreshPromise.then(
-          function(result) {
-            self.set("presentationMode", self.VIEW);
-            return result;
-          },
-          function(e) {
+        var key = po.getKey();
+        return self
+          .refresh(po, true)
+          .otherwise(function(e) {
             // this is not really a fatal error, but an inconvenience
-            if (e.isInstanceOf) {
-              if (e.isInstanceOf(IdNotFoundException)) {
-                /* If we get an IdNotFoundException, we get a delete message via topic from crudDao, and close the window
-                 with a dialog warning the user. The error is propagated over the Promise here, though. */
-                logger.info("IdNotFoundException on cancel of " + po.getTypeDescription() + "@" +
-                            po.get("persistenceId") + ". Just resolving. " +
-                            "This is handled by an event from a topic from CrudDao.",
-                            e);
-                return new Deferred().resolve(po);
-              }
-              if (e.isInstanceOf(SecurityException)) {
-                // IDEA handle this with a topic event too, like IdNotFoundException
-                self.set("presentationMode", self.WILD);
-                var message = messages[SecurityException.mid];
-                alert(message);
-                return self.close();
-              }
+            // this can never be an IdNotFoundException; refresh eats that
+            if (e.isInstanceOf && e.isInstanceOf(SecurityException)) {
+              // IDEA handle this with a topic event too, like IdNotFoundException
+              self.set("presentationMode", self.WILD);
+              var message = messages[SecurityException.mid];
+              alert(message);
+              return self.close();
             }
             logger.error("ERROR ON REFRESH: " + e);
             self.set("presentationMode", self.ERROR);
             alert(e);
             throw e;
-          }
-        );
+          })
+          .then(function(result) {
+            if (result) {
+              self.set("presentationMode", self.VIEW);
+            }
+            // else, not found on the server - stay busy - will be closed
+            return result;
+          });
       },
 
       _saver: function(po) {
@@ -329,7 +330,7 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
               if (e.isInstanceOf(IdNotFoundException)) {
                 // already gone; no problem; window will be closed by event on topic from crudDao
                 logger.info("Object was already removed while removing. No problem.");
-                return new Deferred().resolve(po);
+                return po;
               }
               if (e.isInstanceOf(SemanticException)) {
                 logger.info("Object removal got a SemanticException. Go wild, and try to tell the user, and then reset.");
@@ -340,7 +341,7 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
                   messageKey += "_" + e.key;
                 }
                 var message = messages[messageKey] || messageKey;
-                alert(message);
+                alert(message); // MUDO Don't use alert
                 return self.cancel();
               }
             }
@@ -379,27 +380,26 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
       _handleSaveException: function(exc) {
         var po = this.get("target");
         if (exc.isInstanceOf && exc.isInstanceOf(SemanticException)) {
+          this.set("presentationMode", this.WILD);
+          if (exc.isInstanceOf(ObjectAlreadyChangedException) || exc.isInstanceOf(SecurityException)) {
+            return this.cancel(); // MUDO not good; already changed --> wild, security --> close
+          }
           if (!exc.isInstanceOf(IdNotFoundException)) {
             // for IdNotFoundException, we will have gotten a delete event on the topic from crudDao, and have warned
             // the user and closed this pane already
-            this.set("presentationMode", this.WILD);
             var messageKey = exc.constructor.mid;
             if (exc.key) {
               messageKey += "_" + exc.key;
             }
             var message = messages[messageKey] || messageKey;
-            alert(message);
+            alert(message); // MUDO Don't use alert
           }
-          if (exc.isInstanceOf(ObjectAlreadyChangedException) || exc.isInstanceOf(SecurityException)) {
-            return this.cancel();
-          }
-          // else other semantic exception; we stay wild
-          return new Deferred().resolve(po);
+          return po;
         }
         logger.error("ERROR ON SAVE or CREATE");
         this.set("presentationMode", this.ERROR);
         alert(exc);
-        return this.cancel();
+        return this.cancel(); // MUDO throw on true error?
       },
 
       focus: function() {
