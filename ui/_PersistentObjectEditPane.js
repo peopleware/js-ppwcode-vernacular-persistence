@@ -324,33 +324,14 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
            Because in this case we expect that, we don't want a modal dialog. We remember we are in this case. */
         self._deletePromise = self.crudDao.remove(po);
         // there is nothing to do on normal completion
-        return self._deletePromise.otherwise(
-          function(e) {
-            if (e.isInstanceOf) {
-              if (e.isInstanceOf(IdNotFoundException)) {
-                // already gone; no problem; window will be closed by event on topic from crudDao
-                logger.info("Object was already removed while removing. No problem.");
-                return po;
-              }
-              if (e.isInstanceOf(SemanticException)) {
-                logger.info("Object removal got a SemanticException. Go wild, and try to tell the user, and then reset.");
-                // IDEA handle this with a topic event too, like IdNotFoundException
-                self.set("presentationMode", self.WILD);
-                var messageKey = e.constructor.mid;
-                if (e.key) {
-                  messageKey += "_" + e.key;
-                }
-                var message = messages[messageKey] || messageKey;
-                alert(message); // MUDO Don't use alert
-                return self.cancel();
-              }
-            }
-            logger.error("ERROR ON SAVE or CREATE: TODO");
-            self.set("presentationMode", self.ERROR);
-            alert(e);
-            return self.cancel();
+        return self._deletePromise.otherwise(function(e) {
+          if (e.isInstanceOf && e.isInstanceOf(IdNotFoundException)) {
+            // already gone; no problem; window will be closed by event on topic from crudDao
+            logger.info("Object was already removed while removing. No problem.");
+            return po;
           }
-        );
+          return self._handleSaveException(e);
+        });
       },
 
       _focusOnFirstActiveTextBox: function(presentationMode) {
@@ -380,10 +361,11 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
       _handleSaveException: function(exc) {
         var po = this.get("target");
         if (exc.isInstanceOf && exc.isInstanceOf(SemanticException)) {
+          logger.info("Got a SemanticException. Message via NewsFlash.");
           this.set("presentationMode", this.WILD);
           return po;
         }
-        logger.error("ERROR ON SAVE or CREATE");
+        logger.error("ERROR ON SAVE, CREATE or DELETE");
         this.set("presentationMode", this.ERROR);
         alert(exc);
         return this.cancel(); // MUDO throw on true error?
