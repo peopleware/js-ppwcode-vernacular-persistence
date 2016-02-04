@@ -47,7 +47,6 @@ define(["dojo/_base/declare", "ppwcode-util-oddsAndEnds/ui/newsFlash/NewsFlash",
 
           if (actionCompleted.action === "GET") {
             logger.debug("Event reports a successful GET, which we will not trouble the user with.");
-            // TODO report GET on cancel
             return;
           }
 
@@ -76,12 +75,8 @@ define(["dojo/_base/declare", "ppwcode-util-oddsAndEnds/ui/newsFlash/NewsFlash",
         }
 
         if (!actionCompleted.exception.isInstanceOf || !actionCompleted.exception.isInstanceOf(SemanticException)) {
-          logger.debug("Event signals an error. Telling the user we are sorry.");
-          // an error happened
-          return {
-            level: NewsFlash.Level.WARNING,
-            html: js.substitute(crudDaoNewsFlash["error"], actionCompleted)
-          };
+          logger.debug("Event signals an error. We are not showing unhandled errors here. NOP.");
+          return;
         }
 
         logger.debug("Event signals a SemanticException. We want to notify the user, or request interaction.");
