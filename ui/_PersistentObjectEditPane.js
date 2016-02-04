@@ -381,19 +381,6 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
         var po = this.get("target");
         if (exc.isInstanceOf && exc.isInstanceOf(SemanticException)) {
           this.set("presentationMode", this.WILD);
-          if (exc.isInstanceOf(ObjectAlreadyChangedException) || exc.isInstanceOf(SecurityException)) {
-            return this.cancel(); // MUDO not good; already changed --> wild, security --> close
-          }
-          if (!exc.isInstanceOf(IdNotFoundException)) {
-            // for IdNotFoundException, we will have gotten a delete event on the topic from crudDao, and have warned
-            // the user and closed this pane already
-            var messageKey = exc.constructor.mid;
-            if (exc.key) {
-              messageKey += "_" + exc.key;
-            }
-            var message = messages[messageKey] || messageKey;
-            alert(message); // MUDO Don't use alert
-          }
           return po;
         }
         logger.error("ERROR ON SAVE or CREATE");

@@ -12,6 +12,10 @@ define({
     "ppwcode-vernacular-persistence/IdNotFoundException":
       "${this.getLabel({formatLength: 'long', locale: 'nl'})}$ bestaat niet meer. Het venster werd gesloten.",
 
+    "ppwcode-vernacular-persistence/ObjectAlreadyChangedException":
+      "${this.subject.getLabel({formatLength: 'long', locale: 'nl'})}$ is ondertussen reeds in een ander venster " +
+      "of door een andere gebruiker aangepast. Bekijk of uw wijzigingen nog nodig zijn, en herhaal ze indien nodig.",
+
     "ppwcode-vernacular-exceptions/SemanticException":
       "De ingevulde waarden voor ${this.subject.getLabel({formatLength: 'long', locale: 'nl'})}$ worden door de " +
       "server niet aanvaard (${this.exception.toString()}$). Pas de gegevens aan, en probeer opnieuw.",
