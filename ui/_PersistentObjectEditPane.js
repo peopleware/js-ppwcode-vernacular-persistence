@@ -17,13 +17,13 @@
 define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPane/_SemanticObjectPane", "ppwcode-util-oddsAndEnds/_PropagationMixin",
         "ppwcode-vernacular-exceptions/SemanticException", "../IdNotFoundException", "../ObjectAlreadyChangedException", "ppwcode-vernacular-exceptions/SecurityException",
         "../PersistentObject", "../CrudDao", "dijit/registry", "dijit/form/TextBox", "dojo/Deferred", "dojo/topic",
-        "dojo/i18n!./nls/messages",
+        "ppwcode-util-oddsAndEnds/ui/handleFinalError", "dojo/_base/lang",
         "ppwcode-util-oddsAndEnds/log/logger!",
         "module"],
   function(declare, _SemanticObjectPane, _PropagationMixin,
            SemanticException, IdNotFoundException, ObjectAlreadyChangedException, SecurityException,
            PersistentObject, CrudDao, registry, TextBox, Deferred, topic,
-           messages,
+           handleFinalError, lang,
            logger,
            module) {
 
@@ -201,20 +201,9 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
         var key = po.getKey();
         return self
           .refresh(po, true)
-          .otherwise(function(e) {
-            // this is not really a fatal error, but an inconvenience
-            // this can never be an IdNotFoundException; refresh eats that
-            if (e.isInstanceOf && e.isInstanceOf(SecurityException)) {
-              // IDEA handle this with a topic event too, like IdNotFoundException
-              self.set("presentationMode", self.WILD);
-              var message = messages[SecurityException.mid];
-              alert(message);
-              return self.close();
-            }
-            logger.error("ERROR ON REFRESH: " + e);
-            self.set("presentationMode", self.ERROR);
-            alert(e);
-            throw e;
+          .otherwise(function(err) {
+            this.set("presentationMode", this.ERROR);
+            return handleFinalError(err, false, lang.hitch(self, self.cancel));
           })
           .then(function(result) {
             if (result) {
@@ -288,11 +277,11 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
               self.set("presentationMode", self.VIEW);
               return result;
             }).otherwise(function(exc) {
-              return self._handleSaveException(exc);
+              return self._handleSaveException(exc, lang.hitch(self, self.save));
             });
         }
         else {
-          return null;
+          throw wildExceptions;
         }
       },
 
@@ -319,7 +308,7 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
             logger.info("Object was already removed while removing. No problem.");
             return po;
           }
-          return self._handleSaveException(e);
+          return self._handleSaveException(e, lang.hitch(self, self.remove));
         });
       },
 
@@ -347,17 +336,15 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
         }
       },
 
-      _handleSaveException: function(exc) {
+      _handleSaveException: function(exc, retry) {
         var po = this.get("target");
         if (exc.isInstanceOf && exc.isInstanceOf(SemanticException)) {
           logger.info("Got a SemanticException. Message via NewsFlash.");
           this.set("presentationMode", this.WILD);
           return po;
         }
-        logger.error("ERROR ON SAVE, CREATE or DELETE");
         this.set("presentationMode", this.ERROR);
-        alert(exc);
-        return this.cancel(); // MUDO throw on true error?
+        return handleFinalError(exc, false, retry);
       },
 
       focus: function() {
