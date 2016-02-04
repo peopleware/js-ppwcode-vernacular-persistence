@@ -184,7 +184,7 @@ define(["dojo/_base/declare", "dojo/dom-style",
         if (pane && pane.preSave && typeof pane.preSave === "function") {
           pane.preSave();
         }
-        this.inherited(arguments);
+        return this.inherited(arguments);
       },
 
       _setButtonsStyles: function(stylePresentationMode) {
