@@ -279,28 +279,17 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
             // this avoids the focus being ripped away from this completely.
             this.focus();
           }
-          var persistPromise = persister.call(self, po);
-          return persistPromise.then(
-            function(result) {
-              if (persisterName === "_saver") {
-                if (result !== po) {
-                  throw "ERROR: revive should have found the same object";
-                }
-                // MUDO workaround https://peopleware.atlassian.net/browse/PICTOPERFECT-505
-                // The server PUT result is not correct! We retrieve extra, to get the correct result for now!
-                return self.cancel(); // yes, weird, but it does the trick for now for the workaround
-              }
+          return persister.call(self, po)
+            .otherwise(function(exc) {
+              return self._handleSaveException(exc);
+            }).then(function(result) {
               if (persisterName === "_creator") {
                 // we need to switch the old target with the result
                 self.set("target", result);
-                self.set("presentationMode", self.VIEW);
               }
+              self.set("presentationMode", self.VIEW);
               return result;
-            },
-            function(exc) {
-              return self._handleSaveException(exc);
-            }
-          );
+            });
         }
         else {
           return null;
