@@ -1281,6 +1281,7 @@ define(["dojo/_base/declare",
           subject: po,
           url: url
         });
+        var key = po.getKey();
         var deletePromise = request.del(
           url,
           {
@@ -1290,27 +1291,32 @@ define(["dojo/_base/declare",
             withCredentials: true,
             timeout: self.timeout
           }
-        ).then(function(data) {
-          logger.debug("DELETE success in server: " + data);
-          return self._cleanupAfterRemove(po, signal);
-        }).otherwise(
-          function(err) {
+        ).otherwise(function(err) {
+          var exc = self._handleException(err, "remove - DELETE - " + url); // of the request
+          signal.exception = exc; // also mention IdNotFoundException
+          if (exc.isInstanceOf && exc.isInstanceOf(IdNotFoundException)) {
+            logger.debug("IdNotFoundException while deleting " + key);
             //noinspection JSUnresolvedFunction
-            var exc = self._handleException(err, "remove - DELETE " + url); // of the request
-            /* IdNotFoundException is sad, and might be mentioned to the user, but not a problem.
-               SecurityException is an error or SemanticException for now.
-               ObjectAlreadyChangedException and other SemanticException: caller has to deal with that, like errors.
-             */
+            if (exc.persistenceId === po.get("persistenceId")) {
+              // IdNotFoundException is sad, and might be mentioned to the user, but not a problem; it is what we want
+              // make it nominal
+              return po;
+            }
             // MUDO IdNotFoundExceptions for other objects
-            signal.exception = exc;
-            self._publishActionCompleted(signal);
-            throw exc;
           }
-        ).then(function(po) {
+          /* SecurityException is an error or SemanticException for now.
+             ObjectAlreadyChangedException and other SemanticException: caller has to deal with that, like errors.
+           */
+          self._publishActionCompleted(signal);
+          throw exc;
+        }).then(function() {
+          logger.debug("DELETE success in server or already deleted: " + key);
+          return self._cleanupAfterRemove(po, signal);
+        }).then(function(po) {
           self._publishActionCompleted(signal);
           return po;
         }).otherwise(function(err) {
-          logger.error("Error deleting " + po.getKey() + ": " + err.message || err, err);
+          logger.error("Error deleting " + key + ": " + err.message || err, err);
           throw err;
         });
         deletePromise.always(lang.hitch(self, self._optionalCacheReporting)); // side track
