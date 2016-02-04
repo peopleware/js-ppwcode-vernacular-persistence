@@ -18,7 +18,8 @@ define({
 
     "ppwcode-vernacular-exceptions/SemanticException":
       "De ingevulde waarden voor ${this.subject.getLabel({formatLength: 'long', locale: 'nl'})}$ worden door de " +
-      "server niet aanvaard (${this.exception.toString()}$). Pas de gegevens aan, en probeer opnieuw.",
+      "server niet aanvaard " + "(${(this.exception.key ? this.exception.key : '') + " +
+      "(this.exception.cause ? JSON.stringify(this.exception.cause) : ''}$). Pas de gegevens aan, en probeer opnieuw.",
 
     "ppwcode-vernacular-exceptions/SecurityException":
       "De gevraagde gegevens zijn voor u niet toegankelijk.",

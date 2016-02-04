@@ -280,15 +280,15 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
             this.focus();
           }
           return persister.call(self, po)
-            .otherwise(function(exc) {
-              return self._handleSaveException(exc);
-            }).then(function(result) {
+            .then(function(result) {
               if (persisterName === "_creator") {
                 // we need to switch the old target with the result
                 self.set("target", result);
               }
               self.set("presentationMode", self.VIEW);
               return result;
+            }).otherwise(function(exc) {
+              return self._handleSaveException(exc);
             });
         }
         else {

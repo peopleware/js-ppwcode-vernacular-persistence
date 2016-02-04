@@ -570,6 +570,10 @@ define(["dojo/_base/declare",
               });
             }
           }
+          if (exc.response.status === 403) {
+            /* TODO shaky, but for now we make this a very general semantic exception */
+            return new SemanticException({cause: exc.response.data});
+          }
           //noinspection MagicNumberJS
           if (exc.response.status === 500) {
             logger.error("Server reported internal error (" + contextDescription + ").");

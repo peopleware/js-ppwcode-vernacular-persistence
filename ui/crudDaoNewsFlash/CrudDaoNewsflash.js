@@ -97,11 +97,18 @@ define(["dojo/_base/declare", "ppwcode-util-oddsAndEnds/ui/newsFlash/NewsFlash",
         }
 
         logger.debug("Event signals generic SemanticException.");
-        var messageTemplate = crudDaoNewsFlash[
-          crudDaoNewsFlash[actionCompleted.exception.constructor.mid] ?
-          actionCompleted.exception.constructor.mid :
-          SemanticException.mid
-        ];
+        var messageKey = actionCompleted.exception.constructor.mid + "[" + actionCompleted.exception.key + "]";
+        var messageTemplate = crudDaoNewsFlash[actionCompleted.exception.constructor.mid
+                                               + "[" + actionCompleted.exception.key + "]"];
+        if (!messageTemplate) {
+          messageTemplate = crudDaoNewsFlash[SemanticException.mid + "[" + actionCompleted.exception.key + "]"];
+        }
+        if (!messageTemplate) {
+          messageTemplate = crudDaoNewsFlash[actionCompleted.exception.constructor.mid];
+        }
+        if (!messageTemplate) {
+          messageTemplate = crudDaoNewsFlash[SemanticException.mid];
+        }
         return {level: NewsFlash.Level.ADVISE, html: js.substitute(messageTemplate, actionCompleted)};
       }
 
