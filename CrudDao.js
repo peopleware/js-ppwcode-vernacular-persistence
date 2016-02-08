@@ -518,7 +518,7 @@ define(["dojo/_base/declare",
         logger.debug("handleNotAuthorized called.");
       },
 
-      _handleException: function(exc, contextDescription) {
+      _handleException: function(exc, contextDescription, /*String?*/ requestedTypeDescription) {
         // summary:
         //   Triage and handle `exc`.
         //   This method does not throw exceptions itself, but translates `exc` into another exception
@@ -562,8 +562,10 @@ define(["dojo/_base/declare",
                 // NOTE: sic! Yes, there is a typo in the server code (missing "t" in "persistenObjectType")
                 //noinspection JSUnresolvedVariable
                 kwargs.serverType = exc.response.data.Data.persistenObjectType;
-                /* getting the typeDescription in general needs a require, and thus is async. We do not want to do that
-                   here. */
+                // TODO server is stupid; this is _always_ "PPWCode.Vernacular.Persistence.I.IPersistentObject, ..."
+                if (requestedTypeDescription) {
+                  kwargs.typeDescription = requestedTypeDescription;
+                }
                 //noinspection JSUnresolvedVariable
                 kwargs.persistenceId = exc.response.data.Data.persistenceId;
               }
@@ -687,7 +689,8 @@ define(["dojo/_base/declare",
                          /*String*/ url,
                          /*Object?*/ query,
                          /*Object?*/ referer,
-                         /*Object?*/ options) {
+                         /*Object?*/ options,
+                         /*String?*/ requestedTypeDescription) {
         // summary:
         //   Get all the objects with `url` and the optional `query` from the remote server,
         //   and update `result` to reflect the returned collection when an answer arrives.
@@ -754,7 +757,7 @@ define(["dojo/_base/declare",
         );
         var revivePromise = loadPromise
           .otherwise(function(err) {
-            throw self._handleException(err, "_refresh - GET " + url); // of the request
+            throw self._handleException(err, "_refresh - GET " + url, requestedTypeDescription); // of the request
           })
           .then(
             function(/*Array*/ data) {
@@ -886,7 +889,7 @@ define(["dojo/_base/declare",
             timeout: this.timeout
           }
         ).otherwise(function(err) {
-          var exc = self._handleException(err, "_poAction - " + method + " " + url); // of the request
+          var exc = self._handleException(err, "_poAction - " + method + " " + url, po.getTypeDescription()); // of the request
           if (exc.isInstanceOf && exc.isInstanceOf(IdNotFoundException)) {
             logger.debug("IdNotFoundException while doing " + method + " of " + po.getKey());
             if (po.get("persistenceId") === exc.persistenceId) {
@@ -1100,7 +1103,7 @@ define(["dojo/_base/declare",
               }
             ).otherwise(function(err) {
               //noinspection JSUnresolvedFunction
-              var exc = self._handleException(err, "retrieve - GET " + url); // of the request
+              var exc = self._handleException(err, "retrieve - GET " + url, serverType); // of the request
               if (exc.isInstanceOf && exc.isInstanceOf(IdNotFoundException)) {
                 logger.debug("IdNotFoundException while retrieving " + cacheKey);
                 if (cached && cached.get("persistenceId") === exc.persistenceId) {
@@ -1334,7 +1337,7 @@ define(["dojo/_base/declare",
             timeout: self.timeout
           }
         ).otherwise(function(err) {
-          var exc = self._handleException(err, "remove - DELETE - " + url); // of the request
+          var exc = self._handleException(err, "remove - DELETE - " + url, po.getTypeDescription()); // of the request
           signal.exception = exc; // also mention IdNotFoundException
           if (exc.isInstanceOf && exc.isInstanceOf(IdNotFoundException)) {
             logger.debug("IdNotFoundException while deleting " + key);
@@ -1451,7 +1454,7 @@ define(["dojo/_base/declare",
                 url: url
               });
               return self
-                ._refresh(store, url, null, store, options) // IDEA: we can even add a query here
+                ._refresh(store, url, null, store, options, po.getTypeDescription()) // IDEA: we can even add a query here
                 .otherwise(function(err) {
                   if (exc.isInstanceOf && exc.isInstanceOf(IdNotFoundException)) {
                     logger.debug("IdNotFoundException while retrieving toMany " + guardKey);
