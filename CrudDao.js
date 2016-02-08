@@ -1446,14 +1446,34 @@ define(["dojo/_base/declare",
             self._queued,
             function() { // return Promise
               logger.debug("Starting actual GET of to many for" + guardKey + ".");
+              var signal = new ActionCompleted({
+                crudDao: self,
+                action: "GET",
+                subject: store, // might still be changed to po, if no error
+                url: url
+              });
               return self
                 ._refresh(store, url, null, store, options) // IDEA: we can even add a query here
                 .otherwise(function(err) {
-                  throw self._handleException(err, "_retrieveToMany - GET " + url);
+                  if (exc.isInstanceOf && exc.isInstanceOf(IdNotFoundException)) {
+                    logger.debug("IdNotFoundException while retrieving toMany " + guardKey);
+                    if (po.get("persistenceId") === exc.persistenceId) {
+                      // MUDO IdNotFoundExceptions for other objects
+                      logger.debug("Our main object has disappeared. Cleaning up.");
+                      //noinspection JSUnresolvedFunction
+                      return self._cleanupAfterRemove(po, signal).then(function() {throw exc;});
+                    }
+                  }
+                  throw exc;
+                })
+                .otherwise(function(err) {
+                  self._publishActionCompleted(signal);
+                  throw err;
                 })
                 .then(function(result) {
                   logger.debug("To-many store for " + guardKey + " refreshed.");
                   result.set("lastReloaded", new Date());
+                  self._publishActionCompleted(signal);
                   return result;
                 });
             }
