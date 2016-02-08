@@ -1431,25 +1431,26 @@ define(["dojo/_base/declare",
         logger.debug("Refreshing to many store for " + guardKey);
         var guardedPromise = store._arbiter.guard(
           guardKey,
-          lang.hitch(self, self._queued, lang.hitch(self, self._retrieveToMany, store, url, options, guardKey)),
+          lang.hitch(
+            self,
+            self._queued,
+            function() { // return Promise
+              logger.debug("Starting actual GET of to many for" + guardKey + ".");
+              return self
+                ._refresh(store, url, null, store, options) // IDEA: we can even add a query here
+                .otherwise(function(err) {
+                  throw self._handleException(err, "_retrieveToMany - GET " + url);
+                })
+                .then(function(result) {
+                  logger.debug("To-many store for " + guardKey + " refreshed.");
+                  result.set("lastReloaded", new Date());
+                  return result;
+                });
+            }
+          ),
           true
         );
         return guardedPromise;
-      },
-
-      _retrieveToMany: function(store, url, options, guardKey) { // return Promise
-        var self = this;
-        logger.debug("Starting actual GET of to many for" + guardKey + ".");
-        return self
-          ._refresh(store, url, null, store, options) // IDEA: we can even add a query here
-          .otherwise(function(err) {
-            throw self._handleException(err, "_retrieveToMany - GET " + url);
-          })
-          .then(function(result) {
-            logger.debug("To-many store for " + guardKey + " refreshed.");
-            result.set("lastReloaded", new Date());
-            return result;
-          });
       },
 
       searchInto: function(/*PersistentObjectStore*/ result, /*String?*/ serverType, /*Object?*/ query, /*Object?*/ options) {
