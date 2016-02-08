@@ -888,16 +888,7 @@ define(["dojo/_base/declare",
             logger.debug("ObjectAlreadyChangedException while doing " + method + " of " + po.getKey() + ". " +
                          "Refreshing the object that has changed with new data (" + JSON.stringify(exc.newVersion));
             // take care to do this for the object reported changed, not necessarily po
-            // TODO bug PICTOPERFECT-956 in server: exc.newVersion is the OLD version of the data I sent, not the new version
-            //return self.revive(exc.newVersion).then(function() {
-            //  throw exc;
-            //});
-            /* TODO workaround (sigh): do a force retrieve now, and throw the error when done;
-               use revive to get the type description easily; don't add a new referer;
-               error during revive or retrieve will get precedence! */
-            return self.revive(exc.newVersion).then(function(revived) {
-              return self.retrieve(po.getTypeDescription(), po.get("persistenceId"), null, true);
-            }).then(function() {
+            return self.revive(exc.newVersion).then(function() {
               throw exc;
             });
           }
