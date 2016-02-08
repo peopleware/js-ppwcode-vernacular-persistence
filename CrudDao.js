@@ -752,19 +752,20 @@ define(["dojo/_base/declare",
             timeout: this.timeout
           }
         );
-        var revivePromise = loadPromise.then(
-          function(/*Array*/ data) {
-            if (js.typeOf(data) !== "array") {
-              throw new Error("expected array from remote call");
-            }
-            logger.debug("Retrieved successfully from server: " + data.length + " items");
-            // the then Promise resolves with the resolution of the revive Promise, an Array
-            return self.revive(data, referer); // return Promise
-          },
-          function(err) {
+        var revivePromise = loadPromise
+          .otherwise(function(err) {
             throw self._handleException(err, "_refresh - GET " + url); // of the request
-          }
-        );
+          })
+          .then(
+            function(/*Array*/ data) {
+              if (js.typeOf(data) !== "array") {
+                throw new Error("expected array from remote call");
+              }
+              logger.debug("Retrieved successfully from server: " + data.length + " items");
+              // the then Promise resolves with the resolution of the revive Promise, an Array
+              return self.revive(data, referer); // return Promise
+            }
+          );
         var totalPromise = loadPromise.response.then(
           function(response) {
             /*
@@ -786,9 +787,6 @@ define(["dojo/_base/declare",
 
         // no need to handle errors of revive: they are errors
         var storePromise = revivePromise.then(function(/*Array*/ revived) {
-          if (js.typeOf(revived) !== "array") {
-            throw new Error("expected array from remote call");
-          }
           //noinspection JSUnresolvedFunction
           var removed = result.loadAll(revived);
           /* Elements might be not PersistentObjects themselves, but a hash of PersistentObjects.
