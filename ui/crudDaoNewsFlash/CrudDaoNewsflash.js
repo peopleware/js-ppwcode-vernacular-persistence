@@ -81,15 +81,21 @@ define(["dojo/_base/declare", "ppwcode-util-oddsAndEnds/ui/newsFlash/NewsFlash",
         }
 
         logger.debug("Event signals a SemanticException. We want to notify the user, or request interaction.");
-        if (actionCompleted.exception.isInstanceOf(IdNotFoundException) && actionCompleted.disappeared) {
+        if (actionCompleted.exception.isInstanceOf(IdNotFoundException)) {
           logger.debug("Event signals IdNotFoundException.");
-          return {
-            level: NewsFlash.Level.NOTIFICATION,
-            html: js.substitute(
+          var result = {level: NewsFlash.Level.NOTIFICATION};
+          if (actionCompleted.disappeared) {
+            logger.debug("Event signals IdNotFoundException, and the object that has disappeared is here (~ in the cache).");
+            result.html = js.substitute(
               crudDaoNewsFlash[actionCompleted.exception.constructor.mid],
               actionCompleted.disappeared
-            )
-          };
+            );
+          }
+          else {
+            logger.debug("Event signals IdNotFoundException, and the object that has disappeared is not known.");
+            result.html = js.substitute(crudDaoNewsFlash[IdNotFoundException.mid + "/UNKNOWN OBJECT"], actionCompleted);
+          }
+          return result;
         }
 
         logger.debug("Event signals generic SemanticException.");

@@ -17,6 +17,9 @@ define({
       "meer.</p>" +
       "<p>Het venster werd gesloten.</p>",
 
+    "ppwcode-vernacular-persistence/IdNotFoundException/UNKNOWN OBJECT":
+      "Het gevraagde object bestaat niet meer.",
+
     "ppwcode-vernacular-persistence/ObjectAlreadyChangedException":
       "<p><span class='objectLabel'>${this.subjectRepresentation('nl')}$</span> is " +
       "ondertussen reeds in een ander venster of door een andere gebruiker aangepast.</p>" +
