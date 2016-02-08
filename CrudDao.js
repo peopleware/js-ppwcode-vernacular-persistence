@@ -1107,10 +1107,7 @@ define(["dojo/_base/declare",
                   // MUDO IdNotFoundExceptions for other objects
                   logger.debug("We have a cached version, and it is the one that has disappeared. Cleaning up.");
                   //noinspection JSUnresolvedFunction
-                  return self._cleanupAfterRemove(cached, signal)
-                    .then(function() {
-                      throw exc;
-                    });
+                  return self._cleanupAfterRemove(cached, signal).then(function() {throw exc;});
                 }
               }
               throw exc;
@@ -1234,7 +1231,6 @@ define(["dojo/_base/declare",
         //noinspection JSUnresolvedFunction
         self.cache.stopTrackingCompletely(po);
         // signal deletion
-        signal.subject = po; // should be filled out correctly already, but just to be sure
         signal.disappeared = po;
         //noinspection JSUnresolvedFunction
         po._changeAttrValue("persistenceId", null);
