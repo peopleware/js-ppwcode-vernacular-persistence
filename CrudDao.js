@@ -252,7 +252,7 @@ define(["dojo/_base/declare",
       //   The action taken: "GET", "POST" (create), "PUT" (update) or "DELETE".
       action: null,
 
-      // subject: PersistentObject
+      // subject: IdentifiableObject
       //   The object that the `action` was executed on, in the state after the succesful `action`.
       subject: null,
 
@@ -279,9 +279,12 @@ define(["dojo/_base/declare",
         function() {return this._c_prop_instance("crudDao", CrudDao);},
         function() {return this._c_prop_mandatory("action");},
         function() {return this._c_prop_string("action");},
-        function() {["GET", "POST", "PUT", "DELETE"].indexOf(this.action) > 0},
+        function() {0 <= ["GET", "POST", "PUT", "DELETE"].indexOf(this.action)},
         function() {return (this.action === "GET" && this.exception) || this._c_prop_mandatory("subject");},
-        function() {return this._c_prop_instance("subject", PersistentObject);},
+        function() {return this._c_prop_instance("subject", IdentifiableObject);},
+        function() {return this.exception
+                           || ["POST", "PUT", "DELETE"].indexOf(this.action) < 0
+                           || this._c_prop_instance("subject", PersistentObject);},
         function() {return this._c_prop_mandatory("url");},
         function() {return this._c_prop_string("url");},
         // exception is optional, and can be anything
@@ -313,7 +316,12 @@ define(["dojo/_base/declare",
                  || kwargs.action === "DELETE";
         });
         this._c_pre(function() {return (kwargs.action === "GET" && kwargs.exception) || this._c_prop_mandatory(kwargs, "subject");});
-        this._c_pre(function() {return !kwargs.subject || this._c_prop_instance(kwargs, "subject", PersistentObject);});
+        this._c_pre(function() {return !kwargs.subject || this._c_prop_instance(kwargs, "subject", IdentifiableObject);});
+        this._c_pre(function() {
+          return kwargs.exception
+                 || ["POST", "PUT", "DELETE"].indexOf(kwargs.action) < 0
+                 || this._c_prop_instance(kwargs, "subject", PersistentObject)
+        });
         this._c_pre(function() {return this._c_prop_mandatory(kwargs, "url");});
         this._c_pre(function() {return this._c_prop_string(kwargs, "url");});
         // exception is optional, and can be anything
@@ -360,9 +368,17 @@ define(["dojo/_base/declare",
         this.disappeared = kwargs.disappeared;
       },
 
+      subjectRepresentation: function(/*String*/ locale) {
+        return this.subject
+          ? (this.subject.getLabel
+                 ? this.subject.getLabel({formatLength: "long", locale: locale})
+                 : this.subject.getKey())
+          : "—";
+      },
+
       toString: function() {
         return this.action + " for " +
-               (this.subject ? this.subject.getLabel({formatLength: "long"})  : "-- no subject known --") +
+               (this.subject ? this.subject.getKey()  : "-- no subject known --") +
                "; outcome: " + (this.exception ? "exceptional" : "nominal");
       }
 

@@ -18,19 +18,19 @@ define({
       "<p>Het venster werd gesloten.</p>",
 
     "ppwcode-vernacular-persistence/ObjectAlreadyChangedException":
-      "<p><span class='objectLabel'>${this.subject.getLabel({formatLength: 'long', locale: 'nl'})}$</span> is " +
+      "<p><span class='objectLabel'>${this.subjectRepresentation('nl')}$</span> is " +
       "ondertussen reeds in een ander venster of door een andere gebruiker aangepast.</p>" +
       "<p>Bekijk of uw wijzigingen nog nodig zijn, en herhaal ze indien nodig.</p>",
 
     "ppwcode-vernacular-exceptions/SemanticException[NOT UNIQUE]":
       "<p>Een waarde voor " +
-      "<span class='objectLabel'>${this.subject.getLabel({formatLength: 'long', locale: 'nl'})}$</span> die uniek moet " +
+      "<span class='objectLabel'>${this.subjectRepresentation('nl')}$</span> die uniek moet " +
       "zijn, is niet uniek.</p>" +
       "<p>Pas de gegevens aan, en probeer opnieuw.</p>",
 
     "ppwcode-vernacular-exceptions/SemanticException":
       "<p>De ingevulde waarden voor " +
-      "<span class='objectLabel'>${this.subject.getLabel({formatLength: 'long', locale: 'nl'})}$</span> worden door " +
+      "<span class='objectLabel'>${this.subjectRepresentation('nl')}$</span> worden door " +
       "de server niet aanvaard.</p>" +
       "<p>(<code>${(this.exception.key ? this.exception.key : '') + (this.exception.cause ? JSON.stringify(this.exception.cause) : '')}$</code>)</p>" +
       "<p>Pas de gegevens aan, en probeer opnieuw.</p>",

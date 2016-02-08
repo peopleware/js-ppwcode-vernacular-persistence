@@ -68,6 +68,7 @@ define(["dojo/_base/declare", "ppwcode-util-oddsAndEnds/ui/newsFlash/NewsFlash",
             logger.debug("Event signalled successful PUT. Showing confirmation.");
           }
 
+          // invar guarantees subject is a PersistentObject, and thus has getLabel
           return {
             level: NewsFlash.Level.CONFIRMATION,
             html: js.substitute(crudDaoNewsFlash[actionCompleted.action], actionCompleted.subject)
