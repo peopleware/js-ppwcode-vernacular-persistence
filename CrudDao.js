@@ -327,8 +327,11 @@ define(["dojo/_base/declare",
         // exception is optional, and can be anything
         // this._c_pre(function() {return this._c_prop_array(kwargs, "changed", VersionedPersistentObject);})
         // IDEA changed not supported for now
-        this._c_pre(function() {return !kwargs.created || this._c_prop_instance(kwargs, "created", PersistentObject);})
-        this._c_pre(function() {return !kwargs.disappeared || this._c_prop_instance(kwargs, "disappeared", PersistentObject);})
+        this._c_pre(function() {return !kwargs.created || this._c_prop_instance(kwargs, "created", PersistentObject);});
+        this._c_pre(function() {
+          //noinspection JSUnresolvedVariable
+          return !kwargs.disappeared || this._c_prop_instance(kwargs, "disappeared", PersistentObject);
+        });
 
         Object.defineProperty(
           this,
@@ -365,6 +368,7 @@ define(["dojo/_base/declare",
         // this.changed = kwargs.changed ? kwargs.changed.slice() : [];
         // IDEA changed not supported for now
         this.created = kwargs.created;
+        //noinspection JSUnresolvedVariable
         this.disappeared = kwargs.disappeared;
       },
 
@@ -525,8 +529,6 @@ define(["dojo/_base/declare",
         //   that will be thrown if that is applicable, or return the original exc to be thrown. It always
         //   returns an exception to be thrown.
 
-        // TODO function too complex; refactor
-
         if (!exc) {
           logger.error("Asked to handle an exception, but there is none (" + contextDescription + ").");
           return undefined;
@@ -562,7 +564,7 @@ define(["dojo/_base/declare",
                 // NOTE: sic! Yes, there is a typo in the server code (missing "t" in "persistenObjectType")
                 //noinspection JSUnresolvedVariable
                 kwargs.serverType = exc.response.data.Data.persistenObjectType;
-                // TODO server is stupid; this is _always_ "PPWCode.Vernacular.Persistence.I.IPersistentObject, ..."
+                // IDEA server is stupid; this is _always_ "PPWCode.Vernacular.Persistence.I.IPersistentObject, ..."
                 if (requestedTypeDescription) {
                   kwargs.typeDescription = requestedTypeDescription;
                 }
@@ -588,15 +590,16 @@ define(["dojo/_base/declare",
               });
             }
             if (exc.response.data["$type"].indexOf(".DbConstraintExceptionData") >= 0) {
-              // TODO full namespace is specific for a project :-(
+              // IDEA full namespace is specific for a project :-(
               logger.info("Server reported DB constraint violated (" + contextDescription + ").", exc.response.data);
-              /* TODO naked SemanticException for now; we don't have enough info to make this more specific now
+              /* IDEA naked SemanticException for now; we don't have enough info to make this more specific now
               exc.response.data.constraintName has the name of the DB constraint that is violated, but
               the interpretation of what that means belongs on the server.
               Probably, if it starts with UQ, there is some uniqueness being violated.
               We need more streamlining before we can make a good user message.
               For now, we take the approach to only translate what we are sure of.
                */
+              //noinspection JSUnresolvedVariable
               if (exc.response.data.constraintType === "DbUniqueConstraintException") {
                 return new SemanticException({key: "NOT UNIQUE", cause: exc.response.data});
               }
@@ -604,7 +607,7 @@ define(["dojo/_base/declare",
             }
           }
           if (exc.response.status === 403) {
-            /* TODO shaky, but for now we make this a very general semantic exception */
+            /* IDEA shaky, but for now we make this a very general semantic exception */
             return new SemanticException({cause: exc.response.data});
           }
           //noinspection MagicNumberJS
@@ -872,13 +875,11 @@ define(["dojo/_base/declare",
           subject: po, // might be changed for revived
           url: url
         });
-        var revivePromise = request(
-          url,
-          {
+        var revivePromise = request(url, {
             method: method,
             handleAs: "json",
             data: JSON.stringify(po, this.replacer),
-            headers: {"Accept" : "application/json"},
+            headers: {"Accept": "application/json"},
             withCredentials: true,
             timeout: this.timeout
           }
@@ -1007,6 +1008,7 @@ define(["dojo/_base/declare",
         //   we return a Promise that cleans it up, and rejects with the handled exception.
         //   Else, we just throw the handled exception.
 
+        //noinspection JSUnresolvedVariable
         var exc = this._handleException(
           err,
           contextDescription + " " + signal.url,
@@ -1086,7 +1088,7 @@ define(["dojo/_base/declare",
             // track now, early; if we wait until reload, it might be removed from the cache already
             //noinspection JSUnresolvedFunction
             self.track(cached, referer);
-            /* TODO this needs to be guarded?; referer might stop tracking before the reload Promise resolves;
+            /* IDEA this needs to be guarded?; referer might stop tracking before the reload Promise resolves;
              that results in a memory leak? */
           }
           if (!force) {
