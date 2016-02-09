@@ -1025,9 +1025,7 @@ define(["dojo/_base/declare",
         signal.exception = exc;
         if (this._isRelevantIdNotFoundException(exc, referencedObject)) {
           logger.debug("The referenced object has disappeared. Cleaning up.");
-          return this
-            ._cleanupAfterRemove(referencedObject, signal)
-            .then(function() {throw exc;});
+          this._cleanupAfterRemove(referencedObject, signal);
         }
         throw exc;
       },
@@ -1252,6 +1250,8 @@ define(["dojo/_base/declare",
 
         var self = this;
         //noinspection JSUnresolvedFunction
+        var key = po.getKey();
+        //noinspection JSUnresolvedFunction
         self.cache.stopTrackingCompletely(po);
         // signal deletion
         signal.disappeared = po;
@@ -1276,29 +1276,47 @@ define(["dojo/_base/declare",
           //noinspection JSUnresolvedFunction
           po._changeAttrValue("lastModifiedAt", null);
         }
-        return all(
-          js.getAllKeys(po).filter(function(k) {
-            return po[k] && po[k].isInstanceOf && po[k].isInstanceOf(PersistentObject) && po[k].get("persistenceId") && self.cache.get(po[k]);
-          }).map(function(k) {
-            // this will update object in cache, but don't add a referer for my sake,
-            // and don't care about IdNotFoundExceptions (delete might have cascaded)
-            var dependentPo = po[k];
-            logger.debug("refreshing " + dependentPo + " after delete of " + po);
-            return self.retrieve(dependentPo.getTypeDescription(), dependentPo.get("persistenceId"), null, true).then(
-              function(result) {
-                return result;
-              },
-              function(err) {
-                return err; // no throw // TODO filter on serious exceptions
-              }
-            );
-          })
-        ).then(function() {
-          /* TODO are we really only done when all dependents are refreshed? shouldn't that be a sidetrack?
-             But then we won't get any errors, apart from published ... */
-          logger.debug("All dependent objects refreshed. Delete done.");
-          return po;
+        // If po disappeared, probably objects in the neighborhood are changed too, and possibly disappeared too.
+        // Some of those might be in the cache. Refresh them.
+        // We are possibily dealing with a SemanticException, we want reported. We cannot report any exception that
+        // might happen during refresh. We will do this in the background, and log.
+        // Note that this might go recursive if we find other objects that have disappeared.
+        var relatedCachedPos = js.getAllKeys(po).reduce(
+          function(acc, k) {
+            var candidatePo = po[k];
+            if (candidatePo &&
+                candidatePo.isInstanceOf &&
+                candidatePo.isInstanceOf(PersistentObject) &&
+                candidatePo.get("persistenceId") &&
+                self.cache.get(candidatePo)) {
+              acc.push(candidatePo);
+            }
+            return acc;
+          },
+          []
+        );
+        logger[relatedCachedPos.length ? "info" : "debug"]("Related cached persistent objects to refresh in response " +
+                                                           "to disappearance of " + key + ": " +
+                                                           relatedCachedPos.length);
+        all(relatedCachedPos.map(function(rcpo) {
+          logger.info("Refreshing " + rcpo.getKey() + " in background because " + key + " disappeared.");
+          return self
+            .retrieve(rcpo.getTypeDescription(), rcpo.get("persistenceId"), null, true)
+            // This will update objects in cache, but don't add a referer for my sake. Force.
+            .otherwise(function(err) {
+              logger.warn("Error during background refresh of " + rcpo.getKey() +
+                           " in response to disappearance of " + key);
+              throw err;
+            })
+            .then(function(refreshed) {
+              logger.info("Succesful background refresh of " + rcpo.getKey() +
+                          " in response to disappearance of " + key);
+              return refreshed;
+            });
+        })).always(function() {
+          logger.info("Background refresh in response " + "to disappearance of " + key + " done.");
         });
+        return po;
       },
 
       remove: function(/*PersistentObject*/ po) {
