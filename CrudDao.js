@@ -315,7 +315,8 @@ define(["dojo/_base/declare",
                  || kwargs.action === "PUT"
                  || kwargs.action === "DELETE";
         });
-        this._c_pre(function() {return (kwargs.action === "GET" && kwargs.exception) || this._c_prop_mandatory(kwargs, "subject");});
+        this._c_pre(function() {return kwargs.action === "GET" || this._c_prop_mandatory(kwargs, "subject");});
+        // might be filled out later
         this._c_pre(function() {return !kwargs.subject || this._c_prop_instance(kwargs, "subject", IdentifiableObject);});
         this._c_pre(function() {
           return kwargs.exception
@@ -606,7 +607,7 @@ define(["dojo/_base/declare",
               return new SemanticException({cause: exc.response.data});
             }
           }
-          if (exc.response.status === 403) {
+          if (exc.response.status === 403 || exc.response.status === 410) {
             /* IDEA shaky, but for now we make this a very general semantic exception */
             return new SemanticException({cause: exc.response.data});
           }
@@ -997,11 +998,11 @@ define(["dojo/_base/declare",
         //   we return a Promise that cleans it up, and rejects with the handled exception.
         //   Else, we just throw the handled exception.
 
-        //noinspection JSUnresolvedVariable
+        //noinspection JSUnresolvedVariable,JSUnresolvedFunction
         var exc = this._handleException(
           err,
           contextDescription + " " + signal.url,
-          referencedObject && referencedObject.getTypeDescription
+          referencedObject && referencedObject.getTypeDescription()
         );
         signal.exception = exc;
         if (this._isRelevantIdNotFoundException(exc, referencedObject)) {
