@@ -689,13 +689,13 @@ define(["dojo/_base/declare",
                          /*String*/ url,
                          /*Object?*/ query,
                          /*Object?*/ referer,
-                         /*Object?*/ options,
-                         /*String?*/ requestedTypeDescription) {
+                         /*Object?*/ options) {
         // summary:
         //   Get all the objects with `url` and the optional `query` from the remote server,
         //   and update `result` to reflect the returned collection when an answer arrives.
         //   This returns a Promise, that resolves to result.
         //   *The resulting objects are tracked with referer, if there is one.*
+        //   Errors are not handled here.
         // result: PersistentObjectStore|Observable(PersistentObjectStore)
         //   Mandatory. When the promise is resolved, it will contain exactly the objects that were returned.
         // url: String
@@ -755,20 +755,14 @@ define(["dojo/_base/declare",
             timeout: this.timeout
           }
         );
-        var revivePromise = loadPromise
-          .otherwise(function(err) {
-            throw self._handleException(err, "_refresh - GET " + url, requestedTypeDescription); // of the request
-          })
-          .then(
-            function(/*Array*/ data) {
-              if (js.typeOf(data) !== "array") {
-                throw new Error("expected array from remote call");
-              }
-              logger.debug("Retrieved successfully from server: " + data.length + " items");
-              // the then Promise resolves with the resolution of the revive Promise, an Array
-              return self.revive(data, referer); // return Promise
-            }
-          );
+        var revivePromise = loadPromise.then(function(/*Array*/ data) {
+          if (js.typeOf(data) !== "array") {
+            throw new Error("expected array from remote call");
+          }
+          logger.debug("Retrieved successfully from server: " + data.length + " items");
+          // the then Promise resolves with the resolution of the revive Promise, an Array
+          return self.revive(data, referer); // return Promise
+        });
         var totalPromise = loadPromise.response.then(
           function(response) {
             /*
@@ -816,7 +810,7 @@ define(["dojo/_base/declare",
         // piggyback total promise on final Promise; since Promise is sealed, we need a delegate
         // remember that the Promise returns the store, not the array
         var finalPromise = lang.delegate(storePromise, {total: totalPromise});
-        finalPromise.then(lang.hitch(this, this._optionalCacheReporting));
+        finalPromise.always(lang.hitch(this, this._optionalCacheReporting));
         return finalPromise; // return Promise
       },
 
@@ -1002,6 +996,35 @@ define(["dojo/_base/declare",
       //   This hash avoids loading the same object twice at the same time.
       _retrievePromiseCache: null,
 
+      _handleReferencedObjectNotFound: function(/*String*/ contextDescription,
+                      /*ActionCompleted*/ signal,
+                      /*PersistentObject?*/ referencedObject,
+                      err) {
+        // summary:
+        //   Use as a Promise.otherwise callback, with the first 3 arguments partially evaluated.
+        //   `err` is handled, and added as `signal.exception`.
+        //   If we detect an `IdNotFoundException` for the `referencedObject`,
+        //   we return a Promise that cleans it up, and rejects with the handled exception.
+        //   Else, we just throw the handled exception.
+
+        var exc = this._handleException(
+          err,
+          contextDescription + " " + signal.url,
+          referencedObject && referencedObject.getTypeDescription
+        );
+        signal.exception = exc;
+        if (exc.isInstanceOf &&
+            exc.isInstanceOf(IdNotFoundException) &&
+            referencedObject &&
+            referencedObject.get("persistenceId") === exc.persistenceId) {
+          logger.debug("The referenced object has disappeared. Cleaning up.");
+          return this
+            ._cleanupAfterRemove(referencedObject, signal)
+            .then(function() {throw exc;});
+        }
+        throw exc;
+      },
+
       retrieve: function(/*String*/ serverType, /*Number*/ persistenceId, /*Object?*/ referer, /*Boolean*/ force) {
         // summary:
         //   Get the object of type `serverType` with `persistenceId` from the remote server.
@@ -1091,49 +1114,39 @@ define(["dojo/_base/declare",
               url: url
             });
             //noinspection JSUnresolvedVariable
-            var loadedAndRevived = request(
-              url,
-              {
-                method: "GET",
-                handleAs: "json",
-                headers: {"Accept": "application/json"},
-                preventCache: true,
-                withCredentials: true,
-                timeout: self.timeout
-              }
-            ).otherwise(function(err) {
-              //noinspection JSUnresolvedFunction
-              var exc = self._handleException(err, "retrieve - GET " + url, serverType); // of the request
-              if (exc.isInstanceOf && exc.isInstanceOf(IdNotFoundException)) {
-                logger.debug("IdNotFoundException while retrieving " + cacheKey);
-                if (cached && cached.get("persistenceId") === exc.persistenceId) {
-                  // MUDO IdNotFoundExceptions for other objects
-                  logger.debug("We have a cached version, and it is the one that has disappeared. Cleaning up.");
-                  //noinspection JSUnresolvedFunction
-                  return self._cleanupAfterRemove(cached, signal).then(function() {throw exc;});
+            var loadedAndRevived = request
+              .get(
+                url,
+                {
+                  handleAs: "json",
+                  headers: {"Accept": "application/json"},
+                  preventCache: true,
+                  withCredentials: true,
+                  timeout: self.timeout
                 }
-              }
-              throw exc;
-            }).then(function(data) {
-              logger.debug("Retrieved successfully from server (" + cacheKey + ")");
-              //noinspection JSUnresolvedFunction
-              return self.revive(data, referer); // errors are true errors
-            }).otherwise(function(err) {
-              // no need to handle errors of revive: they are errors
-              logger.debug("Retrieve finalized (exceptional). Forgetting the retrieve Promise (" + cacheKey + ")");
-              //noinspection JSUnresolvedVariable
-              delete self._retrievePromiseCache[cacheKey];
-              signal.exception = err;
-              self._publishActionCompleted(signal);
-              throw err;
-            }).then(function(po) {
-              logger.debug("Retrieve finalized (nominal). Forgetting the retrieve Promise (" + cacheKey + ")");
-              delete self._retrievePromiseCache[cacheKey];
-              signal.subject = po;
-              self._publishActionCompleted(signal);
-              //noinspection JSUnresolvedVariable
-              return po;
-            });
+              )
+              .then(function(data) {
+                logger.debug("Retrieved successfully from server (" + cacheKey + ")");
+                //noinspection JSUnresolvedFunction
+                return self.revive(data, referer); // errors are true errors
+              })
+              .then(function(po) {
+                logger.debug("Retrieve finalized (nominal). Forgetting the retrieve Promise (" + cacheKey + ")");
+                delete self._retrievePromiseCache[cacheKey];
+                signal.subject = po;
+                self._publishActionCompleted(signal);
+                //noinspection JSUnresolvedVariable
+                return po;
+              })
+              .otherwise(lang.hitch(self, self._handleReferencedObjectNotFound, "retrieve - GET", signal, cached))
+              .otherwise(function(err) {
+                // no need to handle errors of revive: they are errors
+                logger.debug("Retrieve finalized (exceptional). Forgetting the retrieve Promise (" + cacheKey + ")");
+                //noinspection JSUnresolvedVariable
+                delete self._retrievePromiseCache[cacheKey];
+                self._publishActionCompleted(signal);
+                throw err;
+              });
             loadedAndRevived.then(lang.hitch(self, self._optionalCacheReporting)); // side track
             return loadedAndRevived;
           });
@@ -1454,28 +1467,17 @@ define(["dojo/_base/declare",
                 url: url
               });
               return self
-                ._refresh(store, url, null, store, options, po.getTypeDescription()) // IDEA: we can even add a query here
-                .otherwise(function(err) {
-                  if (exc.isInstanceOf && exc.isInstanceOf(IdNotFoundException)) {
-                    logger.debug("IdNotFoundException while retrieving toMany " + guardKey);
-                    if (po.get("persistenceId") === exc.persistenceId) {
-                      // MUDO IdNotFoundExceptions for other objects
-                      logger.debug("Our main object has disappeared. Cleaning up.");
-                      //noinspection JSUnresolvedFunction
-                      return self._cleanupAfterRemove(po, signal).then(function() {throw exc;});
-                    }
-                  }
-                  throw exc;
-                })
-                .otherwise(function(err) {
-                  self._publishActionCompleted(signal);
-                  throw err;
-                })
+                ._refresh(store, url, null, store, options) // IDEA: we can even add a query here
                 .then(function(result) {
                   logger.debug("To-many store for " + guardKey + " refreshed.");
                   result.set("lastReloaded", new Date());
                   self._publishActionCompleted(signal);
                   return result;
+                })
+                .otherwise(lang.hitch(self, self._handleReferencedObjectNotFound, "retrieveToMany - GET", signal, po))
+                .otherwise(function(err) {
+                  self._publishActionCompleted(signal);
+                  throw err;
                 });
             }
           ),
@@ -1523,11 +1525,14 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return !query || js.typeOf(query) === "object";});
         this._c_pre(function() {return !options || js.typeOf(options) === "object";});
 
+        var self = this;
         logger.debug("Requested GET of matching instances: '" + serverType +"' matching '" + query + "'");
-        var url = this.urlBuilder.retrieveAll(serverType, query);
-        var resultPromise = this._refresh(result, url, query, result, options); // no referer
-        resultPromise.then(lang.hitch(this, this._optionalCacheReporting));
-        return resultPromise; // return Promise
+        var url = self.urlBuilder.retrieveAll(serverType, query);
+        return self // Promise
+          ._refresh(result, url, query, result, options) // no referer
+          .otherwise(function(err) {
+            throw self._handleException(err, "searchInto - GET " + url); // of the request
+          });
       },
 
       retrieveAllPersistenceIds: function(/*String*/ serverType) {
