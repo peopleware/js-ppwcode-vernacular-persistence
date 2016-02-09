@@ -882,52 +882,33 @@ define(["dojo/_base/declare",
             headers: {"Accept": "application/json"},
             withCredentials: true,
             timeout: this.timeout
-          }
-        ).otherwise(function(err) {
-          var exc = self._handleException(err, "_poAction - " + method + " " + url, po.getTypeDescription()); // of the request
-          if (exc.isInstanceOf && exc.isInstanceOf(IdNotFoundException)) {
-            logger.debug("IdNotFoundException while doing " + method + " of " + po.getKey());
-            if (po.get("persistenceId") === exc.persistenceId) {
-              logger.debug("The object we are updating is the one that has disappeared. Cleaning up.");
-              // MUDO IdNotFoundExceptions for other objects
-              //noinspection JSUnresolvedFunction
-              return self._cleanupAfterRemove(po, signal).then(function() {
-                throw exc;
-              });
+          })
+          .then(function(data) {
+            logger.debug(method + " success in server: " + data);
+            return self.revive(data, referer);
+          })
+          .then(function(revived) {
+            signal.subject = revived;
+            if (method === "POST") {
+              signal.created = revived;
             }
-          }
-          if (exc.isInstanceOf && exc.isInstanceOf(ObjectAlreadyChangedException)) {
-            logger.debug("ObjectAlreadyChangedException while doing " + method + " of " + po.getKey() + ". " +
-                         "Refreshing the object that has changed with new data (" + JSON.stringify(exc.newVersion));
-            // take care to do this for the object reported changed, not necessarily po
-            return self.revive(exc.newVersion).then(function() {
-              throw exc;
-            });
-          }
-          throw exc;
-        }).then(function(data) {
-          logger.debug(method + " success in server: " + data);
-          return self.revive(data, referer);
-        }).otherwise(function(err) {
-          signal.exception = err;
-          self._publishActionCompleted(signal);
-          throw err;
-        }).then(function(revived) {
-          signal.subject = revived;
-          if (method === "POST") {
-            signal.created = revived;
-          }
-          self._publishActionCompleted(signal);
-          return revived;
-        }).otherwise(function(err) {
-          if (err.isInstanceOf && err.isInstanceOf(SemanticException)) {
-            logger.info("SemanticException doing " + method + " for " + po.getKey() + ": " + err.toString());
-          }
-          else {
-            logger.error("Error doing " + method + " for " + po.getKey() + ": " + err.message || err, err);
-          }
-          throw err;
-        });
+            self._publishActionCompleted(signal);
+            return revived;
+          })
+          .otherwise(lang.hitch(self, self._handleErrorInRetrieve, "_poAction - " + method, signal, po))
+          .otherwise(lang.hitch(self, self._handleErrorInAction, "_poAction - " + method))
+          .otherwise(function(exc) {
+            if (exc.isInstanceOf && exc.isInstanceOf(SemanticException)) {
+              //noinspection JSUnresolvedFunction
+              logger.info("SemanticException doing " + method + " for " + po.getKey() + ": " + exc.toString());
+            }
+            else {
+              //noinspection JSUnresolvedFunction
+              logger.error("Error doing " + method + " for " + po.getKey() + ": " + exc.message || exc, exc);
+            }
+            self._publishActionCompleted(signal);
+            throw exc;
+          });
         revivePromise.always(lang.hitch(self, self._optionalCacheReporting)); // side track
         return revivePromise;
       },
@@ -1026,6 +1007,25 @@ define(["dojo/_base/declare",
         if (this._isRelevantIdNotFoundException(exc, referencedObject)) {
           logger.debug("The referenced object has disappeared. Cleaning up.");
           this._cleanupAfterRemove(referencedObject, signal);
+        }
+        throw exc;
+      },
+
+      _handleErrorInAction: function(/*String*/ contextDescription,
+                                     exc) {
+        // summary:
+        //   `exc` must already be triaged, exception must be added to signal already
+
+        if (exc.isInstanceOf && exc.isInstanceOf(ObjectAlreadyChangedException)) {
+          //noinspection JSUnresolvedVariable
+          logger.debug("ObjectAlreadyChangedException while doing " + contextDescription + ". " +
+                       "Refreshing the object that has changed with new data (" +
+                       JSON.stringify(exc.newVersion) + ")");
+          // take care to do this for the object reported changed, not necessarily po
+          //noinspection JSUnresolvedVariable
+          return this.revive(exc.newVersion).then(function() {
+            throw exc;
+          });
         }
         throw exc;
       },
@@ -1365,9 +1365,8 @@ define(["dojo/_base/declare",
           url: url
         });
         var key = po.getKey();
-        var deletePromise = request.del(
-          url,
-          {
+        var deletePromise = request
+          .del(url, {
             handleAs: "json",
             data: JSON.stringify(po, self.replacer),
             headers: {"Accept" : "application/json"},
@@ -1381,32 +1380,22 @@ define(["dojo/_base/declare",
                 // IdNotFoundException is sad, and might be mentioned to the user, but not a problem; it is what we want
               return po; // make it nominal
             }
-            // MUDO IdNotFoundExceptions for other objects
-          }
-          if (exc.isInstanceOf && exc.isInstanceOf(ObjectAlreadyChangedException)) {
-            logger.debug("ObjectAlreadyChangedException while deleting " + po.getKey() + ". " +
-                         "Refreshing the object that has changed with new data (" + JSON.stringify(exc.newVersion));
-            // take care to do this for the object reported changed, not necessarily po
-             return self.revive(exc.newVersion).then(function() {
-              self._publishActionCompleted(signal);
-              throw exc;
-            });
-          }
-          /* SecurityException is an error or SemanticException for now.
-             Other SemanticException: caller has to deal with that, like errors.
-           */
-          self._publishActionCompleted(signal);
-          throw exc;
-        }).then(function() {
-          logger.debug("DELETE success in server or already deleted: " + key);
-          return self._cleanupAfterRemove(po, signal);
-        }).then(function(po) {
-          self._publishActionCompleted(signal);
-          return po;
-        }).otherwise(function(err) {
-          logger.error("Error deleting " + key + ": " + err.message || err, err);
-          throw err;
-        });
+            throw exc;
+          })
+          .then(function() {
+            logger.debug("DELETE success in server or already deleted: " + key);
+            return self._cleanupAfterRemove(po, signal);
+          })
+          .then(function(po) {
+            self._publishActionCompleted(signal);
+            return po;
+          })
+          .otherwise(lang.hitch(self, self._handleErrorInAction, "remove - DELETE"))
+          .otherwise(function(err) {
+            logger.error("Error deleting " + key + ": " + err.message || err, err);
+            self._publishActionCompleted(signal);
+            throw err;
+          });
         deletePromise.always(lang.hitch(self, self._optionalCacheReporting)); // side track
         return deletePromise;
       },
