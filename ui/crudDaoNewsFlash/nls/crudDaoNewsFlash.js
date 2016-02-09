@@ -32,11 +32,11 @@ define({
       "<p>Pas de gegevens aan, en probeer opnieuw.</p>",
 
     "ppwcode-vernacular-exceptions/SemanticException":
-      "<p>De ingevulde waarden voor " +
-      "<span class='objectLabel'>${this.subjectRepresentation('nl')}$</span> worden door " +
+      "<p>Uw actie op " +
+      "<span class='objectLabel'>${this.subjectRepresentation('nl')}$</span> wordt door " +
       "de server niet aanvaard.</p>" +
       "<p>(<code>${(this.exception.key ? this.exception.key : '') + (this.exception.cause ? JSON.stringify(this.exception.cause) : '')}$</code>)</p>" +
-      "<p>Pas de gegevens aan, en probeer opnieuw.</p>",
+      "<p>Pas eventueel de gegevens aan, en probeer opnieuw.</p>",
 
     "ppwcode-vernacular-exceptions/SecurityException":
       "De gevraagde gegevens zijn voor u niet toegankelijk.",
