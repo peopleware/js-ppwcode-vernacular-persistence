@@ -1008,6 +1008,10 @@ define(["dojo/_base/declare",
           logger.debug("The referenced object has disappeared. Cleaning up.");
           this._cleanupAfterRemove(referencedObject, signal);
         }
+        /* IDEA handle SecurityException here, as soon as we can get it in a debugger.
+           We want a separate message for the user in CrudDaoNewsFlash, but we also
+           want to treat it like a remove. So _cleanupAfterRemove, and
+           where we close windows or refresh data, do that too. */
         throw exc;
       },
 
