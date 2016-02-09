@@ -997,10 +997,18 @@ define(["dojo/_base/declare",
       //   This hash avoids loading the same object twice at the same time.
       _retrievePromiseCache: null,
 
-      _handleReferencedObjectNotFound: function(/*String*/ contextDescription,
-                      /*ActionCompleted*/ signal,
-                      /*PersistentObject?*/ referencedObject,
-                      err) {
+      _isRelevantIdNotFoundException: function(/*Object*/ exc, /*PersistentObject?*/ referencedObject) {
+        //noinspection JSUnresolvedFunction
+        return exc.isInstanceOf &&
+               exc.isInstanceOf(IdNotFoundException) &&
+               referencedObject &&
+               referencedObject.get("persistenceId") === exc.persistenceId
+      },
+
+      _handleErrorInRetrieve: function(/*String*/ contextDescription,
+                                        /*CrudDao.ActionCompleted*/ signal,
+                                        /*PersistentObject?*/ referencedObject,
+                                        err) {
         // summary:
         //   Use as a Promise.otherwise callback, with the first 3 arguments partially evaluated.
         //   `err` is handled, and added as `signal.exception`.
@@ -1015,10 +1023,7 @@ define(["dojo/_base/declare",
           referencedObject && referencedObject.getTypeDescription
         );
         signal.exception = exc;
-        if (exc.isInstanceOf &&
-            exc.isInstanceOf(IdNotFoundException) &&
-            referencedObject &&
-            referencedObject.get("persistenceId") === exc.persistenceId) {
+        if (this._isRelevantIdNotFoundException(exc, referencedObject)) {
           logger.debug("The referenced object has disappeared. Cleaning up.");
           return this
             ._cleanupAfterRemove(referencedObject, signal)
@@ -1140,7 +1145,7 @@ define(["dojo/_base/declare",
                 //noinspection JSUnresolvedVariable
                 return po;
               })
-              .otherwise(lang.hitch(self, self._handleReferencedObjectNotFound, "retrieve - GET", signal, cached))
+              .otherwise(lang.hitch(self, self._handleErrorInRetrieve, "retrieve - GET", signal, cached))
               .otherwise(function(err) {
                 // no need to handle errors of revive: they are errors
                 logger.debug("Retrieve finalized (exceptional). Forgetting the retrieve Promise (" + cacheKey + ")");
@@ -1350,17 +1355,13 @@ define(["dojo/_base/declare",
             headers: {"Accept" : "application/json"},
             withCredentials: true,
             timeout: self.timeout
-          }
-        ).otherwise(function(err) {
-          var exc = self._handleException(err, "remove - DELETE - " + url, po.getTypeDescription()); // of the request
-          signal.exception = exc; // also mention IdNotFoundException
-          if (exc.isInstanceOf && exc.isInstanceOf(IdNotFoundException)) {
-            logger.debug("IdNotFoundException while deleting " + key);
-            //noinspection JSUnresolvedFunction
-            if (exc.persistenceId === po.get("persistenceId")) {
-              // IdNotFoundException is sad, and might be mentioned to the user, but not a problem; it is what we want
-              // make it nominal
-              return po;
+          })
+          .otherwise(function(err) {
+            var exc = self._handleException(err, "remove - DELETE - " + url, po.getTypeDescription()); // of the request
+            signal.exception = exc; // also mention IdNotFoundException
+            if (self._isRelevantIdNotFoundException(exc, po)) {
+                // IdNotFoundException is sad, and might be mentioned to the user, but not a problem; it is what we want
+              return po; // make it nominal
             }
             // MUDO IdNotFoundExceptions for other objects
           }
@@ -1469,7 +1470,7 @@ define(["dojo/_base/declare",
                   self._publishActionCompleted(signal);
                   return result;
                 })
-                .otherwise(lang.hitch(self, self._handleReferencedObjectNotFound, "retrieveToMany - GET", signal, po))
+                .otherwise(lang.hitch(self, self._handleErrorInRetrieve, "retrieveToMany - GET", signal, po))
                 .otherwise(function(err) {
                   self._publishActionCompleted(signal);
                   throw err;
