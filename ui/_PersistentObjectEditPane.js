@@ -364,6 +364,17 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
     });
 
     _PersistentObjectEditPane.mid = module.id;
+    _PersistentObjectEditPane.firstEnclosing = function enclosingPersistentObjectEditPane(/*_WidgetBase*/ w) {
+      // summary:
+      //   Try to find a _PersistentObjectEditPane that encloses `w`.
+      //   Returns a falsy value if no such instance can be found.
+
+      //noinspection JSUnresolvedFunction
+      return (!w || w.isInstanceOf(_PersistentObjectEditPane)) ?
+             w :
+             enclosingPersistentObjectEditPane(w.getParent());
+    };
+
     return _PersistentObjectEditPane; // return _PersistentObjectEditPane
 
   }
