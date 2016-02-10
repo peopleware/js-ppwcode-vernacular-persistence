@@ -31,11 +31,17 @@ define(["dojo/_base/declare", "ppwcode-util-oddsAndEnds/ui/newsFlash/NewsFlash",
       //   shows flash messages about CRUD-operations performed by CrudDao.
 
       constructor: function() {
-        this.topics = [CrudDao.mid];
+        this.topics.push(CrudDao.mid);
       },
 
       // translate: Function CrudDao.ActionCompleted -> Message?
       translate: function(/*CrudDao.ActionCompleted*/ actionCompleted) {
+        if (!actionCompleted ||
+            !actionCompleted.isInstanceOf ||
+            !actionCompleted.isInstanceOf(CrudDao.ActionCompleted)) {
+          return;
+        }
+
         logger.debug("Received an event from CrudDao: ", actionCompleted.toString());
         // IDEA a way to check for events of a particular CrudDao, instead of any CrudDao
         //if (actionCompleted.crudDao !== this) {
