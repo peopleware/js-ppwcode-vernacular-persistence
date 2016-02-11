@@ -34,6 +34,15 @@ define(["dojo/_base/declare", "ppwcode-util-oddsAndEnds/ui/newsFlash/NewsFlash",
         this.topics.push(CrudDao.mid);
       },
 
+      // showConfirmationOnSuccessGet: Boolean
+      showConfirmationOnSuccessGet: false,
+
+      // showConfirmationOnSuccessChange: Boolean
+      showConfirmationOnSuccessChange: true,
+
+      // showWarningOnNonSemanticExceptions: Boolean
+      showWarningOnNonSemanticExceptions: false,
+
       // translate: Function CrudDao.ActionCompleted -> Message?
       translate: function(/*CrudDao.ActionCompleted*/ actionCompleted) {
         if (!actionCompleted ||
@@ -53,9 +62,10 @@ define(["dojo/_base/declare", "ppwcode-util-oddsAndEnds/ui/newsFlash/NewsFlash",
 
           if (actionCompleted.action === "GET") {
             logger.debug("Event reports a successful GET, which we will not trouble the user with.");
-            return;
+            if (!this.showConfirmationOnSuccessGet || !actionCompleted.subject || !actionCompleted.subject.getLabel) {
+              return;
+            }
           }
-
           if (actionCompleted.action === "DELETE") {
             if (!actionCompleted.disappeared || actionCompleted.disappeared !== actionCompleted.subject) {
               logger.warn("Event signalled successful DELETE, but had no disappeared. Showing no feedback.");
@@ -75,15 +85,19 @@ define(["dojo/_base/declare", "ppwcode-util-oddsAndEnds/ui/newsFlash/NewsFlash",
           }
 
           // invar guarantees subject is a PersistentObject, and thus has getLabel
-          return {
+          return (this.showConfirmationOnSuccessChange || actionCompleted.action === "GET") && {
+              // if we get here, and actionCompleted.action === "GET", this.showConfirmationOnSuccessGet is true
             level: NewsFlash.Level.CONFIRMATION,
             html: js.substitute(crudDaoNewsFlash[actionCompleted.action], actionCompleted.subject)
           };
         }
 
         if (!actionCompleted.exception.isInstanceOf || !actionCompleted.exception.isInstanceOf(SemanticException)) {
-          logger.debug("Event signals an error. We are not showing unhandled errors here. NOP.");
-          return;
+          logger.debug("Event signals an error. Telling the user we are sorry.");
+          return this.showWarningOnNonSemanticExceptions && {
+            level: NewsFlash.Level.WARNING,
+            html: js.substitute(crudDaoNewsFlash["error"], actionCompleted)
+          };
         }
 
         logger.debug("Event signals a SemanticException. We want to notify the user, or request interaction.");

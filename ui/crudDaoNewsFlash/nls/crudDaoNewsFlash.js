@@ -1,5 +1,9 @@
 define({
   root:{
+    "GET":
+      "<p>De meest recente waarden van " +
+      "<span class='objectLabel'>${this.getLabel({formatLength: 'long', locale: 'nl'})}$</span> werden ingeladen.</p>",
+
     "DELETE":
       "<p><span class='objectLabel'>${this.getLabel({formatLength: 'long', locale: 'nl'})}$</span> is verwijderd.</p>" +
       "<p>Het venster werd gesloten.</p>",
