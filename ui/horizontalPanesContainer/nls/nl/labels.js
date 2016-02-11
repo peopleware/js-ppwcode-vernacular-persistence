@@ -15,7 +15,11 @@ limitations under the License.
 */
 
 define({
-  created: "Aangemaakt door",
-  at: "op",
-  lastModified: "Laatst aangepast door"
+  editButton: "Bewerk … (E)",
+  cancelButton: "Annuleer",
+  cancelButtonTitle: "Annuleer (ESC)",
+  saveButton: "Bewaar (CTRL/COMMAND-S)",
+  deleteButton: "Verwijder",
+  closeButton: "Sluit (W)",
+  busy: "Aan het verzenden …"
 });

@@ -16,10 +16,11 @@ limitations under the License.
 
 define({
   root:{
-    created: "Aangemaakt door",
-    at: "op",
-    lastModified: "Laatst aangepast door"
+    created: "Created by",
+    at: "at",
+    lastModified: "Last modified by"
   },
 
-  en:true
+  nl: true,
+  fr: true
 });

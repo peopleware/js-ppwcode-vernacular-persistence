@@ -1,5 +1,5 @@
 /*
-Copyright 2013 - $Date $ by PeopleWare n.v.
+Copyright 2016 - $Date $ by PeopleWare n.v.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,10 +16,12 @@ limitations under the License.
 
 define({
   root:{
-    editButton: "Bewerk ...",
-    cancelButton: "Annuleer",
-    saveButton: "Bewaar",
-    deleteButton: "Verwijder",
-    busy: "Aan het verzenden"
-  }
+    editButton: "Edit ...",
+    cancelButton: "Cancel",
+    saveButton: "Save",
+    deleteButton: "Delete",
+    busy: "Sending …"
+  },
+  nl: true,
+  fr: true
 });
