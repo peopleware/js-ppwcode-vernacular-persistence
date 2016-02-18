@@ -80,7 +80,7 @@ define(["dojo/_base/declare",
 
           self.own(self.on("keydown", function(event) {
             var presentationMode = self.get("presentationMode");
-            if ((presentationMode === self.EDIT || presentationMode === self.WILD) &&
+            if ((presentationMode === self.EDIT || presentationMode === self.DELETE_ONLY || presentationMode === self.WILD) &&
                 event.keyCode === keys.ESCAPE) {
               event.preventDefault();
               event.stopPropagation();
@@ -90,7 +90,8 @@ define(["dojo/_base/declare",
                       ((event.keyCode === keys.LEFT_ARROW || event.keyCode === keys.RIGHT_ARROW) &&
                         (presentationMode === self.VIEW || presentationMode === self.BUSY)) ||
                       ((event.keyCode === keys.PAGE_UP || event.keyCode === keys.PAGE_DOWN || event.keyCode === keys.HOME || event.keyCode === keys.END) &&
-                        (presentationMode === self.EDIT || presentationMode === self.WILD || presentationMode === self.VIEW || presentationMode === self.BUSY) &&
+                        (presentationMode === self.EDIT || presentationMode === self.DELETE_ONLY ||
+                         presentationMode === self.WILD || presentationMode === self.VIEW || presentationMode === self.BUSY) &&
                         event.metaKey)
                     ) {
               event.preventDefault();

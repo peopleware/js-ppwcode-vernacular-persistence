@@ -147,7 +147,7 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
         this._c_pre(function() {return this.get("target");});
         this._c_pre(function() {return this.get("target").get("editable") || this.get("target").get("deletable");});
 
-        this.set("presentationMode", this.EDIT);
+        this.set("presentationMode", this.get("target").get("editable") ? this.EDIT : this.DELETE_ONLY);
       },
 
       refresh: function(po, force) {

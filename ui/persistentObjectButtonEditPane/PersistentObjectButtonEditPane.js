@@ -194,8 +194,8 @@ define(["dojo/_base/declare", "dojo/dom-style",
         var po = this.get("target");
         var busy = (stylePresentationMode === this.BUSY);
         this._setVisible(this._btnEdit, stylePresentationMode === this.VIEW && (po.get("editable") || po.get("deletable")), false);
-        this._setVisible(this._btnCancel, this.isInEditMode(), busy);
-        this._setVisible(this._btnDelete, this.isInEditMode() && po.get("deletable") && po.get("persistenceId"), busy);
+        this._setVisible(this._btnCancel, (this.isInEditMode() || stylePresentationMode === "DELETE_ONLY"), busy);
+        this._setVisible(this._btnDelete, (this.isInEditMode() || stylePresentationMode === "DELETE_ONLY") && po.get("deletable") && po.get("persistenceId"), busy);
         this._setVisible(this._btnSave, this.isInEditMode() && (po.get("editable") || !po.get("persistenceId")), busy || (po && !po.get("wildExceptions").isEmpty()));
       },
 
