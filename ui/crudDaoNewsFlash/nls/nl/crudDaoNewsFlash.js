@@ -54,7 +54,6 @@ define({
     "<p>Uw actie op " +
     "<span class='objectLabel'>${this.subjectRepresentation('nl')}$</span> wordt door " +
     "de server niet aanvaard.</p>" +
-    "<p>(<code>${(this.exception.key ? this.exception.key : '') + (this.exception.cause ? JSON.stringify(this.exception.cause) : '')}$</code>)</p>" +
     "<p>Pas eventueel de gegevens aan, en probeer opnieuw.</p>",
 
   "ppwcode-vernacular-exceptions/SecurityException":
@@ -64,6 +63,5 @@ define({
     "<p>Er heeft zich een onverwachte situatie voorgedaan. We verontschuldigen ons, maar uw laatste wijzigingen " +
     "zijn niet opgeslagen.</p>" +
     "<p>Herlaad de pagina, en probeer opnieuw.</p>" +
-    "<p>Indien de fout zich blijft herhalen, kan u ons contacteren.</p>" +
-      "<pre>(${this.exception.message || this.exception.toString()}$)</pre>"
+    "<p>Indien de fout zich blijft herhalen, kan u ons contacteren.</p>"
 });

@@ -51,7 +51,6 @@ define({
   "ppwcode-vernacular-exceptions/SemanticException":
     "<p>Votre action sur " +
     "<span class='objectLabel'>${this.subjectRepresentation('nl')}$</span> n’est pas acceptée par le serveur.</p>" +
-    "<p>(<code>${(this.exception.key ? this.exception.key : '') + (this.exception.cause ? JSON.stringify(this.exception.cause) : '')}$</code>)</p>" +
     "<p>Vous pouvez modifier les données, et essayez à nouveau.</p>",
 
   "ppwcode-vernacular-exceptions/SecurityException":
@@ -61,6 +60,5 @@ define({
     "<p>Une situation imprévue se est produite. Veuillez nous excuser, mais votre dernières modifications ne sont pas " +
     "enregistrés.</p>" +
     "<p>Recharger la page, et essayez à nouveau.</p>" +
-    "<p>Si le problème persiste, vous pouvez nous contacter.</p>" +
-      "<pre>(${this.exception.message || this.exception.toString()}$)</pre>"
+    "<p>Si le problème persiste, vous pouvez nous contacter.</p>"
 });

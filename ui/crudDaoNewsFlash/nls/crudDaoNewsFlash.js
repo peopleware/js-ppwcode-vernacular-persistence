@@ -53,7 +53,9 @@ define({
     "ppwcode-vernacular-exceptions/SemanticException":
       "<p>Your action on " +
       "<span class='objectLabel'>${this.subjectRepresentation('nl')}$</span> is not accepted by the server.</p>" +
+      /* Don't add the exception: the end user can't make anything of this. Look at the console.
       "<p>(<code>${(this.exception.key ? this.exception.key : '') + (this.exception.cause ? JSON.stringify(this.exception.cause) : '')}$</code>)</p>" +
+      */
       "<p>You might want to change the data, and try again.</p>",
 
     "ppwcode-vernacular-exceptions/SecurityException":
@@ -62,8 +64,10 @@ define({
     "error":
       "<p>An unexpected situation has occured. We apologize, but your last changes are not saved.</p>" +
       "<p>Reload the page, and try again.</p>" +
-      "<p>If the issue persists, you can contact us.</p>" +
+      "<p>If the issue persists, you can contact us.</p>"
+      /* Don't add the exception: the end user can't make anything of this. Look at the console.
       "<pre>(${this.exception.message || this.exception.toString()}$)</pre>"
+      */
   },
   nl: true,
   fr: true
