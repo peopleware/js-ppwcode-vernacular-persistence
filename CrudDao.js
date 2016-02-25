@@ -689,6 +689,13 @@ define(["dojo/_base/declare",
         return deferred.promise;
       },
 
+      _piggyBackTotalPromise: function(/*Promise*/ promise, /*Promise*/ totalPromise) {
+        // summary:
+        //   Piggyback total promise on final Promise. Since Promise is sealed, we need a delegate.
+
+        return lang.delegate(promise, {total: totalPromise});
+      },
+
       _refresh: function(/*PersistentObjectStore|Observable(PersistentObjectStore)*/ result,
                          /*String*/ url,
                          /*Object?*/ query,
@@ -813,8 +820,8 @@ define(["dojo/_base/declare",
         });
         // piggyback total promise on final Promise; since Promise is sealed, we need a delegate
         // remember that the Promise returns the store, not the array
-        var finalPromise = lang.delegate(storePromise, {total: totalPromise});
-        finalPromise.always(lang.hitch(this, this._optionalCacheReporting));
+        var finalPromise = self._piggyBackTotalPromise(storePromise, totalPromise);
+        finalPromise.always(lang.hitch(self, self._optionalCacheReporting));
         return finalPromise; // return Promise
       },
 
@@ -1474,8 +1481,8 @@ define(["dojo/_base/declare",
                 subject: store, // might still be changed to po, if no error
                 url: url
               });
-              return self
-                ._refresh(store, url, null, store, options) // IDEA: we can even add a query here
+              var refreshed = self._refresh(store, url, null, store, options); // IDEA: we can even add a query here
+              var handledRefreshed = refreshed
                 .then(function(result) {
                   logger.debug("To-many store for " + guardKey + " refreshed.");
                   result.set("lastReloaded", new Date());
@@ -1487,6 +1494,7 @@ define(["dojo/_base/declare",
                   self._publishActionCompleted(signal);
                   throw err;
                 });
+              return self._piggyBackTotalPromise(handledRefreshed, refreshed.total);
             }
           ),
           true
@@ -1536,11 +1544,13 @@ define(["dojo/_base/declare",
         var self = this;
         logger.debug("Requested GET of matching instances: '" + serverType +"' matching '" + query + "'");
         var url = self.urlBuilder.retrieveAll(serverType, query);
-        return self // Promise
-          ._refresh(result, url, query, result, options) // no referer
-          .otherwise(function(err) {
+        var refreshed = self._refresh(result, url, query, result, options); // no referer; has total
+        return self._piggyBackTotalPromise(
+          refreshed.otherwise(function(err) {
             throw self._handleException(err, "searchInto - GET " + url); // of the request
-          });
+          }),
+          refreshed.total
+        ) ;
       },
 
       retrieveAllPersistenceIds: function(/*String*/ serverType) {
