@@ -66,10 +66,10 @@ define(["dojo/_base/declare",
         //
         //   In summary, `reload` should not be called while we are in change mode.
         //
-        //   Postcondition: result ==> this.get("changeMode")
+        //   Postcondition: result ==> true
         this._c_pre(function() {return json;});
 
-        return this.get("changeMode");
+        return true;
       },
 
       canReload: function(/*Object*/ json) {
