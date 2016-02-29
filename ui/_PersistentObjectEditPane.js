@@ -95,7 +95,7 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
 
       postCreate: function() {
         var self = this;
-        // self.inherited(arguments); // MUDO this call must be made, and activates missing features, but also now introduces layout problems; fix before uncommenting
+        self.inherited(arguments);
         self.own(topic.subscribe(CrudDao.mid, function(/*CrudDao.ActionCompleted*/ actionCompleted) {
           logger.debug("Received an event from CrudDao: ", actionCompleted.toString());
           // don't react to update (save) or create, only to delete, and only if it's for me
