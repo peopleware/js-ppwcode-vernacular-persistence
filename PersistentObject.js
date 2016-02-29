@@ -182,8 +182,6 @@ define(["dojo/_base/declare",
       return PersistentObject.keyForId(serverType, po.get("persistenceId")); // return String
     };
 
-
-
     return PersistentObject; // return PersistentObject
   }
 );
