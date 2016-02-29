@@ -50,9 +50,11 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
       //   of the outermost pane that is updated, created or deleted, with possible
       //   cascade (elsewhere) to the owned objects.
 
+      // IDEA remove target from the cache completely on ERROR?
+
       _c_invar: [
         // no extra invariants
-        function() {return (this.get("presentationMode") !== this.EDIT)
+        function() {return (this.get("presentationMode") === this.EDIT || this.get("presentationMode") === this.WILD)
                            === (this.get("target") && this.get("target").get("changeMode"));}
       ],
 
@@ -315,7 +317,7 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
       _onPresentationModeChange: function(presentationMode) {
         var po = this.get("target");
         if (po) {
-          po.set("changeMode", presentationMode === this.EDIT);
+          po.set("changeMode", presentationMode === this.EDIT || presentationMode === this.WILD);
         }
         this._focusOnFirstActiveTextBox(presentationMode);
       },
