@@ -52,10 +52,12 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
 
       _c_invar: [
         // no extra invariants
+        function() {return (this.get("presentationMode") !== this.EDIT)
+                           === (this.get("target") && this.get("target").get("changeMode"));}
       ],
 
       "-propagate-": {
-        presentationMode: [{path: "_focusOnFirstActiveTextBox", exec: true}]
+        presentationMode: [{path: "_onPresentationModeChange", exec: true}]
       },
 
       getTargetType: function() {
@@ -88,9 +90,6 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
           }
         }));
       },
-
-      // TODO validate should be setup here, or in _SemanticObjectPane
-
 
       postCreate: function() {
         var self = this;
@@ -133,6 +132,7 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
         var self = this;
         var po = self.get("target");
         if (po) {
+          po.set("changeMode", false); // the presentationMode is not changed, so we need to set the changeMode here
           self.crudDao.stopTracking(po, self);
         }
         return new Deferred().resolve(po); // returns the promise
@@ -312,11 +312,18 @@ define(["dojo/_base/declare","ppwcode-vernacular-semantics/ui/_semanticObjectPan
         });
       },
 
+      _onPresentationModeChange: function(presentationMode) {
+        var po = this.get("target");
+        if (po) {
+          po.set("changeMode", presentationMode === this.EDIT);
+        }
+        this._focusOnFirstActiveTextBox(presentationMode);
+      },
+
       _focusOnFirstActiveTextBox: function(presentationMode) {
         var self = this;
 
         function recursiveChildWidgets(domNode) {
-          // TODO C/P from ppwcode/vernacular/semantics/ui/_SemanticObjectPane; generalize somewhere
           return registry.findWidgets(domNode).reduce(
             function(acc, w) {
               acc.push(w);
