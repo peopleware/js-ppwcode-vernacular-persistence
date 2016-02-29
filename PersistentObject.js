@@ -38,14 +38,55 @@ define(["dojo/_base/declare",
       //   We actually don't care what type this is. We just store, and return to the server.
       persistenceId: null,
 
-      reload: function(/*Object*/ json) {
-        this._c_pre(function() {return json;});
-        this._c_pre(function() {return this._c_prop("persistenceId");});
-        // persistenceId can change from null to an actual number, but not the other way around
-        // this will happen with the JSON response from a creation or IdNotFoundException, and during construction
-        this._c_pre(function() {return !this.get("persistenceId") || (json.persistenceId  === this.get("persistenceId"));});
+      // changeMode: Boolean
+      //   This object is being edited, and we don't want `reload` to overwrite changes already made.
+      changeMode: false,
 
-        //noinspection JSUnresolvedFunction
+      shouldNotReloadInChangeMode: function(/*Object*/ json) {
+        //   When we choose to use a non-versioned PersistentObject in the model, it is because of one
+        //   of two reasons. Either we know the object will never change after creation, or we don't want
+        //   to use optimistic locking. In the first case, the user will never edit the object after creation.
+        //   In the second case, we need to consider what we do when new data comes in.
+        //   Normally, we want to reload the latest data. When the user is editing, this will
+        //   overwrite the edits, either with the original data, if nothing has changed on the server,
+        //   or newer data, if something has changed on the server. This will also happen when we get server
+        //   data as a side effect of other operations while the user is editing. This is annoying, since the user's
+        //   edits will disappear. If the operation that has this side effect is necessary for the edit, the edit
+        //   becomes impossible. (An example is a search to link this object to another object, where this object
+        //   itself is part of the search results).
+        //
+        //   We want a reload with the latest data if an edit is cancelled.
+        //
+        //   If we have choosen not to use optimistic locking, we have either choosen to do pessimistic locking,
+        //   or we have choosen to use "last one wins". In the first case, we will never get newer data from the
+        //   server while the user is editing. There is no need to reload while the user is editing, and a reload
+        //   would undo the user's changes, so we should not reload. In the second case, we also should not reload.
+        //   When the original data comes in, we would reset the user's edits, which we don't want, and since we
+        //   want "last one wins", if new data comes in, this user is last, and his edits should remain too.
+        //
+        //   In summary, `reload` should not be called while we are in change mode.
+        //
+        //   Postcondition: result ==> this.get("changeMode")
+        this._c_pre(function() {return json;});
+
+        return this.get("changeMode");
+      },
+
+      canReload: function(/*Object*/ json) {
+        // summary:
+        //   `persistenceId` can change from null to an actual number, but not the other way around.
+        //   This will happen with the JSON response from a creation or IdNotFoundException, and during
+        //   construction.
+        //   Extra postcondition:
+        //   | result ==> (!this.get("persistenceId") || (json.persistenceId === this.get("persistenceId"))) &&
+        //   |            (!this.get("changeMode") || this.shouldNotReloadInChangeMode(json))
+
+        return this.inherited(arguments) &&
+               (!this.get("persistenceId") || (json.persistenceId === this.get("persistenceId"))) &&
+               (!this.get("changeMode") || !this.shouldNotReloadInChangeMode(json));
+      },
+
+      reload: function(/*Object*/ json) {
         this._changeAttrValue("persistenceId", json.persistenceId);
       },
 
