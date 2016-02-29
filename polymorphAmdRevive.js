@@ -218,9 +218,16 @@ define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
           function(intermediateObject) {
             logger.trace(debugPrefix + "intermediate object ready for reloading " +
                          jsonPo["$type"] + "@" + jsonPo.persistenceId);
-            po.reload(intermediateObject);
-            if (logger.isTraceEnabled()) {
-              logger.trace(debugPrefix + "reloaded: " + po.toString());
+            if (!po.get("changeMode") || !po.shouldNotReloadInChangeMode(intermediateObject)) {
+              po.reload(intermediateObject);
+              if (logger.isTraceEnabled()) {
+                logger.trace(debugPrefix + "reloaded: " + po.toString());
+              }
+            }
+            else {
+              logger.trace(debugPrefix + "intermediate object ready for reloading, but " +
+                           jsonPo["$type"] + "@" + jsonPo.persistenceId + " is in change mode and this is not a " +
+                           "new version - not reloading");
             }
             if (referer) {
               if (logger.isTraceEnabled()) {
@@ -285,8 +292,6 @@ define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
         var /*PersistentObject*/ reloadTarget = cache.getByTypeAndId(type, id);
         if (reloadTarget) {
           logger.debug(debugPrefix + "found in cache: " + key);
-          // TODO only reload if dirty or !== persistenceVersion (if there is one); jsonPo needs to be processed deep,
-          // though
         }
         else {
           logger.info(debugPrefix + "not found in cache; creating new object for: " + key);
@@ -328,7 +333,7 @@ define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
         var objectPromise = intermediateObjectPromise.then(
           function(intermediate) {
             var fresh = new Constructor();
-            fresh.reload(intermediate);
+            fresh.reload(intermediate); // canReload MUST be true, it makes no sense otherwise
             if (logger.isDebugEnabled()) {
               logger.debug(debugPrefix + "created fresh object: " + fresh.toString());
             }
@@ -491,7 +496,7 @@ define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
         }
         // default
         throw "ERROR: impossible type (type of '" + value + "' cannot be " + valueType + ")";
-        // TODO WHAT ABOUT PROPERTIES OF TYPE CONSTRUCTOR?
+        // IDEA WHAT ABOUT PROPERTIES OF TYPE CONSTRUCTOR?
       }
 
       // the real method
