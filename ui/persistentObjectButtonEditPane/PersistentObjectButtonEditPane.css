@@ -21,7 +21,7 @@
   padding: 0;
 }
 
-.persistentObjectButtonEditPane > .persistentObjectButtonEditPane-contentPane {
+.persistentObjectButtonEditPane > .dijitContentPane.persistentObjectButtonEditPane-contentPane {
   padding: 8px;
 }
 
