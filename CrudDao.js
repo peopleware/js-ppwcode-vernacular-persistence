@@ -43,7 +43,7 @@ define(["dojo/_base/declare",
       var toBeRemoved = [];
       for (var i = 0; i < localStorage.length; i++) {
         var key = localStorage.key(i);
-        if (key.endsWith(cacheHistoryKeyPostfix)
+        if (key.indexOf(cacheHistoryKeyPostfix) === (key.length - cacheHistoryKeyPostfix.length)
             && !sessionsToKeep.some(function(sessionToKeep) {return sessionToKeep.key + cacheHistoryKeyPostfix === key;})) {
           toBeRemoved.push(key);
         }
