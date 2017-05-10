@@ -279,7 +279,7 @@ define(["dojo/_base/declare",
         function() {return this._c_prop_instance("crudDao", CrudDao);},
         function() {return this._c_prop_mandatory("action");},
         function() {return this._c_prop_string("action");},
-        function() {0 <= ["GET", "POST", "PUT", "DELETE"].indexOf(this.action)},
+        function() {return 0 <= ["GET", "POST", "PUT", "DELETE"].indexOf(this.action)},
         function() {return (this.action === "GET" && this.exception) || this._c_prop_mandatory("subject");},
         function() {return this._c_prop_instance("subject", IdentifiableObject);},
         function() {return this.exception
