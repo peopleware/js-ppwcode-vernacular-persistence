@@ -95,6 +95,8 @@ define(["dojo/_base/declare",
         this._c_pre(function() { return referer !== null;});
 
         this._referers.add(referer);
+        logger.debug("Referer added to " + this.payload.toString() +
+                    ": " + referer);
       },
 
       removeReferer: function(/*Object*/ referer) {
@@ -103,6 +105,8 @@ define(["dojo/_base/declare",
         //   not in the set to begin with, nothing happens.
 
         this._referers.remove(referer);
+        logger.debug("Referer removed from " + this.payload.toString() +
+                    ": " + referer);
       },
 
       getNrOfReferers: function() {
@@ -193,7 +197,8 @@ define(["dojo/_base/declare",
           this._data[key] = entry;
           if (logger.isInfoEnabled()) {
             var numberOfEntries = Object.keys(this._data).length;
-            logger.info("Entry added to cache (" + numberOfEntries + "): " + io.toString());
+            logger.info("Entry added to cache (" + numberOfEntries + "): " + io.toString() +
+                        " with referer "  + referer);
           }
         }
         entry.addReferer(referer);
