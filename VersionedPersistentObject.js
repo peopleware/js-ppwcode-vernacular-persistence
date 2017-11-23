@@ -41,12 +41,13 @@ define(["dojo/_base/declare", "./PersistentObject"],
         //   We want the first effect if an edit is cancelled or when we get newer data from the server (a higher
         //   `persistenceVersion`) while the user is editing, possibly with a warning message. A lower
         //   `persistenceVersion` is not possible. When we receive data with the same `persistenceVersion`, and
-        //   we are in `changeMode`, the data should not be reloaded. When we receive data with the same
-        //   `persistenceVersion`, and we are not in `changeMode`, the data should be reloaded.
+        //   we are in `changeMode`, the data should not be reloaded. (When we receive data with the same
+        //   `persistenceVersion`, and we are not in `changeMode`, the data should be reloaded, especially for
+        //   refresh / cancel).
         //
         //   This relaxes the precondition we have in PersistentObject: there we stated that reload cannot be
         //   called when we are in change mode. Now we say that reload cannot be called when we are in change mode,
-        //   except when the `persistenceVersion` is the same.
+        //   except when the `persistenceVersion` is the higher.
         //   This makes it necessary to repeat the postcondition of the superclass in the extra postcondition.
         //
         //   Extra postcondition:

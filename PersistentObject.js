@@ -79,7 +79,7 @@ define(["dojo/_base/declare",
         //   construction.
         //   Extra postcondition:
         //   | result ==> (!this.get("persistenceId") || (json.persistenceId === this.get("persistenceId"))) &&
-        //   |            (!this.get("changeMode") || this.shouldNotReloadInChangeMode(json))
+        //   |            (!this.get("changeMode") || !this.shouldNotReloadInChangeMode(json))
 
         return this.inherited(arguments) &&
                (!this.get("persistenceId") || (json.persistenceId === this.get("persistenceId"))) &&
