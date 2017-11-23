@@ -213,6 +213,18 @@ define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
         //   is resolved.
 
         logger.debug(debugPrefix + "reloading object for " + jsonPo["$type"] + "@" + jsonPo.persistenceId);
+        var now = Date.now();
+        var lastReloaded = po.get("lastReloaded");
+        var age = lastReloaded && (now - lastReloaded.getTime());
+        if (age && age < revive.minAgeForReloadMs &&
+            (!jsonPo.persistenceVersion || // this is intended to "never" change, so no need to reload if loaded once
+             (!po.dirty && jsonPo.persistenceVersion === po.get("persistenceVersion")))) {
+          logger.trace(debugPrefix + jsonPo["$type"] + "@" + jsonPo.persistenceId + " is not dirty, and very recent, " +
+                       "and the version hasn't changed: will not go deep (and possibly miss deeper changes)");
+          var deferred = new Deferred();
+          deferred.resolve(po);
+          return deferred.promise;
+        }
         var intermediateObjectPromise = processObject(jsonPo, po, debugPrefix + "  "); // po is referer going deep
         var reloadedPromise = intermediateObjectPromise.then(
           function(intermediateObject) {
@@ -507,6 +519,8 @@ define(["ppwcode-util-oddsAndEnds/js", "dojo/promise/all",
       return topResultOrPromise; // return /*Object|Promise*/
 
     }
+
+    revive.minAgeForReloadMs = 5000
 
     return revive;
 
