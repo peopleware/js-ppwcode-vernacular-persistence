@@ -21,7 +21,7 @@ define(["dojo/_base/declare",
         "ppwcode-vernacular-exceptions/SemanticException",
         "dojo/Deferred", "dojo/request", "dojo/_base/lang", "ppwcode-util-oddsAndEnds/js", "dojo/topic",
         "dojox/uuid/generateRandomUuid",
-        "dojo/has", "dojo/promise/all", "ppwcode-util-oddsAndEnds/log/logger!", "module"],
+        "dojo/has", "dojo/promise/all", "ppwcode-util-oddsAndEnds/log/delayedLogger!", "module"],
   function(declare,
            _ContractMixin,
            UrlBuilder, PersistentObject, IdentifiableObject,
@@ -491,7 +491,7 @@ define(["dojo/_base/declare",
           localStorage.setItem(cacheHistoryKey, JSON.stringify(cacheHistory));
         }
         if (log && logger.isInfoEnabled()) {
-          logger.info("CCCC cache report TTTT: " + JSON.stringify(reportEntry));
+          logger.info(function() {return "CCCC cache report TTTT: " + JSON.stringify(reportEntry)});
         }
       },
 
@@ -531,11 +531,11 @@ define(["dojo/_base/declare",
         //   returns an exception to be thrown.
 
         if (!exc) {
-          logger.error("Asked to handle an exception, but there is none (" + contextDescription + ").");
+          logger.error(function() {return "Asked to handle an exception, but there is none (" + contextDescription + ")."});
           return undefined;
         }
         if (exc.dojoType === "cancel") {
-          logger.info("Remote action cancelled (" + contextDescription + ").");
+          logger.info(function() {return "Remote action cancelled (" + contextDescription + ")."});
           /*
            We might want to eat this exception: it is not a problem; the Promise is cancelled.
            However, it seems to be the only way to signal cancellation reliably. dgrid e.g.
@@ -553,7 +553,7 @@ define(["dojo/_base/declare",
             // to a server login page, that redirects here again after successful login.
             // ie ("trident") has issues with a 401; this is a workaround, that will result in infinite reloads if
             // something truly bad happens
-            logger.info("Not authorized leaked through (" + contextDescription + ").", exc);
+            logger.info(function() {return "Not authorized leaked through (" + contextDescription + ").", exc});
             this.handleNotAuthorized(); // this method might do a redirect, so it might not return
             return exc; // we may not get here
           }
@@ -574,16 +574,22 @@ define(["dojo/_base/declare",
               }
             }
             var infExc = new IdNotFoundException(kwargs);
-            logger.info("Not found (" + contextDescription + "): ", infExc);
+            logger.info(function() {return "Not found (" + contextDescription + "): ", infExc});
             return infExc;
           }
           if (exc.response.data && exc.response.data["$type"] && exc.response.data["$type"].indexOf) {
             if (exc.response.data["$type"].indexOf("PPWCode.Vernacular.Persistence.I.Dao.DaoSecurityException") >= 0) {
-              logger.warn("Server reported dynamic security exception (" + contextDescription + ").", exc.response.data);
+              logger.warn(
+                function() {return "Server reported dynamic security exception (" + contextDescription + ")."},
+                exc.response.data
+              );
               return new SecurityException({cause: exc.response.data});
             }
             if (exc.response.data["$type"].indexOf("PPWCode.Vernacular.Persistence.I.Dao.ObjectAlreadyChangedException") >= 0) {
-              logger.info("Server reported object already changed (" + contextDescription + ").", exc.response.data);
+              logger.info(
+                function() {return "Server reported object already changed (" + contextDescription + ")."},
+                exc.response.data
+              );
               //noinspection JSUnresolvedVariable
               return new ObjectAlreadyChangedException({
                 cause: exc.response.data,
@@ -592,7 +598,10 @@ define(["dojo/_base/declare",
             }
             if (exc.response.data["$type"].indexOf(".DbConstraintExceptionData") >= 0) {
               // IDEA full namespace is specific for a project :-(
-              logger.info("Server reported DB constraint violated (" + contextDescription + ").", exc.response.data);
+              logger.info(
+                function() {return "Server reported DB constraint violated (" + contextDescription + ")."},
+                exc.response.data
+              );
               /* IDEA naked SemanticException for now; we don't have enough info to make this more specific now
               exc.response.data.constraintName has the name of the DB constraint that is violated, but
               the interpretation of what that means belongs on the server.
@@ -662,17 +671,19 @@ define(["dojo/_base/declare",
         var self = this;
 
         if (self._numberOfExecutingRequests < self.maxConcurrentRequests) {
-          logger.debug("Concurrent requests: " + self._numberOfExecutingRequests + " (max " +
-                       self.maxConcurrentRequests + ") - not queueing this request");
+          logger.debug(function() {
+            return "Concurrent requests: " + self._numberOfExecutingRequests + " (max " +
+                       self.maxConcurrentRequests + ") - not queueing this request"});
           return actualCall();
         }
-        logger.info("Reached maximum number of concurrent requests (max " + self.maxConcurrentRequests +
-                    ") - queueing this request (" + self._queuedRequests.length + " pending already)");
+        logger.info(function() {
+          return "Reached maximum number of concurrent requests (max " + self.maxConcurrentRequests +
+                    ") - queueing this request (" + self._queuedRequests.length + " pending already)"});
         // queue the request for later; return a Promise for the Promise
         var deferred = new Deferred();
         self._queuedRequests.push(
           function() {
-            logger.info("Starting queued request. (" + self._queuedRequests.length + " left in queue)");
+            logger.info(function() {return "Starting queued request. (" + self._queuedRequests.length + " left in queue)"});
             var done = actualCall();
             done.then(
               function(result) {
@@ -745,7 +756,7 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return !options || !options.count || js.typeOf(options.count) === "number";});
 
         logger.debug("GET URL is: " + url);
-        logger.debug("query: " + query);
+        logger.debug(function() {return "query: " + query});
         var self = this;
         var headers = {"Accept": "application/json"};
         if (options && (options.start >= 0 || options.count >= 0)) {
@@ -874,9 +885,9 @@ define(["dojo/_base/declare",
         });
 
         var self = this;
-        logger.debug("Requested " + method + " of: " + po);
+        logger.debug(function() {return "Requested " + method + " of: " + po});
         var url = self.urlBuilder.get(method)(po);
-        logger.debug(method + " URL is: " + url);
+        logger.debug(function() {return method + " URL is: " + url});
         var signal = new ActionCompleted({
           crudDao: self,
           action: method,
@@ -892,7 +903,7 @@ define(["dojo/_base/declare",
             timeout: this.timeout
           })
           .then(function(data) {
-            logger.debug(method + " success in server: " + data);
+            logger.debug(function() {return method + " success in server: " + data});
             return self.revive(data, referer);
           })
           .then(function(revived) {
@@ -908,11 +919,11 @@ define(["dojo/_base/declare",
           .otherwise(function(exc) {
             if (exc.isInstanceOf && exc.isInstanceOf(SemanticException)) {
               //noinspection JSUnresolvedFunction
-              logger.info("SemanticException doing " + method + " for " + po.getKey() + ": " + exc.toString());
+              logger.info(function() {return "SemanticException doing " + method + " for " + po.getKey() + ": " + exc.toString()});
             }
             else {
               //noinspection JSUnresolvedFunction
-              logger.error("Error doing " + method + " for " + po.getKey() + ": " + exc.message || exc, exc);
+              logger.error(function() {return "Error doing " + method + " for " + po.getKey() + ": " + exc.message || exc}, exc);
             }
             self._publishActionCompleted(signal);
             throw exc;
@@ -1030,9 +1041,10 @@ define(["dojo/_base/declare",
 
         if (exc.isInstanceOf && exc.isInstanceOf(ObjectAlreadyChangedException)) {
           //noinspection JSUnresolvedVariable
-          logger.debug("ObjectAlreadyChangedException while doing " + contextDescription + ". " +
+          logger.debug(function() {
+            return "ObjectAlreadyChangedException while doing " + contextDescription + ". " +
                        "Refreshing the object that has changed with new data (" +
-                       JSON.stringify(exc.newVersion) + ")");
+                       JSON.stringify(exc.newVersion) + ")"});
           // take care to do this for the object reported changed, not necessarily po
           //noinspection JSUnresolvedVariable
           return this.revive(exc.newVersion).then(function() {
@@ -1307,9 +1319,12 @@ define(["dojo/_base/declare",
           },
           []
         );
-        logger[relatedCachedPos.length ? "info" : "debug"]("Related cached persistent objects to refresh in response " +
+        logger[relatedCachedPos.length ? "info" : "debug"](
+          function() {
+            return "Related cached persistent objects to refresh in response " +
                                                            "to disappearance of " + key + ": " +
-                                                           relatedCachedPos.length);
+                                                           relatedCachedPos.length}
+        );
         all(relatedCachedPos.map(function(rcpo) {
           logger.info("Refreshing " + rcpo.getKey() + " in background because " + key + " disappeared.");
           return self
@@ -1367,7 +1382,7 @@ define(["dojo/_base/declare",
         });
 
         var self = this;
-        logger.debug("Requested DELETE of: " + po);
+        logger.debug(function() {return "Requested DELETE of: " + po});
         var url = self.urlBuilder.get("DELETE")(po);
         logger.debug("DELETE URL is: " + url);
         var signal = new ActionCompleted({
@@ -1404,7 +1419,7 @@ define(["dojo/_base/declare",
           })
           .otherwise(lang.hitch(self, self._handleErrorInAction, "remove - DELETE"))
           .otherwise(function(err) {
-            logger.error("Error deleting " + key + ": " + err.message || err, err);
+            logger.error(function() {return "Error deleting " + key + ": " + err.message || err}, err);
             self._publishActionCompleted(signal);
             throw err;
           });
@@ -1458,7 +1473,7 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return !referer || js.typeOf(referer) === "object";});
 
         var self = this;
-        logger.debug("Requested GET of to many: '" + po + "[" + propertyName+ "]'");
+        logger.debug(function() {return "Requested GET of to many: '" + po + "[" + propertyName+ "]'"});
         var store = po[propertyName];
         if (referer) {
           self.track(store, referer);
@@ -1542,7 +1557,7 @@ define(["dojo/_base/declare",
         this._c_pre(function() {return !options || js.typeOf(options) === "object";});
 
         var self = this;
-        logger.debug("Requested GET of matching instances: '" + serverType +"' matching '" + query + "'");
+        logger.debug(function() {return "Requested GET of matching instances: '" + serverType +"' matching '" + query + "'"});
         var url = self.urlBuilder.retrieveAll(serverType, query);
         var refreshed = self._refresh(result, url, query, result, options); // no referer; has total
         return self._piggyBackTotalPromise(
