@@ -22,7 +22,25 @@ define(["dojo/_base/declare",
   function(declare,
            _ContractMixin,
            IdentifiableObject, Set, PersistentObject, ToManyStore,
-           js, logger) {
+           js, baseLogger) {
+
+    function logFunction(level) {
+      var enabledName = "is" + level.charAt(0).toUpperCase() + level.slice(1) + "Enabled";
+      return function (msg) {
+        if (this._logger[enabledName]()) {
+          var message = typeof msg === "function" ? msg() : msg;
+          this._logger[level](message);
+        }
+      }
+      return;
+    }
+
+    var logger = {
+      _logger: baseLogger
+    };
+    ['trace', 'debug', 'info', 'warn', 'error', 'fatal'].forEach(function(l) {
+      logger[l] = logFunction(l);
+    });
 
     var Entry = declare([_ContractMixin], {
       // summary:
@@ -95,8 +113,8 @@ define(["dojo/_base/declare",
         this._c_pre(function() { return referer !== null;});
 
         this._referers.add(referer);
-        logger.debug("Referer added to " + this.payload.toString() +
-                    ": " + referer);
+        logger.debug(function () {return "Referer added to " + this.payload.toString() +
+                    ": " + referer});
       },
 
       removeReferer: function(/*Object*/ referer) {
@@ -105,8 +123,8 @@ define(["dojo/_base/declare",
         //   not in the set to begin with, nothing happens.
 
         this._referers.remove(referer);
-        logger.debug("Referer removed from " + this.payload.toString() +
-                    ": " + referer);
+        logger.debug(function () {return "Referer removed from " + this.payload.toString() +
+                    ": " + referer});
       },
 
       getNrOfReferers: function() {
@@ -195,11 +213,11 @@ define(["dojo/_base/declare",
         if (!entry) {
           entry = new Entry(io, this);
           this._data[key] = entry;
-          if (logger.isInfoEnabled()) {
+          logger.info(function () {
             var numberOfEntries = Object.keys(this._data).length;
-            logger.info("Entry added to cache (" + numberOfEntries + "): " + io.toString() +
-                        " with referer "  + referer);
-          }
+            "Entry added to cache (" + numberOfEntries + "): " + io.toString() +
+            " with referer "  + referer
+          });
         }
         entry.addReferer(referer);
       },
@@ -236,10 +254,10 @@ define(["dojo/_base/declare",
           entry.removeReferer(referer);
           if (entry.getNrOfReferers() <= 0) {
             delete self._data[key];
-            if (logger.isInfoEnabled()) {
+            logger.info(function() {
               var numberOfEntries = Object.keys(self._data).length;
-              logger.info("Entry removed from cache (" + numberOfEntries + "): " + entry.payload.toString());
-            }
+              return "Entry removed from cache (" + numberOfEntries + "): " + entry.payload.toString()
+            });
             if (entry.payload.isInstanceOf(ToManyStore)) {
               logger.info("Entry was ToManyStore " + key + ". Disabling.");
               entry.payload.removeAll();
