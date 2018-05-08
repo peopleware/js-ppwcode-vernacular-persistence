@@ -18,29 +18,11 @@ define(["dojo/_base/declare",
         "ppwcode-util-contracts/_Mixin",
         "ppwcode-vernacular-semantics/IdentifiableObject", "ppwcode-util-collections/ArraySet", "./PersistentObject",
         "./ToManyStore",
-        "ppwcode-util-oddsAndEnds/js", "ppwcode-util-oddsAndEnds/log/logger!"],
+        "ppwcode-util-oddsAndEnds/js", "ppwcode-util-oddsAndEnds/log/delayedLogger!"],
   function(declare,
            _ContractMixin,
            IdentifiableObject, Set, PersistentObject, ToManyStore,
-           js, baseLogger) {
-
-    function logFunction(level) {
-      var enabledName = "is" + level.charAt(0).toUpperCase() + level.slice(1) + "Enabled";
-      return function (msg) {
-        if (this._logger[enabledName]()) {
-          var message = typeof msg === "function" ? msg() : msg;
-          this._logger[level](message);
-        }
-      }
-      return;
-    }
-
-    var logger = {
-      _logger: baseLogger
-    };
-    ['trace', 'debug', 'info', 'warn', 'error', 'fatal'].forEach(function(l) {
-      logger[l] = logFunction(l);
-    });
+           js, logger) {
 
     var Entry = declare([_ContractMixin], {
       // summary:
