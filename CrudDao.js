@@ -408,6 +408,10 @@ define(["dojo/_base/declare",
       /* IDEA detect we are on older hardware, and set it to 10 then; e.g., count to 1 000 000, and depending on the
          speed ... */
 
+      // toManyTimeout: Number
+      //   Separate timeout for retrieveToMany, which in some implementations takes much longer
+      toManyTimeout: 10000,
+
       // maxConcurrentRequests: Number
       //   The maximum number of concurrent connections. Later requests will be queued, and handled when earlier
       //   requests finish.
@@ -505,7 +509,7 @@ define(["dojo/_base/declare",
       },
 
       constructor: function(kwargs) {
-        this._copyKwargsProperties(kwargs, ["urlBuilder", "revive", "cache", "replacer", "timeout"]);
+        this._copyKwargsProperties(kwargs, ["urlBuilder", "revive", "cache", "replacer", "timeout", "toManyTimeout"]);
         this._retrievePromiseCache = {};
         this._queuedRequests = [];
       },
@@ -711,7 +715,8 @@ define(["dojo/_base/declare",
                          /*String*/ url,
                          /*Object?*/ query,
                          /*Object?*/ referer,
-                         /*Object?*/ options) {
+                         /*Object?*/ options,
+                         /*Number?*/ timeout) {
         // summary:
         //   Get all the objects with `url` and the optional `query` from the remote server,
         //   and update `result` to reflect the returned collection when an answer arrives.
@@ -733,6 +738,8 @@ define(["dojo/_base/declare",
         //                             if there are no more, or if it decides to return less (e.g., because the server
         //                             return count is capped to a lower number). Default is as many as possible.
         //   We expect a consistent sorting order on the server for paging.
+        // timeout: Number?
+        //   Optional override of this.timeout.
         // description:
         //   The objects might be in result or the cache beforehand. Those objects are reloaded,
         //   and might send changed events.
@@ -774,7 +781,7 @@ define(["dojo/_base/declare",
             query: query,
             headers: headers,
             withCredentials: true,
-            timeout: this.timeout
+            timeout: timeout || this.timeout
           }
         );
         var revivePromise = loadPromise.then(function(/*Array*/ data) {
@@ -1496,7 +1503,7 @@ define(["dojo/_base/declare",
                 subject: store, // might still be changed to po, if no error
                 url: url
               });
-              var refreshed = self._refresh(store, url, null, store, options); // IDEA: we can even add a query here
+              var refreshed = self._refresh(store, url, null, store, options, self.toManyTimeout); // IDEA: we can even add a query here
               var handledRefreshed = refreshed
                 .then(function(result) {
                   logger.debug("To-many store for " + guardKey + " refreshed.");
