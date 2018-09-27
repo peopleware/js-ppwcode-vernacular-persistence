@@ -399,11 +399,13 @@ define(["dojo/_base/declare",
         var key = self._lookupKeyOf(io);
         if (key) {
           var entry = self._data[key];
-          //noinspection JSUnresolvedVariable
-          entry._referers.forEach(function(r) {
-            //noinspection JSUnresolvedFunction
-            self._removeReferer(key, r);
-          });
+          if (entry) {
+            //noinspection JSUnresolvedVariable
+            entry._referers.forEach(function(r) {
+              //noinspection JSUnresolvedFunction
+              self._removeReferer(key, r);
+            });
+          }
         }
         // else, there is no entry, so nobody is tracking anyway
       },
