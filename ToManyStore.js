@@ -75,8 +75,13 @@ define(["dojo/_base/declare",
         this._arbiter = new Arbiter();
       },
 
-      /* Get is the Stateful get. This is the PersistentObjectStore (i.e., StoreOfStateful) get, by id */
-      getById: PersistentObjectStore.prototype.get,
+      get: function(propertyName) {
+        // summary:
+        //   Combination of Stateful.get and StoreOfStateful / PersistentObjectStore.get. First try
+        //   PersistentObjectStore.get. If that is `falsy` (it should be a PersistentObject if not),
+        //   return the Stateful get. Note that there are no Stateful events for the Store-properties.
+        return PersistentObjectStore.prototype.get.apply(this, arguments) || this.inherited(arguments);
+      },
 
       getKey: function() {
         return this.getTypeDescription() + "@" + this.one.getKey() + "[" + this.serverPropertyName + "]";
