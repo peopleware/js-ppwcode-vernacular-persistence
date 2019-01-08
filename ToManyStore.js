@@ -75,6 +75,9 @@ define(["dojo/_base/declare",
         this._arbiter = new Arbiter();
       },
 
+      /* Get is the Stateful get. This is the PersistentObjectStore (i.e., StoreOfStateful) get, by id */
+      getById: PersistentObjectStore.prototype.get,
+
       getKey: function() {
         return this.getTypeDescription() + "@" + this.one.getKey() + "[" + this.serverPropertyName + "]";
       },
