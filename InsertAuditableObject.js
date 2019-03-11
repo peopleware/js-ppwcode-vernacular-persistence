@@ -68,23 +68,24 @@ define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js
         return 0;
       }
 
-      // MUDO There is a much worse problem: a RAM-created server Date is in the local time of the server
-      //      While the time in the DB has no timezone. A RAM-created server Date that is sent over JSON
-      //      contains timezone information. A date that is retrieved from the DB does not contain
-      //      timezone in RAM, and thus does also not contain timezone information when it is sent over
-      //      JSON.
-      //      When JavaScript parses a string with timezone information, it takes it into account.
-      //      When JavaScript parses a string without timezone information, it assumes the local
-      //      timezone.
-      //      When server and client are in a different timezone, when the JSON contains timezone information,
-      //      the string is interpreted in the timezone of the server. When the JSON does not contain
-      //      timezone information, the string is interpreted in the timezone of the client.
-      //      For web applications, this in unacceptable.
-      // MUDO for now we work around this by NOT SENDING THE DATA TO THE SERVER IN THE FIRST PLACE
-      //      that was another workaround; the effect of this is that we will not see this data after update
-      // MUDO but it is obviously wrong
+      /* TODO There is a much worse problem: a RAM-created server Date is in the local time of the server
+              While the time in the DB has no timezone. A RAM-created server Date that is sent over JSON
+              contains timezone information. A date that is retrieved from the DB does not contain
+              timezone in RAM, and thus does also not contain timezone information when it is sent over
+              JSON.
+              When JavaScript parses a string with timezone information, it takes it into account.
+              When JavaScript parses a string without timezone information, it assumes the local
+              timezone.
+              When server and client are in a different timezone, when the JSON contains timezone information,
+              the string is interpreted in the timezone of the server. When the JSON does not contain
+              timezone information, the string is interpreted in the timezone of the client.
+              For web applications, this in unacceptable.
+              --
+              For now we work around this by NOT SENDING THE DATA TO THE SERVER IN THE FIRST PLACE
+              That was another workaround; the effect of this is that we will not see this data after update
+              But it is obviously wrong. */
 
-      // MUDO Attempted workaround for PICTOPERFECT-484: send the data to the server
+      // TODO Attempted workaround for PICTOPERFECT-484: send the data to the server
 
       var InsertAuditableObject = declare([PersistentObject], {
         // InsertAuditableObjects have a `createdAt` and `createdBy` property, which is set by the server.
@@ -123,7 +124,7 @@ define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js
         reload: function(/*Object*/ json) {
           // created.. can change from null to an actual date and username number after create,
           this._c_pre(function() {return json;});
-// MUDO PICTOPERFECT-482          this._c_pre(function() {return !!json.persistenceId === !!json.createdBy;});
+          // TODO PICTOPERFECT-482 this._c_pre(function() {return !!json.persistenceId === !!json.createdBy;});
           this._c_pre(function() {return !!json.createdBy === !!json.createdAt;}); // jshint ignore:line
           this._c_pre(function() {return this._c_prop_string(json, "createdBy");});
           /*
@@ -132,7 +133,7 @@ define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js
           by the superclass from null to the new value (on create) before we reach this test. It was true before reload, but not
           halfway. What follows is an equivalent local version.
           */
-// MUDO PICTOPERFECT-482          this._c_pre(function() {return !this.get("createdBy") || !json.persistenceId || (this.get("createdBy") === json.createdBy);});
+          // TODO PICTOPERFECT-482 this._c_pre(function() {return !this.get("createdBy") || !json.persistenceId || (this.get("createdBy") === json.createdBy);});
 
           logger.trace("Trying to convert to date: ", json.createdAt);
           if (!json.createdAt && logger.isDebugEnabled()) {
@@ -148,7 +149,7 @@ define(["dojo/_base/declare", "./PersistentObject", "ppwcode-util-oddsAndEnds/js
         },
 
         // it makes no senses whatsoever to send this data back to the back-end
-        // MUDO Workaround for PICTOPERFECT-484: send the data to the server; this does eem to do the trick; is the timezone info above no longer applicable?
+        // TODO Workaround for PICTOPERFECT-484: send the data to the server; this does seem to do the trick; is the timezone info above no longer applicable?
 
         _extendJsonObject:function (/*Object*/ json) {
           json.createdBy = this.get("createdBy");
