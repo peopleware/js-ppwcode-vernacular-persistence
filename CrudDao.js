@@ -399,7 +399,9 @@ define(["dojo/_base/declare",
 
       _c_invar: [
         function() {return this._c_prop("urlBuilder");},
-        function() {return this.urlBuilder ? this.urlBuilder.isInstanceOf && this.urlBuilder.isInstanceOf(UrlBuilder) : true;}
+        function() {return this.urlBuilder ? this.urlBuilder.isInstanceOf && this.urlBuilder.isInstanceOf(UrlBuilder) : true;},
+        function() {return this._c_prop("getAuthHash");},
+        function() {return this.getAuthHash ? typeof this.getAuthHash === "function" : true}
       ],
 
       // timeout: Number
@@ -428,6 +430,13 @@ define(["dojo/_base/declare",
 
       // urlBuilder: UrlBuilder
       urlBuilder: null,
+
+      // authHashGetter: Function
+      //   Optional function without arguments that returns `null` or the `btoa("`"username:password")` hash
+      //   to use for server authentication. If this returns `null`, `request`s are made `withCredentials` (triggering
+      //   browser authentication). If this returns not-null, the returned string is used as "Authorization: Basic …"
+      //   header.
+      getAuthHash: null,
 
       actionCompletedTopicName: module.id,
 
@@ -509,7 +518,7 @@ define(["dojo/_base/declare",
       },
 
       constructor: function(kwargs) {
-        this._copyKwargsProperties(kwargs, ["urlBuilder", "revive", "cache", "replacer", "timeout", "toManyTimeout"]);
+        this._copyKwargsProperties(kwargs, ["urlBuilder", "revive", "cache", "replacer", "timeout", "toManyTimeout", "getAuthHash"]);
         this._retrievePromiseCache = {};
         this._queuedRequests = [];
       },
@@ -517,11 +526,18 @@ define(["dojo/_base/declare",
       requestOptions: function(other) {
         var headers = lang.mixin({"Accept": "application/json"}, other.headers);
         var timeout = other.timeout || this.timeout;
+        var credentialsHash = this.getAuthHash && this.getAuthHash();
+        if (credentialsHash) {
+          logger.info("Authenticating with credentials hash.");
+          headers.Authorization = "Basic " + credentialsHash;
+        } else {
+          logger.info("Using browser authentication.");
+        }
 
         return lang.mixin({}, other, {
           handleAs: "json",
           headers: headers,
-          withCredentials: true,
+          withCredentials: !credentialsHash,
           timeout: timeout
         });
       },
