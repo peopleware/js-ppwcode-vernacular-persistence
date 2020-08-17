@@ -514,6 +514,18 @@ define(["dojo/_base/declare",
         this._queuedRequests = [];
       },
 
+      requestOptions: function(other) {
+        var headers = lang.mixin({"Accept": "application/json"}, other.headers);
+        var timeout = other.timeout || this.timeout;
+
+        return lang.mixin({}, other, {
+          handleAs: "json",
+          headers: headers,
+          withCredentials: true,
+          timeout: timeout
+        });
+      },
+
       postscript: function() {
         this.setCacheReportingPeriod(has((this.constructor.mid || module.id) + "-cacheReporting"));
       },
@@ -775,14 +787,12 @@ define(["dojo/_base/declare",
         }
         var loadPromise = request(
           url,
-          {
+          self.requestOption({
             method: "GET",
-            handleAs: "json",
             query: query,
             headers: headers,
-            withCredentials: true,
-            timeout: timeout || this.timeout
-          }
+            timeout: timeout
+          })
         );
         var revivePromise = loadPromise.then(function(/*Array*/ data) {
           if (js.typeOf(data) !== "array") {
@@ -901,14 +911,10 @@ define(["dojo/_base/declare",
           subject: po, // might be changed for revived
           url: url
         });
-        var revivePromise = request(url, {
+        var revivePromise = request(url, self.requestOptions({
             method: method,
-            handleAs: "json",
-            data: JSON.stringify(po, this.replacer),
-            headers: {"Accept": "application/json"},
-            withCredentials: true,
-            timeout: this.timeout
-          })
+            data: JSON.stringify(po, this.replacer)
+          }))
           .then(function(data) {
             logger.debug(function() {return method + " success in server: " + data});
             return self.revive(data, referer);
@@ -1153,13 +1159,9 @@ define(["dojo/_base/declare",
             var loadedAndRevived = request
               .get(
                 url,
-                {
-                  handleAs: "json",
-                  headers: {"Accept": "application/json"},
-                  preventCache: true,
-                  withCredentials: true,
-                  timeout: self.timeout
-                }
+                self.requestOptions({
+                  preventCache: true
+                })
               )
               .then(function(data) {
                 logger.debug("Retrieved successfully from server (" + cacheKey + ")");
@@ -1400,13 +1402,9 @@ define(["dojo/_base/declare",
         });
         var key = po.getKey();
         var deletePromise = request
-          .del(url, {
-            handleAs: "json",
-            data: JSON.stringify(po, self.replacer),
-            headers: {"Accept" : "application/json"},
-            withCredentials: true,
-            timeout: self.timeout
-          })
+          .del(url, self.requestOptions({
+            data: JSON.stringify(po, self.replacer)
+          }))
           .otherwise(function(err) {
             var exc = self._handleException(err, "remove - DELETE - " + url, po.getTypeDescription()); // of the request
             signal.exception = exc; // also mention IdNotFoundException
@@ -1585,14 +1583,10 @@ define(["dojo/_base/declare",
         var url = this.urlBuilder.allPersistenceIds(serverType);
         var loadPromise = request(
           url,
-          {
+          self.requestOptions({
             method:"GET",
-            handleAs:"json",
-            headers:{"Accept":"application/json"},
-            preventCache: true,
-            withCredentials: true,
-            timeout: this.timeout
-          }
+            preventCache: true
+          })
         );
         loadPromise.then(lang.hitch(this, this._optionalCacheReporting));
         return loadPromise; // return Promise
