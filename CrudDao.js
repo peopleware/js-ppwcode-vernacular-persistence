@@ -803,7 +803,7 @@ define(["dojo/_base/declare",
         }
         var loadPromise = request(
           url,
-          self.requestOption({
+          self.requestOptions({
             method: "GET",
             query: query,
             headers: headers,
