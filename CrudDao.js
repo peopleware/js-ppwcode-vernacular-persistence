@@ -437,7 +437,7 @@ define(["dojo/_base/declare",
       //   browser authentication). If this returns not-null, the returned string is used as username and password.
       /**
        * @callback
-       * @returns {{username:string, password: string}}
+       * @returns {{user: string, password: string}}
        */
       getCredentials: null,
 
@@ -529,7 +529,7 @@ define(["dojo/_base/declare",
       requestOptions: function(other) {
         var headers = lang.mixin({"Accept": "application/json"}, other.headers);
         var timeout = other.timeout || this.timeout;
-        var /** @type {{username: string, password: string}} */ credentials = this.getCredentials && this.getCredentials();
+        var /** @type {{user: string, password: string}} */ credentials = this.getCredentials && this.getCredentials();
         var base = {
           handleAs: "json",
           headers: headers,
@@ -538,7 +538,7 @@ define(["dojo/_base/declare",
         }
         if (credentials) {
           logger.info("Authenticating with credentials hash.");
-          base.username = credentials.username;
+          base.user = credentials.user;
           base.password = credentials.password;
         } else {
           logger.info("Using browser authentication.");
