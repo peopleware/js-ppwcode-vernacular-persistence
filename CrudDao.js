@@ -526,20 +526,22 @@ define(["dojo/_base/declare",
       requestOptions: function(other) {
         var headers = lang.mixin({"Accept": "application/json"}, other.headers);
         var timeout = other.timeout || this.timeout;
-        var credentialsHash = this.getAuthHash && this.getAuthHash();
-        if (credentialsHash) {
+        var credentials = this.getCredentials && this.getCredentials();
+        var base = {
+          handleAs: "json",
+          headers: headers,
+          withCredentials: !credentials,
+          timeout: timeout
+        }
+        if (credentials) {
           logger.info("Authenticating with credentials hash.");
-          headers.Authorization = "Basic " + credentialsHash;
+          base.username = credentials.username;
+          base.password = credentials.password;
         } else {
           logger.info("Using browser authentication.");
         }
 
-        return lang.mixin({}, other, {
-          handleAs: "json",
-          headers: headers,
-          withCredentials: !credentialsHash,
-          timeout: timeout
-        });
+        return lang.mixin({}, other, base);
       },
 
       postscript: function() {
