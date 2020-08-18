@@ -400,7 +400,7 @@ define(["dojo/_base/declare",
       _c_invar: [
         function() {return this._c_prop("urlBuilder");},
         function() {return this.urlBuilder ? this.urlBuilder.isInstanceOf && this.urlBuilder.isInstanceOf(UrlBuilder) : true;},
-        function() {return this._c_prop("getAuthHash");},
+        function() {return this._c_prop("getCredentials");},
         function() {return this.getAuthHash ? typeof this.getAuthHash === "function" : true}
       ],
 
@@ -431,12 +431,15 @@ define(["dojo/_base/declare",
       // urlBuilder: UrlBuilder
       urlBuilder: null,
 
-      // authHashGetter: Function
-      //   Optional function without arguments that returns `null` or the `btoa("`"username:password")` hash
+      // getCredentials: Function
+      //   Optional function without arguments that returns `null` or an object containing username and password
       //   to use for server authentication. If this returns `null`, `request`s are made `withCredentials` (triggering
-      //   browser authentication). If this returns not-null, the returned string is used as "Authorization: Basic …"
-      //   header.
-      getAuthHash: null,
+      //   browser authentication). If this returns not-null, the returned string is used as username and password.
+      /**
+       * @callback
+       * @returns {{username:string, password: string}}
+       */
+      getCredentials: null,
 
       actionCompletedTopicName: module.id,
 
@@ -518,7 +521,7 @@ define(["dojo/_base/declare",
       },
 
       constructor: function(kwargs) {
-        this._copyKwargsProperties(kwargs, ["urlBuilder", "revive", "cache", "replacer", "timeout", "toManyTimeout", "getAuthHash"]);
+        this._copyKwargsProperties(kwargs, ["urlBuilder", "revive", "cache", "replacer", "timeout", "toManyTimeout", "getCredentials"]);
         this._retrievePromiseCache = {};
         this._queuedRequests = [];
       },
@@ -526,7 +529,7 @@ define(["dojo/_base/declare",
       requestOptions: function(other) {
         var headers = lang.mixin({"Accept": "application/json"}, other.headers);
         var timeout = other.timeout || this.timeout;
-        var credentials = this.getCredentials && this.getCredentials();
+        var /** @type {{username: string, password: string}} */ credentials = this.getCredentials && this.getCredentials();
         var base = {
           handleAs: "json",
           headers: headers,
